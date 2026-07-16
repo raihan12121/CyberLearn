@@ -1,3 +1,5 @@
+import hmac
+import hashlib
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
@@ -5,13 +7,34 @@ from typing import List
 from ..database import get_db
 from .. import models, schemas
 from ..auth.dependencies import get_current_user
+from ..config import settings
 
 router = APIRouter(
     prefix="/labs",
     tags=["Practice Labs"]
 )
 
-# Seed labs list
+
+def generate_lab_flag(lab_id: str) -> str:
+    """
+    Generate a deterministic CTF flag for a lab using HMAC-SHA256.
+
+    The flag is derived from the lab ID and a secret key (FLAG_SECRET),
+    so it is:
+      - Deterministic: same secret + lab_id = same flag (across restarts if
+        FLAG_SECRET is persisted in .env)
+      - Unique per deployment: different FLAG_SECRET = different flags
+      - Not stored in source code
+    """
+    signature = hmac.new(
+        settings.FLAG_SECRET.encode("utf-8"),
+        lab_id.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()[:16]
+    return f"FLAG{{{signature}}}"
+
+
+# Seed labs list — flags are NOT stored here; they are generated at runtime from FLAG_SECRET
 SEED_LABS = [
     {
         "id": "linux-navigation",
@@ -22,7 +45,6 @@ SEED_LABS = [
         "xp_reward": 100,
         "description": "Practice filesystem navigation using commands like cd, ls, and pwd in a sandbox container environment.",
         "container_template": "linux-basic",
-        "flag": "FLAG{cyber_learn_permissions_101}"
     },
     {
         "id": "sql-injection-bypass",
@@ -33,7 +55,6 @@ SEED_LABS = [
         "xp_reward": 250,
         "description": "Bypass standard authentication mechanisms by exploiting vulnerable SQL search queries.",
         "container_template": "web-security",
-        "flag": "FLAG{sqli_bypass_successful_1337}"
     },
     {
         "id": "packet-sniffer-recon",
@@ -44,7 +65,6 @@ SEED_LABS = [
         "xp_reward": 300,
         "description": "Intercept traffic on a local area network to capture plaintext login credentials.",
         "container_template": "networking",
-        "flag": "FLAG{network_pcap_sniff_98}"
     },
     {
         "id": "book-recon",
@@ -55,7 +75,6 @@ SEED_LABS = [
         "xp_reward": 100,
         "description": "Find the flag hidden in the vulnerable web application.",
         "container_template": "osint-basic",
-        "flag": "FLAG{book_recon_osint_99}"
     },
     {
         "id": "sql-beginner",
@@ -66,7 +85,6 @@ SEED_LABS = [
         "xp_reward": 150,
         "description": "Exploit a basic SQL injection vulnerability to retrieve the flag.",
         "container_template": "web-security",
-        "flag": "FLAG{sql_beginner_injection_42}"
     },
     {
         "id": "ctf-101",
@@ -77,7 +95,6 @@ SEED_LABS = [
         "xp_reward": 250,
         "description": "Your first multi-step CTF challenge. Follow the breadcrumbs.",
         "container_template": "ctf-basic",
-        "flag": "FLAG{ctf_101_breadcrumbs_55}"
     },
     {
         "id": "linux-privesc",
@@ -88,7 +105,6 @@ SEED_LABS = [
         "xp_reward": 500,
         "description": "Escalate your privileges on a Linux machine to read the root flag.",
         "container_template": "linux-basic",
-        "flag": "FLAG{linux_privesc_root_access_77}"
     },
     {
         "id": "bug-hunter",
@@ -99,7 +115,6 @@ SEED_LABS = [
         "xp_reward": 1000,
         "description": "Find and chain multiple vulnerabilities in a complex web app.",
         "container_template": "web-security",
-        "flag": "FLAG{bug_hunter_expert_chaining_999}"
     },
     {
         "id": "root-access",
@@ -110,7 +125,6 @@ SEED_LABS = [
         "xp_reward": 300,
         "description": "Gain root access to the system using misconfigurations.",
         "container_template": "linux-basic",
-        "flag": "FLAG{root_access_misconfig_88}"
     },
     {
         "id": "xss-master",
@@ -121,7 +135,6 @@ SEED_LABS = [
         "xp_reward": 200,
         "description": "Bypass XSS filters and execute arbitrary JavaScript.",
         "container_template": "web-security",
-        "flag": "FLAG{xss_master_filter_bypass_123}"
     },
     {
         "id": "network-sniffer",
@@ -132,7 +145,6 @@ SEED_LABS = [
         "xp_reward": 120,
         "description": "Analyze network traffic to extract credentials.",
         "container_template": "networking",
-        "flag": "FLAG{network_sniffer_wireshark_12}"
     },
     {
         "id": "crypto-basics",
@@ -143,28 +155,37 @@ SEED_LABS = [
         "xp_reward": 100,
         "description": "Decode encrypted messages using classic ciphers.",
         "container_template": "crypto-basic",
-        "flag": "FLAG{crypto_basics_classic_cipher_10}"
     },
 ]
 
 def seed_labs_if_empty(db: Session):
-    count = db.query(models.Lab).count()
-    # If not all seeded labs exist, delete and re-seed to make sure everything matches
-    if count < len(SEED_LABS):
-        # Clean existing labs if less than total seeded labs
-        db.query(models.Lab).delete()
+    # Check if all seed labs exist
+    seed_lab_ids = [l["id"] for l in SEED_LABS]
+    existing_labs_count = db.query(models.Lab).filter(models.Lab.id.in_(seed_lab_ids)).count()
+    
+    if existing_labs_count < len(SEED_LABS):
         for l in SEED_LABS:
-            db_lab = models.Lab(
-                id=l["id"],
-                title=l["title"],
-                type=l["category"],
-                difficulty=l["difficulty"],
-                time_limit=l["time_limit"],
-                xp_reward=l["xp_reward"],
-                description=l["description"],
-                container_template=l["container_template"]
-            )
-            db.add(db_lab)
+            db_lab = db.query(models.Lab).filter(models.Lab.id == l["id"]).first()
+            if not db_lab:
+                db_lab = models.Lab(
+                    id=l["id"],
+                    title=l["title"],
+                    type=l["category"],
+                    difficulty=l["difficulty"],
+                    time_limit=l["time_limit"],
+                    xp_reward=l["xp_reward"],
+                    description=l["description"],
+                    container_template=l["container_template"]
+                )
+                db.add(db_lab)
+            else:
+                db_lab.title = l["title"]
+                db_lab.type = l["category"]
+                db_lab.difficulty = l["difficulty"]
+                db_lab.time_limit = l["time_limit"]
+                db_lab.xp_reward = l["xp_reward"]
+                db_lab.description = l["description"]
+                db_lab.container_template = l["container_template"]
         db.commit()
 
 @router.get("", response_model=List[schemas.LabResponse])
@@ -257,17 +278,10 @@ def submit_flag(
             detail="No active running session found to submit flag for."
         )
         
-    # Find matching flag from seed data
-    matching_flag = None
-    for l in SEED_LABS:
-        if l["id"] == session.lab_id:
-            matching_flag = l["flag"]
-            break
-            
-    if not matching_flag:
-        matching_flag = "FLAG{default_placeholder}"
+    # Generate the expected flag using HMAC — never stored in source code
+    expected_flag = generate_lab_flag(session.lab_id)
         
-    if flag_submission.strip() == matching_flag:
+    if flag_submission.strip() == expected_flag:
         # Success!
         session.status = "completed"
         session.completed_at = datetime.utcnow()
@@ -299,3 +313,34 @@ def submit_flag(
             "correct": False,
             "message": "Incorrect flag payload. Review instructions or ask the AI coach for hints!"
         }
+
+
+@router.get("/{lab_id}/flag")
+def get_lab_flag(
+    lab_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """
+    Retrieve the generated flag for a specific lab.
+    Restricted to admin users only — used for container provisioning and testing.
+    """
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only administrators can retrieve lab flags."
+        )
+
+    # Verify the lab exists
+    lab = db.query(models.Lab).filter(models.Lab.id == lab_id).first()
+    if not lab:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="The requested lab does not exist."
+        )
+
+    return {
+        "lab_id": lab_id,
+        "lab_title": lab.title,
+        "flag": generate_lab_flag(lab_id),
+    }

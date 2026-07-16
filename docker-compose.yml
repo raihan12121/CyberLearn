@@ -51,9 +51,10 @@ services:
       dockerfile: Dockerfile
     container_name: cyberlearn-backend
     restart: always
+    env_file:
+      - ./backend/.env  # Secrets loaded from .env (see .env.example for template)
     environment:
       - DATABASE_URL=postgresql://cyberuser:cyberpassword@postgres:5432/cyberdb
-      - SECRET_KEY=super_secret_cyber_learn_token_key_1337_!
     ports:
       - "8000:8000"
     depends_on:

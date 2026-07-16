@@ -66,9 +66,14 @@ export const api = {
     return Promise.resolve({ detail: "Logged out locally" });
   },
   
-  socialLogin: (provider: string) => apiFetch("/auth/social-login", {
+  socialLogin: (provider: string, email?: string, fullName?: string, token?: string) => apiFetch("/auth/social-login", {
     method: "POST",
-    body: JSON.stringify({ provider }),
+    body: JSON.stringify({
+      provider,
+      email: email || `demo_${provider}_user@cyberlearn.io`,
+      full_name: fullName || `Demo ${provider.charAt(0).toUpperCase() + provider.slice(1)} User`,
+      provider_token: token || "mock_provider_token_12345"
+    }),
   }),
   
   getMe: () => apiFetch("/auth/me"),
@@ -120,6 +125,9 @@ export const api = {
 
   // Certificates
   getCertificates: () => apiFetch("/certificates"),
+
+  // Admin: retrieve the generated flag for a specific lab (for container provisioning/testing)
+  getLabFlag: (labId: string) => apiFetch(`/labs/${labId}/flag`),
 
   // Profile Updates & Details
   updateProfile: (data: Record<string, unknown>) => apiFetch("/users/me", {

@@ -157,9 +157,13 @@ def test_endpoints():
     assert not submit_res.get("correct"), "Incorrect flag marked correct"
     print("Incorrect flag submission logic OK. Message:", submit_res.get("message"))
     
-    # 12. Submit correct flag
+    # 12. Submit correct flag (fetch it dynamically via admin endpoint)
     print("\n[12] Testing POST /labs/{session_id}/submit with correct flag...")
-    correct_flag = "FLAG{cyber_learn_permissions_101}"
+    # First retrieve the correct flag via admin endpoint (user was promoted to admin above)
+    r = session.get(f"{API_URL}/labs/{lab_id}/flag")
+    assert r.status_code == 200, f"GET lab flag failed: {r.status_code} - {r.text}"
+    correct_flag = r.json().get("flag")
+    assert correct_flag and correct_flag.startswith("FLAG{"), f"Invalid flag format: {correct_flag}"
     r = session.post(f"{API_URL}/labs/{session_id}/submit?flag_submission={correct_flag}")
     assert r.status_code == 200, f"Flag submission API failed: {r.status_code} - {r.text}"
     submit_res = r.json()

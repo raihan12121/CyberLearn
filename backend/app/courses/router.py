@@ -242,37 +242,57 @@ def seed_database_if_empty(db: Session):
         },
     ]
 
-    lesson_count = db.query(models.Lesson).count()
-    if course_count < len(SEED_COURSES) or lesson_count < len(lessons_data):
-        # Clean progress first to prevent foreign key errors if database supports it
-        # Actually, let's delete lessons and courses and re-seed
-        db.query(models.Lesson).delete()
-        db.query(models.Course).delete()
-        
+    # Check if all seed courses exist
+    seed_course_ids = [c["id"] for c in SEED_COURSES]
+    existing_courses_count = db.query(models.Course).filter(models.Course.id.in_(seed_course_ids)).count()
+    
+    # Check if all seed lessons exist
+    seed_lesson_ids = [l["id"] for l in lessons_data]
+    existing_lessons_count = db.query(models.Lesson).filter(models.Lesson.id.in_(seed_lesson_ids)).count()
+    
+    if existing_courses_count < len(SEED_COURSES) or existing_lessons_count < len(lessons_data):
+        # We have missing seed data. Let's insert/update them without deleting anything.
         for c in SEED_COURSES:
-            db_course = models.Course(
-                id=c["id"],
-                title=c["title"],
-                category=c["category"],
-                difficulty=c["difficulty"],
-                estimated_duration=c["estimated_duration"],
-                description=c["description"],
-                is_published=True
-            )
-            db.add(db_course)
+            db_course = db.query(models.Course).filter(models.Course.id == c["id"]).first()
+            if not db_course:
+                db_course = models.Course(
+                    id=c["id"],
+                    title=c["title"],
+                    category=c["category"],
+                    difficulty=c["difficulty"],
+                    estimated_duration=c["estimated_duration"],
+                    description=c["description"],
+                    is_published=True
+                )
+                db.add(db_course)
+            else:
+                db_course.title = c["title"]
+                db_course.category = c["category"]
+                db_course.difficulty = c["difficulty"]
+                db_course.estimated_duration = c["estimated_duration"]
+                db_course.description = c["description"]
         db.commit()
         
         for l in lessons_data:
-            db_lesson = models.Lesson(
-                id=l["id"],
-                course_id=l["course_id"],
-                title=l["title"],
-                content_type=l["content_type"],
-                duration=l["duration"],
-                sort_order=l["sort_order"],
-                content=l["content"]
-            )
-            db.add(db_lesson)
+            db_lesson = db.query(models.Lesson).filter(models.Lesson.id == l["id"]).first()
+            if not db_lesson:
+                db_lesson = models.Lesson(
+                    id=l["id"],
+                    course_id=l["course_id"],
+                    title=l["title"],
+                    content_type=l["content_type"],
+                    duration=l["duration"],
+                    sort_order=l["sort_order"],
+                    content=l["content"]
+                )
+                db.add(db_lesson)
+            else:
+                db_lesson.course_id = l["course_id"]
+                db_lesson.title = l["title"]
+                db_lesson.content_type = l["content_type"]
+                db_lesson.duration = l["duration"]
+                db_lesson.sort_order = l["sort_order"]
+                db_lesson.content = l["content"]
         db.commit()
 
 @router.get("", response_model=List[schemas.CourseResponse])

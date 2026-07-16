@@ -147,5 +147,8 @@ class ProgressResponse(BaseModel):
         from_attributes = True
 
 class SocialLoginRequest(BaseModel):
-    provider: str
+    provider: str  # e.g. "google", "github"
+    email: EmailStr  # User's email from the OAuth provider
+    full_name: Optional[str] = None  # User's display name from the OAuth provider
+    provider_token: str  # OAuth access token for server-side verification
 
