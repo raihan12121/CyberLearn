@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  # Relational Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: cyberlearn-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: cyberuser
+      POSTGRES_PASSWORD: cyberpassword
+      POSTGRES_DB: cyberdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - cybernetwork
+
+  # Cache and Session Storage
+  redis:
+    image: redis:7-alpine
+    container_name: cyberlearn-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - cybernetwork
+
+  # Search Engine
+  meilisearch:
+    image: getmeili/meilisearch:v1.6
+    container_name: cyberlearn-search
+    restart: always
+    ports:
+      - "7700:7700"
+    environment:
+      - MEILI_MASTER_KEY=cyber_master_search_key_123!
+      - MEILI_ENV=development
+    volumes:
+      - meilisearch_data:/meili_data
+    networks:
+      - cybernetwork
+
+  # Backend FastAPI Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cyberlearn-backend
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql://cyberuser:cyberpassword@postgres:5432/cyberdb
+      - SECRET_KEY=super_secret_cyber_learn_token_key_1337_!
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - cybernetwork
+
+  # Frontend Next.js Service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: cyberlearn-frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    networks:
+      - cybernetwork
+
+volumes:
+  postgres_data:
+  redis_data:
+  meilisearch_data:
+
+networks:
+  cybernetwork:
+    driver: bridge
