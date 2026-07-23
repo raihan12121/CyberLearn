@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Header
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from ..database import get_db
 from .. import models
 from ..auth.dependencies import get_current_user
@@ -58,7 +58,7 @@ def get_leaderboard(
             comp = models.User(
                 email=f"{username.lower()}@cyberlearn.io",
                 username=username,
-                password_hash="mocked_competitor",
+                password_hash=get_password_hash("mocked_competitor_pass_123"),
                 full_name=username,
                 xp=xp,
                 streak_days=streak,
@@ -73,7 +73,7 @@ def get_leaderboard(
                 user_id=comp.id,
                 lab_id="linux-navigation",
                 status="completed",
-                completed_at=datetime.utcnow()
+                completed_at=datetime.now(timezone.utc)
             )
             db.add(session)
             db.commit()

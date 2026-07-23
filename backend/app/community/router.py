@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from ..database import get_db
@@ -45,7 +45,7 @@ def get_posts(db: Session = Depends(get_db)):
     if not system_user:
         system_user = models.User(
             email="system@cyberlearn.io",
-            password_hash="system_pass_not_loginable",
+            password_hash=get_password_hash("system_pass_not_loginable_123"),
             full_name="System Admin",
             role="admin"
         )
@@ -73,3 +73,21 @@ def create_post(
     db.commit()
     db.refresh(db_post)
     return db_post
+
+@router.post("/{post_id}/upvote", response_model=schemas.PostResponse)
+def upvote_post(
+    post_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    post = db.query(models.Post).filter(models.Post.id == post_id).first()
+    if not post:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Post not found"
+        )
+    post.upvotes += 1
+    db.commit()
+    db.refresh(post)
+    return post
+

@@ -36,10 +36,6 @@ export default function LoginPage() {
       .catch((err) => {
         setLoading(false);
         setError(err.message || "Invalid credentials.");
-        // Fallback for visual mock demo support
-        console.log("Backend offline, launching demo session redirect:", err);
-        setAuthToken("demo-placeholder-token-1234");
-        router.push("/dashboard");
       });
   };
 
@@ -55,10 +51,6 @@ export default function LoginPage() {
       .catch((err) => {
         setLoading(false);
         setError(err.message || `Social login with ${provider} failed.`);
-        // Fallback for visual mock demo support
-        console.log("Backend offline, launching social demo session redirect:", err);
-        setAuthToken(`social-demo-${provider}-token`);
-        router.push("/dashboard");
       });
   };
 

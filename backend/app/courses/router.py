@@ -297,7 +297,6 @@ def seed_database_if_empty(db: Session):
 
 @router.get("", response_model=List[schemas.CourseResponse])
 def get_courses(db: Session = Depends(get_db)):
-    seed_database_if_empty(db)
     return db.query(models.Course).filter(models.Course.is_published == True).all()
 
 @router.get("/progress", response_model=List[schemas.ProgressResponse])
@@ -356,7 +355,6 @@ def update_progress(
 
 @router.get("/{course_id}", response_model=schemas.CourseResponse)
 def get_course(course_id: str, db: Session = Depends(get_db)):
-    seed_database_if_empty(db)
     course = db.query(models.Course).filter(models.Course.id == course_id).first()
     if not course:
         raise HTTPException(

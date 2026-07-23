@@ -18,14 +18,9 @@ def get_user_profile_details(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    # Calculate global rank
-    # Rank is the position of current_user in users list sorted by XP descending
-    users_sorted = db.query(models.User).order_by(models.User.xp.desc()).all()
-    rank = 1
-    for idx, u in enumerate(users_sorted):
-        if u.id == current_user.id:
-            rank = idx + 1
-            break
+    # Calculate global rank via efficient SQL count
+    higher_xp_count = db.query(func.count(models.User.id)).filter(models.User.xp > current_user.xp).scalar()
+    rank = higher_xp_count + 1
             
     # Calculate solved labs count
     solved_labs_count = db.query(models.LabSession).filter(
@@ -120,13 +115,14 @@ def get_user_profile_details(
     # Build Activity Timeline
     timeline = []
     
-    # 1. Completed labs
-    completed_sessions = db.query(models.LabSession).filter(
+    # 1. Completed labs (with join to prevent N+1 query)
+    completed_sessions = db.query(models.LabSession, models.Lab).outerjoin(
+        models.Lab, models.LabSession.lab_id == models.Lab.id
+    ).filter(
         models.LabSession.user_id == current_user.id,
         models.LabSession.status == "completed"
     ).all()
-    for s in completed_sessions:
-        lab = db.query(models.Lab).filter(models.Lab.id == s.lab_id).first()
+    for s, lab in completed_sessions:
         lab_title = lab.title if lab else "Sandbox Lab"
         xp_gain = lab.xp_reward if lab else 100
         timeline.append({
@@ -136,13 +132,14 @@ def get_user_profile_details(
             "timestamp": s.completed_at or s.started_at
         })
         
-    # 2. Completed lessons
-    completed_progress = db.query(models.Progress).filter(
+    # 2. Completed lessons (with join to prevent N+1 query)
+    completed_progress = db.query(models.Progress, models.Lesson).outerjoin(
+        models.Lesson, models.Progress.lesson_id == models.Lesson.id
+    ).filter(
         models.Progress.user_id == current_user.id,
         models.Progress.status == "completed"
     ).all()
-    for p in completed_progress:
-        lesson = db.query(models.Lesson).filter(models.Lesson.id == p.lesson_id).first()
+    for p, lesson in completed_progress:
         lesson_title = lesson.title if lesson else "Academy Lesson"
         timeline.append({
             "action": f"Completed lesson: {lesson_title}",
@@ -232,8 +229,8 @@ def change_password(
     current_user: models.User = Depends(get_current_user)
 ):
     # Verify current password
-    # Exclude social logins which don't have password
-    if current_user.password_hash == "social_login_no_password":
+    # Social login accounts or accounts missing usable password hash
+    if not current_user.password_hash or current_user.password_hash.startswith("social_login"):
         raise HTTPException(status_code=400, detail="Social login accounts do not have a standard password configuration.")
         
     if not verify_password(password_in.current_password, current_user.password_hash):
@@ -242,3 +239,89 @@ def change_password(
     current_user.password_hash = get_password_hash(password_in.new_password)
     db.commit()
     return {"detail": "Password updated successfully."}
+
+@router.get("/{username}/public-profile")
+def get_public_user_profile(username: str, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.username == username).first()
+    if not user:
+        # Fallback search by email prefix if username wasn't set explicitly
+        user = db.query(models.User).filter(models.User.email.startswith(username)).first()
+        
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User @{username} not found."
+        )
+        
+    # Calculate global rank
+    higher_xp_count = db.query(func.count(models.User.id)).filter(models.User.xp > user.xp).scalar()
+    rank = higher_xp_count + 1
+    
+    # Calculate solved labs count
+    solved_labs_count = db.query(models.LabSession).filter(
+        models.LabSession.user_id == user.id,
+        models.LabSession.status == "completed"
+    ).count()
+    
+    # Get achievements
+    achievements = []
+    for a in user.achievements:
+        achievements.append({
+            "name": a.badge_name,
+            "icon": a.badge_icon or "🏅",
+            "date": a.earned_at.strftime("%B %d, %Y"),
+            "desc": "Verified CyberLearn achievement badge."
+        })
+        
+    if not achievements:
+        achievements = [{
+            "name": "Verified Practitioner",
+            "icon": "🛡️",
+            "date": user.created_at.strftime("%B %d, %Y"),
+            "desc": "Verified active practitioner on CyberLearn."
+        }]
+        
+    # Get verified certificates
+    certs = db.query(models.Certificate, models.Course).join(
+        models.Course, models.Certificate.course_id == models.Course.id
+    ).filter(models.Certificate.user_id == user.id).all()
+    
+    certificates_res = []
+    for cert, course in certs:
+        certificates_res.append({
+            "id": cert.verification_token,
+            "courseTitle": course.title,
+            "category": course.category or "Security",
+            "issueDate": cert.issued_at.strftime("%B %d, %Y"),
+            "credentialUrl": f"/verify/{cert.verification_token}"
+        })
+        
+    # Build solved labs list
+    solved_labs = db.query(models.LabSession, models.Lab).join(
+        models.Lab, models.LabSession.lab_id == models.Lab.id
+    ).filter(
+        models.LabSession.user_id == user.id,
+        models.LabSession.status == "completed"
+    ).all()
+    
+    labs_res = []
+    for s, lab in solved_labs:
+        labs_res.append({
+            "title": lab.title,
+            "category": lab.type or "Web Security",
+            "xp": lab.xp_reward or 100,
+            "date": s.completed_at.strftime("%B %d, %Y") if s.completed_at else "Recently"
+        })
+        
+    return {
+        "full_name": user.full_name or user.username or "Learner",
+        "username": user.username or username,
+        "role": user.role,
+        "rank": rank,
+        "xp": user.xp,
+        "solved_labs_count": solved_labs_count,
+        "joined_date": user.created_at.strftime("Joined %B %Y"),
+        "badges": achievements,
+        "certificates": certificates_res,
+        "solved_labs": labs_res
+    }

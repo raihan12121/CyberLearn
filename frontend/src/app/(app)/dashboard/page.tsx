@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Card, Badge, ProgressBar, Avatar, Button } from "@/components/ui";
 import { api } from "@/lib/api";
+import SkillRadarChart from "@/components/dashboard/SkillRadarChart";
 
 interface ProfileState {
   full_name: string;
@@ -207,6 +208,9 @@ export default function DashboardPage() {
           );
         })}
       </div>
+
+      {/* 6-Axis Skill Radar Component */}
+      <SkillRadarChart />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}

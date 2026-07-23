@@ -338,6 +338,29 @@ export default function CourseDetailPage() {
   // Fetch progress on load
   useEffect(() => {
     if (!courseId) return;
+
+    // Fetch dynamic course data from backend
+    api.getCourse(courseId)
+      .then((data) => {
+        if (data && data.lessons && data.lessons.length > 0) {
+          // Map backend lessons to view format
+          const mappedLessons = data.lessons.map((l: { id: string; title: string; content_type?: string; duration?: number; content?: string }) => ({
+            id: l.id,
+            title: l.title,
+            type: (l.content_type || "reading") as "video" | "reading" | "quiz",
+            duration: `${l.duration || 15} mins`,
+            completed: false,
+            content: l.content || "Lesson content loading...",
+          }));
+
+          if (mappedLessons.length > 0) {
+            setActiveLesson(mappedLessons[0]);
+          }
+        }
+      })
+      .catch((err) => {
+        console.warn("Backend course fetch error, using client preset:", err);
+      });
     
     // Set initial completed lessons based on static preset
     const initialSet = new Set<string>();
@@ -365,6 +388,7 @@ export default function CourseDetailPage() {
         console.warn("Backend offline or progress fetch failed, using offline progress state:", err);
       });
   }, [courseId, course.modules]);
+
 
   // Lesson click handler
   const handleLessonClick = (lesson: {

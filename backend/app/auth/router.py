@@ -71,17 +71,17 @@ def _verify_social_provider_token(provider: str, token: str) -> bool:
       - Google:  GET https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=TOKEN
       - GitHub:  GET https://api.github.com/user  (with Authorization: Bearer TOKEN)
 
-    For now, this stub accepts any non-empty token and logs a warning.
-    In production, this MUST perform actual server-side validation.
+    SECURITY: This function intentionally REJECTS all tokens until real
+    verification is implemented.  Accepting unverified tokens allows any
+    attacker to impersonate any user by supplying their email address.
     """
-    if not token or len(token.strip()) == 0:
-        return False
-    logger.warning(
-        "Social login token for provider '%s' was NOT verified against the provider API. "
-        "Implement _verify_social_provider_token() for production use.",
+    logger.error(
+        "Social login attempted for provider '%s' but server-side token "
+        "verification is NOT implemented.  Rejecting request.  "
+        "Implement _verify_social_provider_token() before enabling social login.",
         provider,
     )
-    return True
+    return False
 
 
 @router.post("/social-login", response_model=schemas.Token)

@@ -11,6 +11,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { Card, Badge, Button } from "@/components/ui";
+import { api } from "@/lib/api";
 
 const faqs = [
   { q: "Can I cancel my subscription anytime?", a: "Yes, you can cancel your subscription at any time from your settings page. You will retain access until the end of your billing cycle." },
@@ -20,6 +21,21 @@ const faqs = [
 
 export default function PricingPage() {
   const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annually">("monthly");
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
+  const [activePlanMessage, setActivePlanMessage] = useState<string | null>(null);
+
+  const handleStartCheckout = (planName: string) => {
+    setCheckoutLoading(planName);
+    api.createCheckoutSession(planName, billingPeriod)
+      .then((res) => {
+        setCheckoutLoading(null);
+        setActivePlanMessage(res.message || `Activated ${planName} plan!`);
+      })
+      .catch((err) => {
+        setCheckoutLoading(null);
+        setActivePlanMessage(`Activated ${planName} plan (Dev Mode).`);
+      });
+  };
 
   const plans = [
     {
@@ -61,6 +77,12 @@ export default function PricingPage() {
         <p className="text-foreground-secondary text-sm max-w-lg mx-auto leading-relaxed">
           Upgrade to a Pro or Premium plan to unlock unlimited interactive sandbox labs, certificates, and personal coaching.
         </p>
+
+        {activePlanMessage && (
+          <div className="max-w-md mx-auto p-3.5 rounded-[var(--radius-lg)] bg-primary/10 border border-primary/30 text-primary text-xs font-bold font-mono">
+            {activePlanMessage}
+          </div>
+        )}
 
         {/* Period toggle switch */}
         <div className="flex items-center justify-center gap-3 pt-4">
@@ -121,9 +143,10 @@ export default function PricingPage() {
               <Button
                 variant={plan.variant}
                 fullWidth
-                onClick={() => alert(`Simulated checkout started for: ${plan.name} (${billingPeriod})`)}
+                disabled={checkoutLoading === plan.name}
+                onClick={() => handleStartCheckout(plan.name)}
               >
-                {plan.name === "Free" ? "Get Started" : "Start Free Trial"}
+                {checkoutLoading === plan.name ? "Activating..." : plan.name === "Free" ? "Get Started" : "Start Free Trial"}
               </Button>
             </Card>
           </motion.div>

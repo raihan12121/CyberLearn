@@ -16,18 +16,46 @@ import {
   ChevronLeft,
   ChevronRight,
   Shield,
+  User,
+  Zap,
 } from "lucide-react";
 import { api } from "@/lib/api";
 
-const navItems = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Courses", href: "/courses", icon: BookOpen },
-  { label: "Practice Labs", href: "/labs", icon: Terminal },
-  { label: "Challenges", href: "/challenges", icon: Swords },
-  { label: "Community", href: "/community", icon: Users },
-  { label: "Certificates", href: "/certificates", icon: Award },
-  { label: "Leaderboard", href: "/leaderboard", icon: Trophy },
-  { label: "AI Coach", href: "/ai-coach", icon: Bot },
+interface NavSection {
+  title: string;
+  items: {
+    label: string;
+    href: string;
+    icon: React.ComponentType<{ className?: string }>;
+  }[];
+}
+
+const navSections: NavSection[] = [
+  {
+    title: "Overview",
+    items: [
+      { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { label: "AI Cyber Coach", href: "/ai-coach", icon: Bot },
+      { label: "Cyber Portfolio", href: "/portfolio/me", icon: User },
+    ],
+  },
+  {
+    title: "Learn Hub",
+    items: [
+      { label: "Video & Text Courses", href: "/courses", icon: BookOpen },
+      { label: "Practice Labs", href: "/labs", icon: Terminal },
+    ],
+  },
+  {
+    title: "Compete Hub",
+    items: [
+      { label: "CTF Challenges", href: "/challenges", icon: Swords },
+      { label: "1v1 Speed Duels", href: "/challenges/duels", icon: Zap },
+      { label: "Leaderboard", href: "/leaderboard", icon: Trophy },
+      { label: "Certificates", href: "/certificates", icon: Award },
+      { label: "Community", href: "/community", icon: Users },
+    ],
+  },
 ];
 
 export default function Sidebar() {
@@ -44,10 +72,6 @@ export default function Sidebar() {
       })
       .catch(() => {});
   }, []);
-
-  const items = isAdmin
-    ? [...navItems, { label: "Admin Portal", href: "/admin", icon: Shield }]
-    : navItems;
 
   return (
     <aside
@@ -70,34 +94,76 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-4 px-2 overflow-y-auto">
-        <ul className="space-y-1">
-          {items.map((item) => {
-            const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
-            const Icon = item.icon;
-            return (
-              <li key={item.href}>
+      <nav className="flex-1 py-4 px-2 overflow-y-auto space-y-6">
+        {navSections.map((section) => (
+          <div key={section.title}>
+            {!collapsed && (
+              <h3 className="px-3 text-[10px] font-semibold text-foreground-muted uppercase tracking-wider mb-2">
+                {section.title}
+              </h3>
+            )}
+            <ul className="space-y-1">
+              {section.items.map((item) => {
+                const isActive =
+                  pathname === item.href ||
+                  (item.href !== "/dashboard" && pathname?.startsWith(item.href));
+                const Icon = item.icon;
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      className={`
+                        flex items-center gap-3 px-3 py-2 rounded-[var(--radius)]
+                        text-sm font-medium transition-all duration-200
+                        ${
+                          isActive
+                            ? "bg-primary/10 text-primary border-l-2 border-primary"
+                            : "text-foreground-secondary hover:text-foreground hover:bg-surface-elevated"
+                        }
+                        ${collapsed ? "justify-center px-0" : ""}
+                      `}
+                      title={collapsed ? item.label : undefined}
+                    >
+                      <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-primary" : ""}`} />
+                      {!collapsed && <span>{item.label}</span>}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+
+        {isAdmin && (
+          <div>
+            {!collapsed && (
+              <h3 className="px-3 text-[10px] font-semibold text-foreground-muted uppercase tracking-wider mb-2">
+                Admin
+              </h3>
+            )}
+            <ul className="space-y-1">
+              <li>
                 <Link
-                  href={item.href}
+                  href="/admin"
                   className={`
-                    flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)]
+                    flex items-center gap-3 px-3 py-2 rounded-[var(--radius)]
                     text-sm font-medium transition-all duration-200
                     ${
-                      isActive
+                      pathname?.startsWith("/admin")
                         ? "bg-primary/10 text-primary border-l-2 border-primary"
                         : "text-foreground-secondary hover:text-foreground hover:bg-surface-elevated"
                     }
                     ${collapsed ? "justify-center px-0" : ""}
                   `}
-                  title={collapsed ? item.label : undefined}
+                  title={collapsed ? "Admin Portal" : undefined}
                 >
-                  <Icon className={`w-5 h-5 shrink-0 ${isActive ? "text-primary" : ""}`} />
-                  {!collapsed && <span>{item.label}</span>}
+                  <Shield className="w-4 h-4 shrink-0 text-amber-400" />
+                  {!collapsed && <span className="text-amber-400 font-semibold">Admin Portal</span>}
                 </Link>
               </li>
-            );
-          })}
-        </ul>
+            </ul>
+          </div>
+        )}
       </nav>
 
       {/* Bottom */}
@@ -132,3 +198,4 @@ export default function Sidebar() {
     </aside>
   );
 }
+

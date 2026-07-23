@@ -116,6 +116,10 @@ export const api = {
     method: "POST",
     body: JSON.stringify(data),
   }),
+  upvotePost: (postId: number) => apiFetch(`/posts/${postId}/upvote`, {
+    method: "POST",
+  }),
+
 
   // Admin
   getAdminMetrics: () => apiFetch("/admin/metrics"),
@@ -139,4 +143,26 @@ export const api = {
     body: JSON.stringify(data),
   }),
   getProfileDetails: () => apiFetch("/users/me/profile"),
+
+  // Public Recruiter Portfolio & Certificate Verification
+  getPublicProfile: (username: string) => apiFetch(`/users/${username}/public-profile`),
+  verifyCertificate: (token: string) => apiFetch(`/certificates/verify/${token}`),
+
+  // Live Proxy Inspection Forwarder
+  forwardProxyRequest: (data: { method: string; url: string; headers?: Record<string, string>; body?: string }) => apiFetch("/labs/proxy/forward", {
+    method: "POST",
+    body: JSON.stringify(data),
+  }),
+
+  // Socratic Hint Unlock & Persistent XP Deduction
+  unlockHint: (labId: string, level: number, cost: number) => apiFetch(`/labs/${labId}/hints/unlock`, {
+    method: "POST",
+    body: JSON.stringify({ level, cost }),
+  }),
+
+  // Billing & Subscriptions
+  createCheckoutSession: (planName: string, billingPeriod: string = "monthly") => apiFetch("/billing/checkout", {
+    method: "POST",
+    body: JSON.stringify({ plan_name: planName, billing_period: billingPeriod }),
+  }),
 };

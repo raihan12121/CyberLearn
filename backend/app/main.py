@@ -11,9 +11,14 @@ from .admin.router import router as admin_router
 from .users.router import router as users_router
 from .leaderboard.router import router as leaderboard_router
 from .certificates.router import router as certificates_router
+from .billing.router import router as billing_router
 
-# Initialize all database tables on start
+from .seed_data import seed_database
+
+# Initialize all database tables and seed initial data on start
 Base.metadata.create_all(bind=engine)
+seed_database()
+
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -40,6 +45,7 @@ app.include_router(admin_router)
 app.include_router(users_router)
 app.include_router(leaderboard_router)
 app.include_router(certificates_router)
+app.include_router(billing_router)
 
 @app.get("/")
 def health_check():

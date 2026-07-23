@@ -75,7 +75,7 @@ export default function ProfilePage() {
           
           if (data.skill_stats && data.skill_stats.length > 0) {
             const colors = ["bg-primary", "bg-accent", "bg-warning", "bg-secondary", "bg-error"];
-            const mappedSkills = data.skill_stats.map((s: any, idx: number) => ({
+            const mappedSkills = data.skill_stats.map((s: { name: string; value: number }, idx: number) => ({
               name: s.name,
               value: s.value,
               color: colors[idx % colors.length]

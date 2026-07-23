@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 import random
 from typing import List
@@ -52,10 +52,9 @@ def get_user_certificates(
         ).first()
         
         if is_completed and not certificate:
-            # Generate new certificate
+            # Generate new certificate token using UUID to guarantee uniqueness
             course_code = "".join([w[0] for w in course.title.split() if w.isalpha()]).upper()
-            rand_suffix = random.randint(1000, 9999)
-            verification_token = f"CERT-{course_code}-{rand_suffix}"
+            verification_token = f"CERT-{course_code}-{uuid.uuid4().hex[:8].upper()}"
             
             # Award course completion XP (e.g. 1000 XP)
             xp_reward = 1000
@@ -65,7 +64,7 @@ def get_user_certificates(
                 user_id=current_user.id,
                 course_id=course.id,
                 verification_token=verification_token,
-                issued_at=datetime.utcnow()
+                issued_at=datetime.now(timezone.utc)
             )
             db.add(certificate)
             db.commit()
@@ -94,3 +93,26 @@ def get_user_certificates(
             })
             
     return certificates_res
+
+@router.get("/verify/{token}")
+def verify_certificate_token(token: str, db: Session = Depends(get_db)):
+    cert = db.query(models.Certificate).filter(models.Certificate.verification_token == token).first()
+    if not cert:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Certificate verification token not found or invalid."
+        )
+        
+    user = db.query(models.User).filter(models.User.id == cert.user_id).first()
+    course = db.query(models.Course).filter(models.Course.id == cert.course_id).first()
+    
+    return {
+        "valid": True,
+        "token": cert.verification_token,
+        "student_name": user.full_name or user.username if user else "Verified Student",
+        "course_title": course.title if course else "Cybersecurity Course",
+        "category": course.category if course else "Web Security",
+        "issued_at": cert.issued_at.strftime("%B %d, %Y"),
+        "issuer": "CyberLearn Security Academy",
+        "verification_url": f"/verify/{cert.verification_token}"
+    }

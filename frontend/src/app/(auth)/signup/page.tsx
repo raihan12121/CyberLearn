@@ -42,10 +42,6 @@ export default function SignupPage() {
       .catch((err) => {
         setLoading(false);
         setError(err.message || "Failed to create account.");
-        // Fallback for visual mock demo support
-        console.log("Backend offline, registering mock session:", err);
-        setAuthToken("demo-placeholder-token-1234");
-        router.push("/dashboard");
       });
   };
 
@@ -61,10 +57,6 @@ export default function SignupPage() {
       .catch((err) => {
         setLoading(false);
         setError(err.message || `Social login with ${provider} failed.`);
-        // Fallback for visual mock demo support
-        console.log("Backend offline, launching social demo session redirect:", err);
-        setAuthToken(`social-demo-${provider}-token`);
-        router.push("/dashboard");
       });
   };
 

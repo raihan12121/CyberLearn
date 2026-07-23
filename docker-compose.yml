@@ -7,9 +7,9 @@ services:
     container_name: cyberlearn-postgres
     restart: always
     environment:
-      POSTGRES_USER: cyberuser
-      POSTGRES_PASSWORD: cyberpassword
-      POSTGRES_DB: cyberdb
+      POSTGRES_USER: ${POSTGRES_USER:-cyberuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cyberpassword}
+      POSTGRES_DB: ${POSTGRES_DB:-cyberdb}
     ports:
       - "5432:5432"
     volumes:
@@ -37,7 +37,7 @@ services:
     ports:
       - "7700:7700"
     environment:
-      - MEILI_MASTER_KEY=cyber_master_search_key_123!
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY:-cyber_master_search_key_123!}
       - MEILI_ENV=development
     volumes:
       - meilisearch_data:/meili_data
@@ -54,7 +54,7 @@ services:
     env_file:
       - ./backend/.env  # Secrets loaded from .env (see .env.example for template)
     environment:
-      - DATABASE_URL=postgresql://cyberuser:cyberpassword@postgres:5432/cyberdb
+      - DATABASE_URL=${DATABASE_URL:-postgresql://cyberuser:cyberpassword@postgres:5432/cyberdb}
     ports:
       - "8000:8000"
     depends_on:

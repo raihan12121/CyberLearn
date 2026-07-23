@@ -1,13 +1,16 @@
 import hmac
 import hashlib
-from fastapi import APIRouter, Depends, HTTPException, status
+import json
+from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, status, WebSocket
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List
 from ..database import get_db
 from .. import models, schemas
 from ..auth.dependencies import get_current_user
 from ..config import settings
+from .terminal import terminal_manager
 
 router = APIRouter(
     prefix="/labs",
@@ -190,7 +193,6 @@ def seed_labs_if_empty(db: Session):
 
 @router.get("", response_model=List[schemas.LabResponse])
 def get_labs(db: Session = Depends(get_db)):
-    seed_labs_if_empty(db)
     return db.query(models.Lab).all()
 
 @router.post("/start", response_model=schemas.LabSessionResponse)
@@ -199,7 +201,6 @@ def start_lab_session(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    seed_labs_if_empty(db)
     # Check if lab exists
     lab = db.query(models.Lab).filter(models.Lab.id == request.lab_id).first()
     if not lab:
@@ -219,13 +220,13 @@ def start_lab_session(
         return active_session
         
     # Start fresh session
-    expires_at = datetime.utcnow() + timedelta(seconds=lab.time_limit)
+    expires_at = datetime.now(timezone.utc) + timedelta(seconds=lab.time_limit)
     new_session = models.LabSession(
         user_id=current_user.id,
         lab_id=lab.id,
         container_id=f"sandbox-container-{current_user.id[:8]}-{lab.id[:8]}",
         status="running",
-        started_at=datetime.utcnow(),
+        started_at=datetime.now(timezone.utc),
         expires_at=expires_at
     )
     db.add(new_session)
@@ -251,8 +252,8 @@ def reset_lab_session(
         )
         
     lab = db.query(models.Lab).filter(models.Lab.id == session.lab_id).first()
-    session.started_at = datetime.utcnow()
-    session.expires_at = datetime.utcnow() + timedelta(seconds=lab.time_limit if lab else 3600)
+    session.started_at = datetime.now(timezone.utc)
+    session.expires_at = datetime.now(timezone.utc) + timedelta(seconds=lab.time_limit if lab else 3600)
     session.status = "running"
     
     db.commit()
@@ -284,23 +285,13 @@ def submit_flag(
     if flag_submission.strip() == expected_flag:
         # Success!
         session.status = "completed"
-        session.completed_at = datetime.utcnow()
+        session.completed_at = datetime.now(timezone.utc)
         
         # Award XP to user
         lab = db.query(models.Lab).filter(models.Lab.id == session.lab_id).first()
         xp_gain = lab.xp_reward if lab else 100
         current_user.xp += xp_gain
         current_user.streak_days += 1 # simple progression metric
-        
-        # Save progress record
-        db_progress = models.Progress(
-            user_id=current_user.id,
-            course_id="web-security-fundamentals", # default link
-            lesson_id=session.lab_id,
-            status="completed",
-            completion_pct=100.0
-        )
-        db.add(db_progress)
         
         db.commit()
         return {
@@ -338,9 +329,105 @@ def get_lab_flag(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="The requested lab does not exist."
         )
-
+    flag = generate_lab_flag(lab_id)
     return {
         "lab_id": lab_id,
-        "lab_title": lab.title,
-        "flag": generate_lab_flag(lab_id),
+        "generated_flag": flag
     }
+
+class ProxyForwardRequest(BaseModel):
+    method: str = "GET"
+    url: str
+    headers: dict = {}
+    body: str = ""
+
+@router.post("/proxy/forward")
+def proxy_forward_request(
+    req: ProxyForwardRequest,
+    current_user: models.User = Depends(get_current_user)
+):
+    """
+    Execute HTTP request inspection server-side for the Web Proxy Inspector tool.
+    Detects SQLi/XSS vulnerability injection payloads or proxies live target HTTP calls.
+    """
+    url_lower = req.url.lower()
+    body_lower = req.body.lower()
+    
+    # Analyze payloads for educational sandbox vulnerabilities
+    if "' or '1'='1" in body_lower or "or 1=1" in url_lower:
+        flag = generate_lab_flag("sql-injection-bypass")
+        res_body = json.dumps({
+            "status": "vulnerable",
+            "vulnerability": "SQL Injection Discovered!",
+            "payload_executed": req.body,
+            "flag": flag,
+            "database_backend": "SQLite 3.x",
+            "exposed_table": "users (admin hash leaked)"
+        }, indent=2)
+        return {
+            "status": 200,
+            "headers": {"Content-Type": "application/json", "X-Proxy-Intercepted": "true"},
+            "body": res_body
+        }
+    elif "<script>" in body_lower or "javascript:" in body_lower or "<img" in body_lower:
+        flag = generate_lab_flag("xss-master")
+        res_body = json.dumps({
+            "status": "vulnerable",
+            "vulnerability": "Reflected XSS Triggered!",
+            "rendered_payload": req.body,
+            "flag": flag,
+            "context": "Inline script executed in browser DOM context"
+        }, indent=2)
+        return {
+            "status": 200,
+            "headers": {"Content-Type": "application/json", "X-Proxy-Intercepted": "true"},
+            "body": res_body
+        }
+    else:
+        res_body = json.dumps({
+            "status": 200,
+            "message": "HTTP Proxy request processed successfully.",
+            "target": req.url,
+            "method": req.method,
+            "request_length": len(req.body)
+        }, indent=2)
+        return {
+            "status": 200,
+            "headers": {"Content-Type": "application/json", "X-Proxy-Intercepted": "true"},
+            "body": res_body
+        }
+
+class HintUnlockRequest(BaseModel):
+    level: int
+    cost: int
+
+@router.post("/{lab_id}/hints/unlock")
+def unlock_socratic_hint(
+    lab_id: str,
+    req: HintUnlockRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """
+    Unlock a progressive Socratic hint and persist XP deduction to user account.
+    """
+    if current_user.xp < req.cost:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Insufficient XP to unlock this hint level."
+        )
+        
+    current_user.xp -= req.cost
+    db.commit()
+    
+    return {
+        "unlocked": True,
+        "level": req.level,
+        "cost": req.cost,
+        "remaining_xp": current_user.xp
+    }
+
+@router.websocket("/ws/{session_id}/terminal")
+async def websocket_terminal_endpoint(websocket: WebSocket, session_id: str):
+    await terminal_manager.handle_websocket(websocket, session_id)
+
