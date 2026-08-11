@@ -390,6 +390,15 @@ export default function CourseDetailPage() {
   }, [courseId, course.modules]);
 
 
+  const [quizEvaluation, setQuizEvaluation] = useState<{
+    passed: boolean;
+    score_pct: number;
+    correct_count: number;
+    total_questions: number;
+    xp_awarded: number;
+    results: { question_id: string; correct: boolean; selected_option: number; correct_option: number; explanation: string }[];
+  } | null>(null);
+
   // Lesson click handler
   const handleLessonClick = (lesson: {
     id: string;
@@ -399,12 +408,13 @@ export default function CourseDetailPage() {
     completed: boolean;
     content?: string;
     videoUrl?: string;
-    quizQuestions?: { q: string; options: string[]; answer: number }[];
+    quizQuestions?: { id?: string; q: string; options: string[]; answer: number; explanation?: string }[];
   }) => {
     setActiveLesson(lesson);
     setQuizAnswers({});
     setQuizSubmitted(false);
     setQuizScore(0);
+    setQuizEvaluation(null);
   };
 
   // Mark lesson as completed
@@ -426,17 +436,37 @@ export default function CourseDetailPage() {
   // Quiz submission handler
   const handleQuizSubmit = () => {
     if (!activeLesson.quizQuestions) return;
-    let score = 0;
-    activeLesson.quizQuestions.forEach((q, idx) => {
-      if (quizAnswers[idx] === q.answer) {
-        score++;
-      }
-    });
-    setQuizScore(score);
-    setQuizSubmitted(true);
-    if (score === activeLesson.quizQuestions.length) {
-      markLessonComplete(activeLesson.id);
-    }
+    
+    const payloadAnswers = activeLesson.quizQuestions.map((q: any, idx: number) => ({
+      question_id: q.id || `q${idx + 1}`,
+      selected_option: quizAnswers[idx] ?? -1,
+    }));
+
+    api.submitQuiz(activeLesson.id, payloadAnswers)
+      .then((res) => {
+        setQuizEvaluation(res);
+        setQuizScore(res.correct_count);
+        setQuizSubmitted(true);
+        if (res.passed) {
+          const newSet = new Set(completedLessonsSet);
+          newSet.add(activeLesson.id);
+          setCompletedLessonsSet(newSet);
+        }
+      })
+      .catch((err) => {
+        console.warn("Backend quiz evaluation error, doing client fallback evaluation:", err);
+        let score = 0;
+        activeLesson.quizQuestions?.forEach((q, idx) => {
+          if (quizAnswers[idx] === q.answer) {
+            score++;
+          }
+        });
+        setQuizScore(score);
+        setQuizSubmitted(true);
+        if (activeLesson.quizQuestions && score === activeLesson.quizQuestions.length) {
+          markLessonComplete(activeLesson.id);
+        }
+      });
   };
 
   // Total lessons counting
@@ -614,6 +644,28 @@ export default function CourseDetailPage() {
                   </div>
                 ))}
 
+                {quizSubmitted && quizEvaluation && (
+                  <div className={`p-4 rounded-[var(--radius-lg)] border space-y-3 ${
+                    quizEvaluation.passed ? "bg-success/10 border-success/30 text-success" : "bg-warning/10 border-warning/30 text-warning"
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-sm">
+                        {quizEvaluation.passed ? "🎉 Assessment Passed!" : "⚠️ Assessment Failed"} ({quizEvaluation.score_pct}%)
+                      </span>
+                      {quizEvaluation.xp_awarded > 0 && (
+                        <span className="text-xs font-mono font-bold bg-success/20 px-2.5 py-1 rounded-full">
+                          +{quizEvaluation.xp_awarded} XP Awarded
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs leading-relaxed text-foreground-secondary">
+                      {quizEvaluation.passed
+                        ? "Great work! You demonstrated mastery of this module."
+                        : "Score at least 80% to pass the assessment and earn lesson completion XP."}
+                    </p>
+                  </div>
+                )}
+
                 <div className="pt-4 border-t border-border flex items-center justify-between mt-auto">
                   {!quizSubmitted ? (
                     <Button
@@ -634,6 +686,7 @@ export default function CourseDetailPage() {
                         setQuizAnswers({});
                         setQuizSubmitted(false);
                         setQuizScore(0);
+                        setQuizEvaluation(null);
                       }}>
                         Retry
                       </Button>

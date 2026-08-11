@@ -48,6 +48,7 @@ export default function CertificatesPage() {
   const [activeTab, setActiveTab] = useState("all");
   const [certificates, setCertificates] = useState(mockCertificates);
   const [shareCert, setShareCert] = useState<typeof mockCertificates[0] | null>(null);
+  const [printCert, setPrintCert] = useState<typeof mockCertificates[0] | null>(null);
 
   useEffect(() => {
     api.getCertificates()
@@ -170,32 +171,24 @@ export default function CertificatesPage() {
                     Locked
                   </Button>
                 ) : (
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1 text-xs"
+                      className="w-full sm:flex-1 text-xs justify-center"
                       onClick={() => setShareCert(cert)}
                       icon={<Share2 className="w-3.5 h-3.5" />}
                     >
                       Share
                     </Button>
-                    <a
-                      href="#"
-                      className="flex-1"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        alert("Simulated PDF download started for: " + cert.id);
-                      }}
+                    <Button
+                      size="sm"
+                      className="w-full sm:flex-1 text-xs justify-center"
+                      onClick={() => setPrintCert(cert)}
+                      icon={<Download className="w-3.5 h-3.5" />}
                     >
-                      <Button
-                        size="sm"
-                        className="w-full text-xs"
-                        icon={<Download className="w-3.5 h-3.5" />}
-                      >
-                        Download
-                      </Button>
-                    </a>
+                      Download
+                    </Button>
                   </div>
                 )}
               </Card>
@@ -243,6 +236,59 @@ export default function CertificatesPage() {
                 </Button>
                 <Button onClick={() => alert("Simulated LinkedIn share completed!")}>
                   Add to LinkedIn
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {printCert && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-2xl bg-surface border-2 border-primary/40 rounded-[var(--radius-xl)] shadow-2xl p-8 space-y-6 relative overflow-hidden"
+            >
+              <div className="flex justify-between items-center border-b border-border pb-3">
+                <div className="flex items-center gap-2">
+                  <Award className="w-5 h-5 text-warning" />
+                  <h3 className="text-base font-bold text-foreground">Official Certificate Preview</h3>
+                </div>
+                <button
+                  onClick={() => setPrintCert(null)}
+                  className="p-1 rounded-full text-foreground-muted hover:text-foreground hover:bg-surface-elevated transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Printable Canvas */}
+              <div className="bg-gradient-to-br from-surface-elevated via-surface to-surface-elevated border border-primary/20 p-8 rounded-xl text-center space-y-4 relative">
+                <div className="text-xs font-bold text-primary tracking-widest uppercase font-mono">CYBERLEARN ACADEMY</div>
+                <p className="text-xs text-foreground-muted uppercase tracking-wider">CERTIFICATE OF COMPLETION</p>
+                <h2 className="text-2xl font-extrabold text-foreground underline decoration-primary/40 underline-offset-4">{printCert.courseTitle}</h2>
+                <p className="text-xs text-foreground-secondary max-w-md mx-auto">
+                  Demonstrated technical competence across hands-on sandbox labs, vulnerability assessments, and course assessments.
+                </p>
+                <div className="flex justify-between items-center text-[10px] font-mono text-foreground-muted border-t border-border/50 pt-4">
+                  <span>TOKEN: {printCert.id}</span>
+                  <span>ISSUED: {printCert.issueDate}</span>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <Button variant="outline" onClick={() => setPrintCert(null)}>
+                  Close
+                </Button>
+                <Button
+                  onClick={() => {
+                    window.print();
+                  }}
+                  icon={<Download className="w-4 h-4" />}
+                >
+                  Print / Save PDF
                 </Button>
               </div>
             </motion.div>

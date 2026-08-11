@@ -295,12 +295,12 @@ export default function XTermTerminal({ sessionId, labId }: XTermTerminalProps) 
   };
 
   return (
-    <div className="flex flex-col h-[520px] bg-[#090D16] border border-zinc-800 rounded-[var(--radius-xl)] overflow-hidden">
+    <div className="flex flex-col h-[420px] sm:h-[520px] bg-[#090D16] border border-zinc-800 rounded-[var(--radius-xl)] overflow-hidden">
       {/* Terminal Header status bar */}
-      <div className="flex items-center justify-between px-4 py-2 bg-zinc-900/80 border-b border-zinc-800 text-xs font-mono text-zinc-400">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2 bg-zinc-900/80 border-b border-zinc-800 text-xs font-mono text-zinc-400">
         <div className="flex items-center gap-2">
-          <TerminalIcon className="w-4 h-4 text-emerald-400" />
-          <span className="font-semibold text-zinc-200">bash @ cyberlearn-sandbox</span>
+          <TerminalIcon className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span className="font-semibold text-zinc-200 text-xs truncate">bash @ cyberlearn-sandbox</span>
         </div>
 
         <div className="flex items-center gap-3">

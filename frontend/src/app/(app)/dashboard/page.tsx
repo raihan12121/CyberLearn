@@ -51,8 +51,6 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-
     // Fetch Profile Details
     const fetchProfilePromise = api.getProfileDetails()
       .then((data) => {
@@ -109,8 +107,8 @@ export default function DashboardPage() {
           const mapping = courseMapping[c.id] || { image: "🛡️", currentLesson: "Introduction" };
 
           // Calculate actual completion percentage from progress list
-          const courseProgress = progressList.filter((p: any) => p.course_id === c.id);
-          const completedCount = courseProgress.filter((p: any) => p.status === "completed").length;
+          const courseProgress = progressList.filter((p: { course_id: string; status: string }) => p.course_id === c.id);
+          const completedCount = courseProgress.filter((p: { status: string }) => p.status === "completed").length;
           
           // Total lessons seeded in backend or local list
           const totalLessonsCount = c.lessons?.length || 10;
@@ -250,7 +248,7 @@ export default function DashboardPage() {
                 </Card>
               ))}
               {activeCourses.length === 0 && (
-                <Card padding="lg" className="col-span-2 text-center text-foreground-secondary">
+                <Card padding="lg" className="col-span-1 md:col-span-2 text-center text-foreground-secondary">
                   No courses in progress. Explore the catalog to start!
                 </Card>
               )}

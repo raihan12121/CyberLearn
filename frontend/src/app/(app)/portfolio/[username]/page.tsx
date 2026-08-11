@@ -37,7 +37,6 @@ export default function VerifiedPortfolioPage() {
       })
       .catch((err) => {
         console.warn("Error fetching public profile, utilizing fallback layout:", err);
-        setError(err.message || "User profile not found.");
         setLoading(false);
       });
   }, [username]);

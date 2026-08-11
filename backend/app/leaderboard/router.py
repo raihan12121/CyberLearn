@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from ..database import get_db
 from .. import models
 from ..auth.dependencies import get_current_user
-from ..auth.utils import create_access_token # simple helper
+from ..auth.utils import create_access_token, get_password_hash # simple helper
 # We will do optional authentication
 from jose import JWTError, jwt
 from ..config import settings
@@ -26,7 +26,7 @@ def get_optional_user(authorization: Optional[str] = Header(None), db: Session =
             return None
         user = db.query(models.User).filter(models.User.email == email).first()
         return user
-    except JWTError:
+    except Exception:
         return None
 
 @router.get("")
@@ -90,7 +90,7 @@ def get_leaderboard(
         
         # If the user is seeded from our mock list, use their seeded solved count
         # or defaults to reflect their high scores!
-        if u.password_hash == "mocked_competitor":
+        if u.email and u.email.endswith("@cyberlearn.io"):
             # Find the solved count from mock data
             for name, mock_xp, mock_solved, mock_streak in [
                 ("AlexHacker", 45230, 154, 45),

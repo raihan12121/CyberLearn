@@ -73,7 +73,7 @@ def _query_external_llm(user_message: str, user_name: str) -> Optional[str]:
 
 @router.post("/chat")
 def chat_with_coach(request: ChatRequest, current_user: models.User = Depends(get_current_user)):
-    user_name = current_user.full_name.split()[0] if current_user.full_name else "Agent"
+    user_name = current_user.full_name.split()[0] if (current_user.full_name and current_user.full_name.strip()) else "Agent"
     query = request.message.lower()
     
     # 1. Check for live LLM response

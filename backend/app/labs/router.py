@@ -411,6 +411,12 @@ def unlock_socratic_hint(
     """
     Unlock a progressive Socratic hint and persist XP deduction to user account.
     """
+    if req.cost < 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cost must be a positive integer."
+        )
+
     if current_user.xp < req.cost:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

@@ -47,7 +47,6 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
     api.getMe()
       .then((user) => {
         if (user.role !== "admin") {

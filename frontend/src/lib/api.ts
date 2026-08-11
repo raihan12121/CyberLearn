@@ -86,6 +86,10 @@ export const api = {
     method: "POST",
     body: JSON.stringify({ course_id: courseId, lesson_id: lessonId, status, completion_pct: completionPct }),
   }),
+  submitQuiz: (lessonId: string, answers: { question_id: string; selected_option: number }[]) => apiFetch(`/courses/lessons/${lessonId}/quiz/submit`, {
+    method: "POST",
+    body: JSON.stringify({ answers }),
+  }),
 
   // Labs
   getLabs: () => apiFetch("/labs"),

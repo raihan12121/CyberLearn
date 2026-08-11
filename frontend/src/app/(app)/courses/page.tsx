@@ -121,14 +121,14 @@ export default function CoursesPage() {
     Promise.all([api.getCourses(), api.getProgress()])
       .then(([coursesData, progressData]) => {
         if (coursesData && coursesData.length > 0) {
-          const merged = coursesData.map((c: any) => {
+          const merged = coursesData.map((c: { id: string; lessons?: { id: string }[] }) => {
             const local = courses.find((l) => l.id === c.id);
             
             // Calculate progress based on completed lessons count from database
             const dbLessons = c.lessons || [];
             const totalLessons = dbLessons.length;
             const courseLessonsProgress = progressData.filter(
-              (p: any) => p.course_id === c.id && p.status === "completed"
+              (p: { course_id: string; status: string }) => p.course_id === c.id && p.status === "completed"
             );
             const completedCount = courseLessonsProgress.length;
             const calculatedProgress = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
@@ -183,13 +183,13 @@ export default function CoursesPage() {
       </motion.div>
 
       {/* Filters and Search */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-        <div className="flex gap-2 flex-wrap">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+        <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
-              className={`px-3 py-1.5 text-sm font-medium rounded-full transition-all duration-200 cursor-pointer ${
+              className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-full shrink-0 transition-all duration-200 cursor-pointer ${
                 activeCategory === cat
                   ? "bg-primary text-white"
                   : "bg-surface-elevated text-foreground-secondary hover:text-foreground border border-border"
@@ -199,7 +199,7 @@ export default function CoursesPage() {
             </button>
           ))}
         </div>
-        <div className="relative flex-1 max-w-xs ml-auto">
+        <div className="relative w-full sm:w-auto sm:max-w-xs sm:ml-auto">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-muted" />
           <input
             type="text"

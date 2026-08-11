@@ -152,3 +152,27 @@ class SocialLoginRequest(BaseModel):
     full_name: Optional[str] = None  # User's display name from the OAuth provider
     provider_token: str  # OAuth access token for server-side verification
 
+# Quiz Schemas
+class QuizAnswerItem(BaseModel):
+    question_id: str
+    selected_option: int
+
+class QuizSubmissionRequest(BaseModel):
+    answers: List[QuizAnswerItem]
+
+class QuizQuestionResult(BaseModel):
+    question_id: str
+    correct: bool
+    selected_option: int
+    correct_option: int
+    explanation: str
+
+class QuizEvaluationResponse(BaseModel):
+    passed: bool
+    score_pct: float
+    correct_count: int
+    total_questions: int
+    xp_awarded: int
+    results: List[QuizQuestionResult]
+
+

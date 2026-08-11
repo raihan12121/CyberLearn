@@ -106,7 +106,7 @@ def seed_database_if_empty(db: Session):
             "content_type": "quiz",
             "duration": 5,
             "sort_order": 3,
-            "content": "Assessment for SOP"
+            "content": '{"questions": [{"id": "q1", "question": "Which three components strictly define a Web Origin under the Same-Origin Policy?", "options": ["Scheme, Host Domain, and Port", "Domain, Subdomain, and Cookie Path", "HTTP Method, User-Agent, and IP Address", "Protocol, Query Parameters, and URL Fragment"], "correct_option": 0, "explanation": "An origin is strictly defined by the tuple of (Scheme, Host, Port). If any of these three elements differ, browsers treat them as different origins."}, {"id": "q2", "question": "What is the primary purpose of the Same-Origin Policy (SOP)?", "options": ["To compress HTTP response payloads for faster loading", "To isolate independent sites and prevent scripts on one origin from reading sensitive DOM/cookie state on another origin", "To encrypt all local storage data stored in the browser", "To block user authentication headers across all web requests"], "correct_option": 1, "explanation": "SOP isolates distinct web applications, ensuring malicious scripts on attacker.com cannot read cookies or DOM data from bank.com."}, {"id": "q3", "question": "Which request header allows a server to explicitly relax SOP and permit cross-origin access?", "options": ["Content-Security-Policy", "Access-Control-Allow-Origin", "Strict-Transport-Security", "X-Frame-Options"], "correct_option": 1, "explanation": "Access-Control-Allow-Origin is a key CORS header that tells the browser which requesting origins are permitted to access resources cross-origin."}]}'
         },
         {
             "id": "xss-intro",
@@ -362,3 +362,103 @@ def get_course(course_id: str, db: Session = Depends(get_db)):
             detail=f"Course with ID '{course_id}' was not found."
         )
     return course
+
+import json
+
+@router.post("/lessons/{lesson_id}/quiz/submit", response_model=schemas.QuizEvaluationResponse)
+def submit_quiz_assessment(
+    lesson_id: str,
+    submission: schemas.QuizSubmissionRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    lesson = db.query(models.Lesson).filter(models.Lesson.id == lesson_id).first()
+    if not lesson:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Lesson with ID '{lesson_id}' was not found."
+        )
+        
+    if lesson.content_type != "quiz":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Target lesson is not a quiz assessment."
+        )
+
+    try:
+        content_data = json.loads(lesson.content or "{}")
+        questions = content_data.get("questions", [])
+    except Exception:
+        questions = []
+
+    if not questions:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Quiz contains no configured questions."
+        )
+
+    user_answers_map = {ans.question_id: ans.selected_option for ans in submission.answers}
+    correct_count = 0
+    results = []
+
+    for q in questions:
+        q_id = q.get("id")
+        correct_opt = q.get("correct_option", 0)
+        selected_opt = user_answers_map.get(q_id, -1)
+        is_correct = selected_opt == correct_opt
+        if is_correct:
+            correct_count += 1
+
+        results.append(schemas.QuizQuestionResult(
+            question_id=q_id,
+            correct=is_correct,
+            selected_option=selected_opt,
+            correct_option=correct_opt,
+            explanation=q.get("explanation", "Review lesson material for details.")
+        ))
+
+    total_questions = len(questions)
+    score_pct = round((correct_count / total_questions) * 100.0, 1)
+    passed = score_pct >= 80.0
+    xp_awarded = 0
+
+    if passed:
+        # Check existing progress or create new
+        db_progress = db.query(models.Progress).filter(
+            models.Progress.user_id == current_user.id,
+            models.Progress.course_id == lesson.course_id,
+            models.Progress.lesson_id == lesson.id
+        ).first()
+
+        is_new_completion = False
+        if db_progress:
+            if db_progress.status != "completed":
+                is_new_completion = True
+                db_progress.status = "completed"
+                db_progress.completion_pct = 100.0
+        else:
+            is_new_completion = True
+            db_progress = models.Progress(
+                user_id=current_user.id,
+                course_id=lesson.course_id,
+                lesson_id=lesson.id,
+                status="completed",
+                completion_pct=100.0
+            )
+            db.add(db_progress)
+
+        if is_new_completion:
+            xp_awarded = 100
+            current_user.xp += xp_awarded
+
+        db.commit()
+
+    return schemas.QuizEvaluationResponse(
+        passed=passed,
+        score_pct=score_pct,
+        correct_count=correct_count,
+        total_questions=total_questions,
+        xp_awarded=xp_awarded,
+        results=results
+    )
+

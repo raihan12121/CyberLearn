@@ -92,7 +92,7 @@ export default function SettingsPage() {
       {/* Main Grid Layout split (Sidebar nav + active form card) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Settings Sub-navigation (3 cols) */}
-        <div className="lg:col-span-3 space-y-1">
+        <div className="lg:col-span-3 flex lg:flex-col gap-1 overflow-x-auto pb-2 lg:pb-0 scrollbar-none">
           {[
             { id: "profile", label: "My Profile", icon: User },
             { id: "security", label: "Security & MFA", icon: Shield },
@@ -104,9 +104,9 @@ export default function SettingsPage() {
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-[var(--radius)] text-left text-xs font-semibold transition-all duration-200 cursor-pointer ${
+                className={`flex-1 lg:flex-none flex items-center justify-center lg:justify-start gap-2.5 px-4 py-2.5 sm:py-3 rounded-[var(--radius)] text-left text-xs font-semibold shrink-0 whitespace-nowrap transition-all duration-200 cursor-pointer ${
                   isSelected
-                    ? "bg-primary/10 border-l-2 border-primary text-primary"
+                    ? "bg-primary/10 border-b-2 lg:border-b-0 lg:border-l-2 border-primary text-primary"
                     : "text-foreground-secondary hover:text-foreground hover:bg-surface-elevated"
                 }`}
               >

@@ -31,11 +31,14 @@ def get_user_profile_details(
     # Auto-award achievements based on stats if not already earned
     earned_badges = {a.badge_name for a in current_user.achievements}
     
+    # Calculate total users for percentile rank milestone
+    total_users = db.query(func.count(models.User.id)).scalar() or 1
+
     milestones = [
         {"badge": "First Blood", "icon": "🎯", "desc": "Earned your first XP points on CyberLearn.", "condition": current_user.xp > 0},
         {"badge": "Web Wizard", "icon": "🧙", "desc": "Successfully completed a web security sandbox lab.", "condition": solved_labs_count >= 1},
         {"badge": "50 Labs Master", "icon": "🏆", "desc": "Demonstrated relentless practice across labs.", "condition": solved_labs_count >= 3},
-        {"badge": "Top 10% Rank", "icon": "⭐", "desc": "Ranked among global active learners.", "condition": rank <= max(1, len(users_sorted) // 10)},
+        {"badge": "Top 10% Rank", "icon": "⭐", "desc": "Ranked among global active learners.", "condition": rank <= max(1, total_users // 10)},
     ]
     
     new_achievements = False

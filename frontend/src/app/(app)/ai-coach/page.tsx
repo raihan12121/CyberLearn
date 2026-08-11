@@ -186,7 +186,7 @@ export default function AICoachPage() {
         <div className="lg:col-span-9 flex flex-col justify-between">
           <Card padding="none" className="flex-1 flex flex-col justify-between overflow-hidden border border-border h-full min-h-[500px]">
             {/* Console Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-elevated/20">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-border bg-surface-elevated/20">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
                   <Bot className="w-5 h-5 text-primary" />
@@ -199,7 +199,7 @@ export default function AICoachPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-foreground-muted hover:text-foreground"
+                className="text-foreground-muted hover:text-foreground text-xs"
                 icon={<RefreshCw className="w-3.5 h-3.5" />}
                 onClick={startNewChat}
               >
@@ -208,13 +208,13 @@ export default function AICoachPage() {
             </div>
 
             {/* Messages body stream */}
-            <div className="flex-1 p-6 overflow-y-auto space-y-4 max-h-[420px]">
+            <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 max-h-[420px]">
               {messages.map((msg, i) => {
                 const isCoach = msg.sender === "coach";
                 return (
                   <div
                     key={i}
-                    className={`flex items-start gap-3 max-w-[85%] ${
+                    className={`flex items-start gap-3 max-w-[90%] sm:max-w-[85%] ${
                       isCoach ? "mr-auto" : "ml-auto flex-row-reverse"
                     }`}
                   >
@@ -229,7 +229,7 @@ export default function AICoachPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <div className={`p-3.5 rounded-[var(--radius-lg)] text-xs leading-relaxed font-normal whitespace-pre-line ${
+                      <div className={`p-3 sm:p-3.5 rounded-[var(--radius-lg)] text-xs leading-relaxed font-normal whitespace-pre-line ${
                         isCoach
                           ? "bg-surface-elevated/40 border border-border text-foreground-secondary"
                           : "bg-primary text-white"
@@ -258,16 +258,16 @@ export default function AICoachPage() {
             </div>
 
             {/* Suggestion Chips */}
-            <div className="px-6 py-3 border-t border-border/60 bg-surface/50">
+            <div className="px-4 sm:px-6 py-3 border-t border-border/60 bg-surface/50">
               <p className="text-[10px] text-foreground-muted font-bold uppercase tracking-wider mb-2">
                 Suggested questions:
               </p>
-              <div className="flex gap-2 flex-wrap max-h-[72px] overflow-y-auto">
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
                 {suggestionChips.map((chip) => (
                   <button
                     key={chip}
                     onClick={() => handleSend(chip)}
-                    className="px-2.5 py-1 text-[10px] font-semibold rounded-full border border-border bg-surface-elevated/40 text-foreground-secondary hover:text-primary hover:border-primary transition-all duration-150 cursor-pointer text-left truncate max-w-[280px]"
+                    className="px-2.5 py-1 text-[10px] font-semibold rounded-full border border-border bg-surface-elevated/40 text-foreground-secondary hover:text-primary hover:border-primary transition-all duration-150 cursor-pointer text-left shrink-0 whitespace-nowrap"
                   >
                     {chip}
                   </button>

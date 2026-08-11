@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Shield,
   Terminal,
@@ -18,6 +18,8 @@ import {
   Zap,
   Award,
   TrendingUp,
+  Menu,
+  X,
 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
@@ -79,17 +81,21 @@ const learningPaths = [
 ];
 
 export default function LandingPage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}
       <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
               <Shield className="w-5 h-5 text-primary" />
             </div>
             <span className="text-lg font-bold text-foreground">CyberLearn</span>
           </Link>
+
+          {/* Desktop links */}
           <div className="hidden md:flex items-center gap-8">
             {["Courses", "Labs", "Challenges", "Community", "Pricing"].map((item) => (
               <Link
@@ -101,20 +107,65 @@ export default function LandingPage() {
               </Link>
             ))}
           </div>
+
           <div className="flex items-center gap-3">
-            <Link href="/login">
-              <Button variant="ghost" size="sm">Log In</Button>
-            </Link>
-            <Link href="/signup">
-              <Button size="sm">Sign Up</Button>
-            </Link>
+            <div className="hidden sm:flex items-center gap-3">
+              <Link href="/login">
+                <Button variant="ghost" size="sm">Log In</Button>
+              </Link>
+              <Link href="/signup">
+                <Button size="sm">Sign Up</Button>
+              </Link>
+            </div>
+
+            {/* Mobile menu trigger */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 rounded-[var(--radius)] text-foreground-secondary hover:text-foreground hover:bg-surface-elevated cursor-pointer"
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Dropdown Sheet */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="md:hidden border-b border-border bg-surface px-4 py-4 space-y-4 overflow-hidden"
+            >
+              <div className="flex flex-col space-y-3">
+                {["Courses", "Labs", "Challenges", "Community", "Pricing"].map((item) => (
+                  <Link
+                    key={item}
+                    href={`/${item.toLowerCase()}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-sm font-medium text-foreground-secondary hover:text-primary transition-colors py-1"
+                  >
+                    {item}
+                  </Link>
+                ))}
+              </div>
+              <div className="flex flex-col sm:hidden gap-2 pt-3 border-t border-border">
+                <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="w-full">
+                  <Button variant="ghost" size="sm" className="w-full justify-center">Log In</Button>
+                </Link>
+                <Link href="/signup" onClick={() => setMobileMenuOpen(false)} className="w-full">
+                  <Button size="sm" className="w-full justify-center">Sign Up</Button>
+                </Link>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </nav>
 
       {/* Hero */}
       <motion.section
-        className="relative overflow-hidden pt-20 pb-24 px-6"
+        className="relative overflow-hidden pt-12 sm:pt-20 pb-16 sm:pb-24 px-4 sm:px-6"
         initial="initial"
         animate="animate"
         variants={staggerContainer}
@@ -132,7 +183,7 @@ export default function LandingPage() {
 
           <motion.h1
             variants={fadeUp}
-            className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground leading-[1.1] tracking-tight mb-6"
+            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-foreground leading-[1.1] tracking-tight mb-6"
           >
             Master Cybersecurity{" "}
             <span className="text-gradient">Through Hands-on</span>{" "}
@@ -141,20 +192,20 @@ export default function LandingPage() {
 
           <motion.p
             variants={fadeUp}
-            className="text-lg md:text-xl text-foreground-secondary max-w-2xl mx-auto mb-10 leading-relaxed"
+            className="text-base sm:text-lg md:text-xl text-foreground-secondary max-w-2xl mx-auto mb-8 sm:mb-10 leading-relaxed"
           >
             Interactive labs, real-world challenges, and AI-powered guidance to
             help you become a cybersecurity expert.
           </motion.p>
 
-          <motion.div variants={fadeUp} className="flex items-center justify-center gap-4">
-            <Link href="/signup">
-              <Button size="lg" icon={<ArrowRight className="w-4 h-4" />}>
+          <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 max-w-md mx-auto sm:max-w-none">
+            <Link href="/signup" className="w-full sm:w-auto">
+              <Button size="lg" className="w-full sm:w-auto justify-center" icon={<ArrowRight className="w-4 h-4" />}>
                 Start Learning Now
               </Button>
             </Link>
-            <Link href="/labs">
-              <Button variant="outline" size="lg" icon={<Terminal className="w-4 h-4" />}>
+            <Link href="/labs" className="w-full sm:w-auto">
+              <Button variant="outline" size="lg" className="w-full sm:w-auto justify-center" icon={<Terminal className="w-4 h-4" />}>
                 Explore Labs
               </Button>
             </Link>
