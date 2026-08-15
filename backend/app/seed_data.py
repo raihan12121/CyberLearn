@@ -21,6 +21,7 @@ def seed_database():
                 full_name="System Administrator",
                 password_hash=get_password_hash("admin123"),
                 role="admin",
+                is_verified=True,
                 xp=5000,
                 streak_days=14,
             )
@@ -36,6 +37,7 @@ def seed_database():
                 full_name="Raihan Student",
                 password_hash=get_password_hash("learner123"),
                 role="student",
+                is_verified=True,
                 xp=1250,
                 streak_days=5,
             )

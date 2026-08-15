@@ -16,6 +16,8 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     full_name = Column(String(255), nullable=True)
     role = Column(String(20), default="student") # student, instructor, admin
+    is_verified = Column(Boolean, default=False)
+    verification_token = Column(String(255), nullable=True, index=True)
     xp = Column(Integer, default=0)
     streak_days = Column(Integer, default=0)
     avatar_url = Column(Text, nullable=True)

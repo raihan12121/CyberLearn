@@ -27,6 +27,7 @@ class UserLogin(BaseModel):
 class UserResponse(UserBase):
     id: str
     role: str
+    is_verified: bool = False
     xp: int
     streak_days: int
     avatar_url: Optional[str] = None
@@ -34,6 +35,12 @@ class UserResponse(UserBase):
 
     class Config:
         from_attributes = True
+
+class VerifyEmailRequest(BaseModel):
+    token: str
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
 
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None

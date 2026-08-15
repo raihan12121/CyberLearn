@@ -64,6 +64,13 @@ export const api = {
     method: "POST",
     body: JSON.stringify(data),
   }),
+
+  verifyEmail: (token: string) => apiFetch(`/auth/verify-email?token=${encodeURIComponent(token)}`),
+
+  resendVerification: (email: string) => apiFetch("/auth/resend-verification", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  }),
   
   login: (data: Record<string, unknown>) => apiFetch("/auth/login", {
     method: "POST",

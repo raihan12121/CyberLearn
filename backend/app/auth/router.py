@@ -15,6 +15,8 @@ router = APIRouter(
     tags=["Authentication"]
 )
 
+from .email import send_verification_email
+
 @router.post("/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
 def register_user(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
     # Check if user already exists
@@ -25,22 +27,70 @@ def register_user(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
             detail="A user with this email address is already registered."
         )
     
-    # Create user
+    # Create user with verification token
     hashed_password = get_password_hash(user_in.password)
     username = user_in.username or user_in.email.split("@")[0]
+    token = secrets.token_urlsafe(32)
+    
     db_user = models.User(
         email=user_in.email,
         username=username,
         password_hash=hashed_password,
         full_name=user_in.full_name,
         role="student",
+        is_verified=False,
+        verification_token=token,
         xp=0,
         streak_days=0
     )
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
+
+    # Dispatch verification HTML email
+    send_verification_email(db_user.email, token, db_user.full_name or "Learner")
     return db_user
+
+@router.get("/verify-email")
+def verify_email(token: str, db: Session = Depends(get_db)):
+    """
+    Verify user email via activation token link.
+    """
+    user = db.query(models.User).filter(models.User.verification_token == token).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification token."
+        )
+    
+    user.is_verified = True
+    user.verification_token = None
+    db.commit()
+    
+    return {
+        "status": "success",
+        "detail": "Your email address has been successfully verified! Account activated.",
+        "email": user.email
+    }
+
+@router.post("/resend-verification")
+def resend_verification_email(req: schemas.ResendVerificationRequest, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == req.email).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No account registered with this email address."
+        )
+        
+    if user.is_verified:
+        return {"detail": "Account is already verified."}
+        
+    token = secrets.token_urlsafe(32)
+    user.verification_token = token
+    db.commit()
+    
+    send_verification_email(user.email, token, user.full_name or "Learner")
+    return {"detail": "Verification email dispatched successfully."}
 
 @router.post("/login", response_model=schemas.Token)
 def login_user(user_in: schemas.UserLogin, db: Session = Depends(get_db)):

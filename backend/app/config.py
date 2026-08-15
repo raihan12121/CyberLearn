@@ -27,6 +27,15 @@ class Settings(BaseSettings):
     # Database URL: defaults to local SQLite file for ease of developer setup
     DATABASE_URL: str = "sqlite:///./cyberlearn.db"
 
+    # SMTP / Email Service Configuration
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    EMAILS_FROM_EMAIL: str = "noreply@cyberlearn.io"
+    EMAILS_FROM_NAME: str = "CyberLearn Security Academy"
+    FRONTEND_URL: str = "https://cyber-learn-three.vercel.app"
+
     # CORS Origins: accepts List[str], JSON string, or comma-separated string from environment
     BACKEND_CORS_ORIGINS: Union[list[str], str] = [
         "http://localhost:3000",
