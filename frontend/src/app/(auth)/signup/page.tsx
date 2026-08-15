@@ -46,27 +46,23 @@ export default function SignupPage() {
 
     try {
       const result = await signInWithGoogleFirebase();
-      if (result) {
+      if (result && result.email) {
         const data = await api.socialLogin("google", result.email, result.fullName, result.token);
         setAuthToken(data.access_token);
         router.push("/dashboard");
         return;
       }
+      setLoading(false);
     } catch (err: any) {
-      if (err?.code !== "auth/popup-closed-by-user" && err?.message !== "FIREBASE_CONFIG_MISSING") {
-        console.warn("Firebase Auth fallback triggered:", err);
+      setLoading(false);
+      if (err?.code === "auth/popup-closed-by-user") {
+        setError("Google sign-in popup was closed. Please try again.");
+      } else if (err?.code === "auth/unauthorized-domain") {
+        setError("Domain not authorized in Firebase Console. Please add cyber-learn-three.vercel.app to Authorized Domains.");
+      } else {
+        setError(err?.message || "Google authentication failed.");
       }
     }
-
-    api.socialLogin("google")
-      .then((data) => {
-        setAuthToken(data.access_token);
-        router.push("/dashboard");
-      })
-      .catch((err) => {
-        setLoading(false);
-        setError(err.message || "Google authentication failed.");
-      });
   };
 
   return (
