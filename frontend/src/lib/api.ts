@@ -91,6 +91,13 @@ export const api = {
       provider_token: token || "mock_provider_token_12345"
     }),
   }),
+
+  getOAuthUrl: (provider: string) => apiFetch(`/auth/oauth/url/${provider}`),
+
+  exchangeOAuthCode: (provider: string, code: string, redirectUri?: string) => apiFetch("/auth/oauth/exchange", {
+    method: "POST",
+    body: JSON.stringify({ provider, code, redirect_uri: redirectUri }),
+  }),
   
   getMe: () => apiFetch("/auth/me"),
 

@@ -42,6 +42,11 @@ class VerifyEmailRequest(BaseModel):
 class ResendVerificationRequest(BaseModel):
     email: EmailStr
 
+class OAuthCallbackRequest(BaseModel):
+    provider: str
+    code: str
+    redirect_uri: Optional[str] = None
+
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     username: Optional[str] = None

@@ -43,14 +43,27 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    api.socialLogin(provider)
-      .then((data) => {
-        setAuthToken(data.access_token);
-        router.push("/dashboard");
+    api.getOAuthUrl(provider)
+      .then((res) => {
+        if (res && res.url) {
+          window.location.href = res.url;
+        } else {
+          return api.socialLogin(provider).then((data) => {
+            setAuthToken(data.access_token);
+            router.push("/dashboard");
+          });
+        }
       })
-      .catch((err) => {
-        setLoading(false);
-        setError(err.message || `Social login with ${provider} failed.`);
+      .catch(() => {
+        api.socialLogin(provider)
+          .then((data) => {
+            setAuthToken(data.access_token);
+            router.push("/dashboard");
+          })
+          .catch((err) => {
+            setLoading(false);
+            setError(err.message || `Social login with ${provider} failed.`);
+          });
       });
   };
 

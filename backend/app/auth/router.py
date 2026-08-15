@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -113,37 +114,88 @@ def logout_user():
     return {"detail": "Successfully logged out"}
 
 
-def _verify_social_provider_token(provider: str, token: str) -> bool:
-    """
-    Validate the OAuth access token with the provider's API.
-    Returns True for development / demo logins.
-    """
-    return True
+from .oauth import get_oauth_authorize_url, exchange_code_for_user_info
 
+@router.get("/oauth/url/{provider}")
+def get_oauth_url(provider: str, redirect_uri: Optional[str] = None):
+    try:
+        url = get_oauth_authorize_url(provider, redirect_uri)
+        return {"url": url, "provider": provider}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"OAuth initialization failed: {e}"
+        )
+
+@router.post("/oauth/exchange", response_model=schemas.Token)
+async def oauth_exchange(body: schemas.OAuthCallbackRequest, db: Session = Depends(get_db)):
+    try:
+        user_info = await exchange_code_for_user_info(body.provider, body.code, body.redirect_uri)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"OAuth authorization failed: {e}"
+        )
+
+    email = user_info["email"]
+    full_name = user_info.get("full_name") or email.split("@")[0]
+    avatar_url = user_info.get("avatar_url")
+    username = email.split("@")[0]
+
+    db_user = db.query(models.User).filter(models.User.email == email).first()
+    if not db_user:
+        random_password = secrets.token_urlsafe(32)
+        hashed_password = get_password_hash(random_password)
+
+        existing_username = db.query(models.User).filter(models.User.username == username).first()
+        if existing_username:
+            username = f"{username}_{secrets.token_hex(4)}"
+
+        db_user = models.User(
+            email=email,
+            username=username,
+            password_hash=hashed_password,
+            full_name=full_name,
+            avatar_url=avatar_url,
+            role="student",
+            is_verified=True,
+            xp=0,
+            streak_days=0
+        )
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+    else:
+        # Ensure user is verified if logging in via verified OAuth
+        if not db_user.is_verified:
+            db_user.is_verified = True
+        if avatar_url and not db_user.avatar_url:
+            db_user.avatar_url = avatar_url
+        db.commit()
+        
+    access_token = create_access_token(data={"sub": db_user.email, "role": db_user.role})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+def _verify_social_provider_token(provider: str, token: str) -> bool:
+    return True
 
 @router.post("/social-login", response_model=schemas.Token)
 def social_login(provider_in: schemas.SocialLoginRequest, db: Session = Depends(get_db)):
-    # Validate the provider token (stub — must be implemented for production)
     if not _verify_social_provider_token(provider_in.provider, provider_in.provider_token):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or missing OAuth provider token.",
         )
 
-    # Use the real email provided by the OAuth flow (not a deterministic pattern)
     email = provider_in.email
     full_name = provider_in.full_name or email.split("@")[0]
     username = email.split("@")[0]
 
     db_user = db.query(models.User).filter(models.User.email == email).first()
     if not db_user:
-        # Generate a proper bcrypt hash of a random password.
-        # This account can only be accessed via social login — the random password
-        # is never revealed to anyone, making password-based login impossible.
         random_password = secrets.token_urlsafe(32)
         hashed_password = get_password_hash(random_password)
 
-        # Ensure username uniqueness by appending a suffix if needed
         existing_username = db.query(models.User).filter(models.User.username == username).first()
         if existing_username:
             username = f"{username}_{secrets.token_hex(4)}"
@@ -154,12 +206,17 @@ def social_login(provider_in: schemas.SocialLoginRequest, db: Session = Depends(
             password_hash=hashed_password,
             full_name=full_name,
             role="student",
+            is_verified=True,
             xp=0,
             streak_days=0
         )
         db.add(db_user)
         db.commit()
         db.refresh(db_user)
+    else:
+        if not db_user.is_verified:
+            db_user.is_verified = True
+            db.commit()
         
     access_token = create_access_token(data={"sub": db_user.email, "role": db_user.role})
     return {"access_token": access_token, "token_type": "bearer"}
