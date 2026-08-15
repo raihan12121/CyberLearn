@@ -332,6 +332,7 @@ def get_lab_flag(
     flag = generate_lab_flag(lab_id)
     return {
         "lab_id": lab_id,
+        "flag": flag,
         "generated_flag": flag
     }
 

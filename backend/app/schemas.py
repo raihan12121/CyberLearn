@@ -50,6 +50,7 @@ class LessonBase(BaseModel):
     title: str
     content_type: str # video, reading, quiz
     content: Optional[str] = None
+    video_url: Optional[str] = None
     sort_order: Optional[int] = 0
     duration: Optional[int] = 0
 

@@ -60,7 +60,7 @@ def seed_database():
                             "id": "web-sec-1",
                             "title": "Introduction to Web Application Architecture",
                             "content_type": "video",
-                            "content": "https://www.w3schools.com/html/mov_bbb.mp4",
+                            "content": "https://www.youtube-nocookie.com/embed/2_a10h63d50",
                             "duration": 12,
                             "sort_order": 1
                         },
@@ -76,7 +76,7 @@ def seed_database():
                             "id": "web-sec-3",
                             "title": "Cross-Site Scripting (XSS) Deep Dive",
                             "content_type": "video",
-                            "content": "https://www.w3schools.com/html/mov_bbb.mp4",
+                            "content": "https://www.youtube-nocookie.com/embed/EoaDgUgS6QA",
                             "duration": 20,
                             "sort_order": 3
                         },
@@ -104,7 +104,7 @@ def seed_database():
                             "id": "linux-1",
                             "title": "Linux Directory Navigation & Shell Basics",
                             "content_type": "video",
-                            "content": "https://www.w3schools.com/html/mov_bbb.mp4",
+                            "content": "https://www.youtube-nocookie.com/embed/sWbUDq4S6XA",
                             "duration": 15,
                             "sort_order": 1
                         },
@@ -131,8 +131,8 @@ def seed_database():
                         {
                             "id": "net-1",
                             "title": "TCP/IP 4-Layer Model & Handshake",
-                            "content_type": "reading",
-                            "content": "Learn the 3-way SYN, SYN-ACK, ACK TCP handshake mechanism.",
+                            "content_type": "video",
+                            "content": "https://www.youtube-nocookie.com/embed/3QhU9jd03a0",
                             "duration": 18,
                             "sort_order": 1
                         }
@@ -152,7 +152,7 @@ def seed_database():
                             "id": "py-1",
                             "title": "Socket Programming & Port Scanning in Python",
                             "content_type": "video",
-                            "content": "https://www.w3schools.com/html/mov_bbb.mp4",
+                            "content": "https://www.youtube-nocookie.com/embed/3Kq1MIfTWCE",
                             "duration": 22,
                             "sort_order": 1
                         }

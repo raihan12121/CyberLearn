@@ -99,7 +99,7 @@ export default function SignupPage() {
           {/* Error Alert */}
           {error && (
             <div className="mb-4 p-3 rounded bg-error/15 text-error text-xs font-semibold">
-              {error} (Backend is offline, redirecting to demo session...)
+              {error}
             </div>
           )}
 

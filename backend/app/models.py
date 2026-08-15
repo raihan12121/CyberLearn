@@ -55,6 +55,7 @@ class Lesson(Base):
     title = Column(String(255), nullable=False)
     content_type = Column(String(20), nullable=False) # video, reading, quiz
     content = Column(Text, nullable=True) # Markdown reading or JSON structure
+    video_url = Column(Text, nullable=True) # Embedded YouTube video URL
     sort_order = Column(Integer, default=0)
     duration = Column(Integer, default=0) # minutes
 

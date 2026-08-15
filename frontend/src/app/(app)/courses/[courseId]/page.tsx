@@ -19,6 +19,22 @@ import { Card, Badge, Button, ProgressBar } from "@/components/ui";
 import { api } from "@/lib/api";
 import Link from "next/link";
 
+function getYouTubeEmbedUrl(url?: string): string | null {
+  if (!url) return null;
+  if (url.includes("youtube.com/embed/") || url.includes("youtube-nocookie.com/embed/")) {
+    return url;
+  }
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  if (match && match[2] && match[2].length === 11) {
+    return `https://www.youtube-nocookie.com/embed/${match[2]}?rel=0&autoplay=0`;
+  }
+  if (url.startsWith("http")) {
+    return url;
+  }
+  return null;
+}
+
 const courseData: Record<string, {
   title: string;
   category: string;
@@ -57,7 +73,7 @@ const courseData: Record<string, {
             type: "video",
             duration: "10 mins",
             completed: true,
-            videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
+            videoUrl: "https://www.youtube-nocookie.com/embed/2JYT5f2isg4",
             content: "Welcome to Web Security Fundamentals! In this lesson, we will explore the underlying architecture of the web, focusing on HTTP protocol, client-server models, headers, and basic HTML structure. Understanding these basics is critical before searching for vulnerabilities.",
           },
           {
@@ -115,7 +131,7 @@ If any of these three elements differ, they are considered different origins. Fo
             type: "video",
             duration: "12 mins",
             completed: false,
-            videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
+            videoUrl: "https://www.youtube-nocookie.com/embed/EoaDgUgS6QA",
             content: "Learn the difference between Stored XSS, Reflected XSS, and DOM-based XSS. We will write basic payloads and study their exploitation routes.",
           },
           {
@@ -161,6 +177,7 @@ This query will return true, bypassing password verification!`,
             type: "video",
             duration: "8 mins",
             completed: true,
+            videoUrl: "https://www.youtube-nocookie.com/embed/oxuRxtrO2Ag",
             content: "Learn how to use cd, ls, pwd, and find to navigate file directories in Linux.",
           },
           {
@@ -190,6 +207,7 @@ This query will return true, bypassing password verification!`,
             type: "video",
             duration: "15 mins",
             completed: false,
+            videoUrl: "https://www.youtube-nocookie.com/embed/3QhU9jd03a0",
             content: "Learn the foundation of network communications with TCP/IP, DNS, and IP routing protocols.",
           },
           {
@@ -216,10 +234,11 @@ This query will return true, bypassing password verification!`,
           {
             id: "python-basics",
             title: "Python Basics for Scripting",
-            type: "reading",
+            type: "video",
             duration: "15 mins",
             completed: false,
-            content: "Learn variables, loops, conditionals, and requests library to automate basic security auditing tasks.",
+            videoUrl: "https://www.youtube-nocookie.com/embed/fgTGADljAeg",
+            content: "Learn variables, loops, socket programming, and requests library to automate basic security auditing tasks.",
           },
           {
             id: "port-scanner",
@@ -248,6 +267,7 @@ This query will return true, bypassing password verification!`,
             type: "video",
             duration: "10 mins",
             completed: false,
+            videoUrl: "https://www.youtube-nocookie.com/embed/rTXN37mXyqg",
             content: "Overview of the top security risks listed by OWASP, including impact, likelihood, and general mitigations.",
           },
           {
@@ -277,6 +297,7 @@ This query will return true, bypassing password verification!`,
             type: "video",
             duration: "12 mins",
             completed: false,
+            videoUrl: "https://www.youtube-nocookie.com/embed/3Kq1MIfTWCE",
             content: "Introduction to standard penetration testing methodologies: reconnaissance, scanning, gaining access, maintaining access, and reporting.",
           },
           {
@@ -306,6 +327,7 @@ This query will return true, bypassing password verification!`,
             type: "video",
             duration: "10 mins",
             completed: false,
+            videoUrl: "https://www.youtube-nocookie.com/embed/v2gD8BHOaXg",
             content: "Overview of prompt injections, training data poisoning, model theft, and insecure output handling.",
           },
           {
@@ -581,19 +603,16 @@ export default function CourseDetailPage() {
               </Link>
             </div>
 
-            {/* Video Player Mock */}
+            {/* Embedded YouTube Video Player */}
             {activeLesson.type === "video" && (
-              <div className="mb-6 rounded-[var(--radius-lg)] overflow-hidden bg-surface-elevated border border-border aspect-video flex flex-col justify-center items-center text-center relative group">
-                <div className="absolute inset-0 bg-gradient-to-t from-surface-elevated/80 to-transparent flex flex-col justify-end p-6 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <p className="text-white font-bold text-lg">{activeLesson.title}</p>
-                  <p className="text-white/70 text-xs mt-1">Click to play tutorial</p>
-                </div>
-                <div className="w-16 h-16 rounded-full bg-primary/20 border border-primary flex items-center justify-center cursor-pointer group-hover:scale-110 transition-transform duration-200 shadow-lg glow-primary">
-                  <Play className="w-8 h-8 text-primary fill-primary" />
-                </div>
-                <span className="text-xs text-foreground-secondary font-mono mt-4">
-                  Simulated Video Lesson
-                </span>
+              <div className="mb-6 rounded-[var(--radius-lg)] overflow-hidden bg-black border border-border aspect-video shadow-2xl relative">
+                <iframe
+                  src={getYouTubeEmbedUrl(activeLesson.videoUrl || activeLesson.content) || "https://www.youtube-nocookie.com/embed/2JYT5f2isg4"}
+                  title={activeLesson.title}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  className="w-full h-full border-0"
+                />
               </div>
             )}
 
