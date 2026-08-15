@@ -52,16 +52,24 @@ export default function SignupPage() {
         router.push("/dashboard");
         return;
       }
-      setLoading(false);
     } catch (err: any) {
-      setLoading(false);
       if (err?.code === "auth/popup-closed-by-user") {
+        setLoading(false);
         setError("Google sign-in popup was closed. Please try again.");
-      } else if (err?.code === "auth/unauthorized-domain") {
-        setError("Domain not authorized in Firebase Console. Please add cyber-learn-three.vercel.app to Authorized Domains.");
-      } else {
-        setError(err?.message || "Google authentication failed.");
+        return;
       }
+      
+      // Fallback to direct Google OAuth URL if Firebase domain is unauthorized or unconfigured
+      try {
+        const res = await api.getOAuthUrl("google");
+        if (res && res.url) {
+          window.location.href = res.url;
+          return;
+        }
+      } catch (oauthErr) {}
+
+      setLoading(false);
+      setError("Domain not authorized in Firebase Console. Please add cyber-learn-three.vercel.app to Authorized Domains in Firebase.");
     }
   };
 
