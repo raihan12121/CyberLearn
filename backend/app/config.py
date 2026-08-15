@@ -1,5 +1,8 @@
+import json
 import secrets
 import warnings
+from typing import Any, Union
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -24,13 +27,32 @@ class Settings(BaseSettings):
     # Database URL: defaults to local SQLite file for ease of developer setup
     DATABASE_URL: str = "sqlite:///./cyberlearn.db"
 
-    # CORS Origins
-    BACKEND_CORS_ORIGINS: list[str] = [
+    # CORS Origins: accepts List[str], JSON string, or comma-separated string from environment
+    BACKEND_CORS_ORIGINS: Union[list[str], str] = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "https://*.vercel.app",
         "*",
     ]
+
+    @field_validator("BACKEND_CORS_ORIGINS", mode="before")
+    @classmethod
+    def assemble_cors_origins(cls, v: Any) -> list[str]:
+        if isinstance(v, str):
+            v_str = v.strip()
+            if not v_str:
+                return ["*"]
+            if v_str.startswith("[") and v_str.endswith("]"):
+                try:
+                    parsed = json.loads(v_str)
+                    if isinstance(parsed, list):
+                        return [str(item).strip() for item in parsed]
+                except Exception:
+                    pass
+            return [item.strip() for item in v_str.split(",") if item.strip()]
+        elif isinstance(v, list):
+            return [str(item).strip() for item in v]
+        return ["*"]
 
     class Config:
         case_sensitive = True
