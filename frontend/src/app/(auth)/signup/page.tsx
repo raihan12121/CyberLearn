@@ -8,6 +8,7 @@ import { Button, Input } from "@/components/ui";
 
 import { useRouter } from "next/navigation";
 import { api, setAuthToken } from "@/lib/api";
+import { signInWithGoogleFirebase, signInWithGithubFirebase } from "@/lib/firebase";
 
 const GithubIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -45,31 +46,38 @@ export default function SignupPage() {
       });
   };
 
-  const handleSocialLogin = (provider: string) => {
+  const handleSocialLogin = async (provider: string) => {
     setError("");
     setLoading(true);
 
-    api.getOAuthUrl(provider)
-      .then((res) => {
-        if (res && res.url) {
-          window.location.href = res.url;
-        } else {
-          return api.socialLogin(provider).then((data) => {
-            setAuthToken(data.access_token);
-            router.push("/dashboard");
-          });
-        }
+    try {
+      let result;
+      if (provider === "google") {
+        result = await signInWithGoogleFirebase();
+      } else if (provider === "github") {
+        result = await signInWithGithubFirebase();
+      }
+
+      if (result) {
+        const data = await api.socialLogin(provider, result.email, result.fullName, result.token);
+        setAuthToken(data.access_token);
+        router.push("/dashboard");
+        return;
+      }
+    } catch (err: any) {
+      if (err?.code !== "auth/popup-closed-by-user" && err?.message !== "FIREBASE_CONFIG_MISSING") {
+        console.warn("Firebase Auth fallback triggered:", err);
+      }
+    }
+
+    api.socialLogin(provider)
+      .then((data) => {
+        setAuthToken(data.access_token);
+        router.push("/dashboard");
       })
-      .catch(() => {
-        api.socialLogin(provider)
-          .then((data) => {
-            setAuthToken(data.access_token);
-            router.push("/dashboard");
-          })
-          .catch((err) => {
-            setLoading(false);
-            setError(err.message || `Social login with ${provider} failed.`);
-          });
+      .catch((err) => {
+        setLoading(false);
+        setError(err.message || `Social login with ${provider} failed.`);
       });
   };
 
