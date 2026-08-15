@@ -82,15 +82,20 @@ export const api = {
     return Promise.resolve({ detail: "Logged out locally" });
   },
   
-  socialLogin: (provider: string, email?: string, fullName?: string, token?: string) => apiFetch("/auth/social-login", {
-    method: "POST",
-    body: JSON.stringify({
-      provider,
-      email: email || `demo_${provider}_user@cyberlearn.io`,
-      full_name: fullName || `Demo ${provider.charAt(0).toUpperCase() + provider.slice(1)} User`,
-      provider_token: token || "mock_provider_token_12345"
-    }),
-  }),
+  socialLogin: (provider: string, email: string, fullName?: string, token?: string) => {
+    if (!email) {
+      throw new Error("Authentication failed: No valid email address returned from identity provider.");
+    }
+    return apiFetch("/auth/social-login", {
+      method: "POST",
+      body: JSON.stringify({
+        provider,
+        email,
+        full_name: fullName || email.split("@")[0],
+        provider_token: token || "firebase_auth_token"
+      }),
+    });
+  },
 
   getOAuthUrl: (provider: string) => apiFetch(`/auth/oauth/url/${provider}`),
 

@@ -28,15 +28,7 @@ function OAuthCallbackContent() {
         router.push("/dashboard");
       })
       .catch((err) => {
-        // Fallback to social login stub if code exchange fails or is demo
-        api.socialLogin(provider)
-          .then((data) => {
-            setAuthToken(data.access_token);
-            router.push("/dashboard");
-          })
-          .catch((fallbackErr) => {
-            setError(fallbackErr.message || err.message || "Social login authentication failed.");
-          });
+        setError(err.message || "Social login authentication failed.");
       });
   }, [searchParams, router]);
 

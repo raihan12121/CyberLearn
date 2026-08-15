@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import { Shield, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { Button, Input } from "@/components/ui";
 import { api, setAuthToken } from "@/lib/api";
-import { signInWithGoogleFirebase } from "@/lib/firebase";
+import { signInWithGoogleFirebase, signInWithEmailFirebase } from "@/lib/firebase";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,21 +17,26 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) return;
     setError("");
     setLoading(true);
 
-    api.login({ email, password })
-      .then((data) => {
-        setAuthToken(data.access_token);
-        router.push("/dashboard");
-      })
-      .catch((err) => {
-        setLoading(false);
-        setError(err.message || "Incorrect email address or password.");
+    try {
+      // Authenticate with Firebase Auth
+      await signInWithEmailFirebase(email, password).catch(() => {
+        // Continue to backend auth
       });
+
+      // Authenticate with CyberLearn API
+      const data = await api.login({ email, password });
+      setAuthToken(data.access_token);
+      router.push("/dashboard");
+    } catch (err: any) {
+      setLoading(false);
+      setError(err.message || "Incorrect email address or password. Please check your credentials.");
+    }
   };
 
   const handleSocialLogin = async () => {
@@ -40,30 +45,22 @@ export default function LoginPage() {
 
     try {
       const result = await signInWithGoogleFirebase();
-      if (result && result.email) {
-        const data = await api.socialLogin("google", result.email, result.fullName, result.token);
-        setAuthToken(data.access_token);
-        router.push("/dashboard");
-        return;
+      if (!result || !result.email) {
+        throw new Error("No verified email returned from Google account.");
       }
-    } catch (err: any) {
-      if (err?.code === "auth/popup-closed-by-user") {
-        setLoading(false);
-        setError("Google sign-in popup was closed. Please try again.");
-        return;
-      }
-      
-      // Fallback to direct Google OAuth URL if Firebase domain is unauthorized or unconfigured
-      try {
-        const res = await api.getOAuthUrl("google");
-        if (res && res.url) {
-          window.location.href = res.url;
-          return;
-        }
-      } catch (oauthErr) {}
 
+      const data = await api.socialLogin("google", result.email, result.fullName, result.token);
+      setAuthToken(data.access_token);
+      router.push("/dashboard");
+    } catch (err: any) {
       setLoading(false);
-      setError("Domain not authorized in Firebase Console. Please add cyber-learn-three.vercel.app to Authorized Domains in Firebase.");
+      if (err?.code === "auth/popup-closed-by-user") {
+        setError("Google sign-in popup was closed before completing.");
+      } else if (err?.code === "auth/unauthorized-domain") {
+        setError("Domain not authorized in Firebase Console. Please add cyber-learn-three.vercel.app to Authorized Domains in Firebase.");
+      } else {
+        setError(err?.message || "Google authentication failed. Please try again.");
+      }
     }
   };
 

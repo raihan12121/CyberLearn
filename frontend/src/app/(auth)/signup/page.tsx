@@ -8,7 +8,7 @@ import { Button, Input } from "@/components/ui";
 
 import { useRouter } from "next/navigation";
 import { api, setAuthToken } from "@/lib/api";
-import { signInWithGoogleFirebase } from "@/lib/firebase";
+import { signInWithGoogleFirebase, signUpWithEmailFirebase } from "@/lib/firebase";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -19,25 +19,33 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password || !name) return;
+    if (!email || !password) return;
     setError("");
     setLoading(true);
 
-    api.register({ email, password, full_name: name })
-      .then(() => {
-        // Auto-login after registration
-        return api.login({ email, password });
-      })
-      .then((data) => {
-        setAuthToken(data.access_token);
-        router.push("/dashboard");
-      })
-      .catch((err) => {
-        setLoading(false);
-        setError(err.message || "Failed to create account.");
+    try {
+      // 1. Create account in Firebase Authentication
+      await signUpWithEmailFirebase(email, password).catch((firebaseErr) => {
+        if (firebaseErr?.code === "auth/email-already-in-use") {
+          throw new Error("A user account with this email address already exists.");
+        } else if (firebaseErr?.code === "auth/weak-password") {
+          throw new Error("Password is too weak. Please use at least 6 characters.");
+        }
       });
+
+      // 2. Register account in CyberLearn database
+      await api.register({ email, password, full_name: name });
+
+      // 3. Log in user and receive JWT access token
+      const data = await api.login({ email, password });
+      setAuthToken(data.access_token);
+      router.push("/dashboard");
+    } catch (err: any) {
+      setLoading(false);
+      setError(err.message || "Failed to create account. Please try again.");
+    }
   };
 
   const handleSocialLogin = async () => {
@@ -46,30 +54,22 @@ export default function SignupPage() {
 
     try {
       const result = await signInWithGoogleFirebase();
-      if (result && result.email) {
-        const data = await api.socialLogin("google", result.email, result.fullName, result.token);
-        setAuthToken(data.access_token);
-        router.push("/dashboard");
-        return;
+      if (!result || !result.email) {
+        throw new Error("No verified email returned from Google account.");
       }
-    } catch (err: any) {
-      if (err?.code === "auth/popup-closed-by-user") {
-        setLoading(false);
-        setError("Google sign-in popup was closed. Please try again.");
-        return;
-      }
-      
-      // Fallback to direct Google OAuth URL if Firebase domain is unauthorized or unconfigured
-      try {
-        const res = await api.getOAuthUrl("google");
-        if (res && res.url) {
-          window.location.href = res.url;
-          return;
-        }
-      } catch (oauthErr) {}
 
+      const data = await api.socialLogin("google", result.email, result.fullName, result.token);
+      setAuthToken(data.access_token);
+      router.push("/dashboard");
+    } catch (err: any) {
       setLoading(false);
-      setError("Domain not authorized in Firebase Console. Please add cyber-learn-three.vercel.app to Authorized Domains in Firebase.");
+      if (err?.code === "auth/popup-closed-by-user") {
+        setError("Google sign-in popup was closed before completing.");
+      } else if (err?.code === "auth/unauthorized-domain") {
+        setError("Domain not authorized in Firebase Console. Please add cyber-learn-three.vercel.app to Authorized Domains in Firebase.");
+      } else {
+        setError(err?.message || "Google authentication failed. Please try again.");
+      }
     }
   };
 
