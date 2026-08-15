@@ -8,13 +8,7 @@ import { Button, Input } from "@/components/ui";
 
 import { useRouter } from "next/navigation";
 import { api, setAuthToken } from "@/lib/api";
-import { signInWithGoogleFirebase, signInWithGithubFirebase } from "@/lib/firebase";
-
-const GithubIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
-  </svg>
-);
+import { signInWithGoogleFirebase } from "@/lib/firebase";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -46,20 +40,14 @@ export default function SignupPage() {
       });
   };
 
-  const handleSocialLogin = async (provider: string) => {
+  const handleSocialLogin = async () => {
     setError("");
     setLoading(true);
 
     try {
-      let result;
-      if (provider === "google") {
-        result = await signInWithGoogleFirebase();
-      } else if (provider === "github") {
-        result = await signInWithGithubFirebase();
-      }
-
+      const result = await signInWithGoogleFirebase();
       if (result) {
-        const data = await api.socialLogin(provider, result.email, result.fullName, result.token);
+        const data = await api.socialLogin("google", result.email, result.fullName, result.token);
         setAuthToken(data.access_token);
         router.push("/dashboard");
         return;
@@ -70,14 +58,14 @@ export default function SignupPage() {
       }
     }
 
-    api.socialLogin(provider)
+    api.socialLogin("google")
       .then((data) => {
         setAuthToken(data.access_token);
         router.push("/dashboard");
       })
       .catch((err) => {
         setLoading(false);
-        setError(err.message || `Social login with ${provider} failed.`);
+        setError(err.message || "Google authentication failed.");
       });
   };
 
@@ -127,7 +115,7 @@ export default function SignupPage() {
           {/* Social Login */}
           <div className="space-y-3 mb-6">
             <button
-              onClick={() => handleSocialLogin("google")}
+              onClick={() => handleSocialLogin()}
               disabled={loading}
               className="w-full flex items-center justify-center gap-3 bg-surface-elevated border border-border rounded-[var(--radius-lg)] px-4 py-2.5 text-sm font-medium text-foreground hover:bg-surface-bright transition-all duration-200 cursor-pointer"
             >
@@ -138,14 +126,6 @@ export default function SignupPage() {
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
               </svg>
               Continue with Google
-            </button>
-            <button
-              onClick={() => handleSocialLogin("github")}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-3 bg-surface-elevated border border-border rounded-[var(--radius-lg)] px-4 py-2.5 text-sm font-medium text-foreground hover:bg-surface-bright transition-all duration-200 cursor-pointer"
-            >
-              <GithubIcon className="w-5 h-5" />
-              Continue with GitHub
             </button>
           </div>
 
