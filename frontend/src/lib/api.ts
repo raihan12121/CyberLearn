@@ -1,5 +1,3 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
 // Retrieve auth token from localStorage
 export function getAuthToken(): string | null {
   if (typeof window !== "undefined") {
@@ -22,9 +20,20 @@ export function removeAuthToken() {
   }
 }
 
+function getApiBaseUrl(): string {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  let url = envUrl && envUrl.trim() ? envUrl.trim() : "http://localhost:8000";
+  while (url.endsWith("/")) {
+    url = url.slice(0, -1);
+  }
+  return url;
+}
+
 // Base Fetch Wrapper
 async function apiFetch(endpoint: string, options: RequestInit = {}) {
   const token = getAuthToken();
+  const baseUrl = getApiBaseUrl();
+  const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
   
   const headers = new Headers(options.headers || {});
   headers.set("Content-Type", "application/json");
@@ -32,7 +41,7 @@ async function apiFetch(endpoint: string, options: RequestInit = {}) {
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const response = await fetch(`${baseUrl}${cleanEndpoint}`, {
     ...options,
     headers,
   });
