@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
-from .database import engine, Base
+from .database import engine, Base, run_auto_migrations
 from .auth.router import router as auth_router
 from .courses.router import router as courses_router
 from .labs.router import router as labs_router
@@ -12,11 +12,14 @@ from .users.router import router as users_router
 from .leaderboard.router import router as leaderboard_router
 from .certificates.router import router as certificates_router
 from .billing.router import router as billing_router
+from .batches.router import router as batches_router
+from .exams.router import router as exams_router
 
 from .seed_data import seed_database
 
-# Initialize all database tables and seed initial data on start
+# Initialize all database tables and run automatic SQLite column migrations
 Base.metadata.create_all(bind=engine)
+run_auto_migrations(engine)
 seed_database()
 
 
@@ -47,6 +50,8 @@ app.include_router(users_router)
 app.include_router(leaderboard_router)
 app.include_router(certificates_router)
 app.include_router(billing_router)
+app.include_router(batches_router)
+app.include_router(exams_router)
 
 @app.get("/")
 def health_check():

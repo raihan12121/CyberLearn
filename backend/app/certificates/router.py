@@ -108,10 +108,13 @@ def verify_certificate_token(token: str, db: Session = Depends(get_db)):
     
     return {
         "valid": True,
+        "status": "valid",
         "token": cert.verification_token,
         "student_name": user.full_name or user.username if user else "Verified Student",
         "course_title": course.title if course else "Cybersecurity Course",
         "category": course.category if course else "Web Security",
+        "score_pct": float(cert.score_pct) if cert.score_pct else 100.0,
+        "certificate_type": cert.certificate_type or "course_completion",
         "issued_at": cert.issued_at.strftime("%B %d, %Y"),
         "issuer": "CyberLearn Security Academy",
         "verification_url": f"/verify/{cert.verification_token}"

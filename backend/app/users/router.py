@@ -328,3 +328,57 @@ def get_public_user_profile(username: str, db: Session = Depends(get_db)):
         "certificates": certificates_res,
         "solved_labs": labs_res
     }
+
+@router.post("/me/verify-nid", response_model=schemas.NidVerificationResponse)
+def submit_nid_verification(
+    nid_in: schemas.NidVerificationRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    if not nid_in.nid_number or len(nid_in.nid_number.strip()) < 8:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A valid National Identification Number (NID) of at least 8 digits is required."
+        )
+
+    current_user.nid_number = nid_in.nid_number.strip()
+    if nid_in.nid_front_image:
+        current_user.nid_front_image = nid_in.nid_front_image
+    if nid_in.nid_back_image:
+        current_user.nid_back_image = nid_in.nid_back_image
+
+    current_user.verification_status = "pending"
+    current_user.verification_notes = "Verification submitted and waiting for administrator audit."
+    db.commit()
+    db.refresh(current_user)
+
+    return schemas.NidVerificationResponse(
+        user_id=current_user.id,
+        full_name=current_user.full_name,
+        email=current_user.email,
+        nid_number=current_user.nid_number,
+        nid_front_image=current_user.nid_front_image,
+        nid_back_image=current_user.nid_back_image,
+        verification_status=current_user.verification_status,
+        verification_notes=current_user.verification_notes,
+        verified_at=current_user.verified_at,
+        created_at=current_user.created_at
+    )
+
+@router.get("/me/verify-nid", response_model=schemas.NidVerificationResponse)
+def get_my_nid_verification(
+    current_user: models.User = Depends(get_current_user)
+):
+    return schemas.NidVerificationResponse(
+        user_id=current_user.id,
+        full_name=current_user.full_name,
+        email=current_user.email,
+        nid_number=current_user.nid_number,
+        nid_front_image=current_user.nid_front_image,
+        nid_back_image=current_user.nid_back_image,
+        verification_status=current_user.verification_status or "unverified",
+        verification_notes=current_user.verification_notes,
+        verified_at=current_user.verified_at,
+        created_at=current_user.created_at
+    )
+

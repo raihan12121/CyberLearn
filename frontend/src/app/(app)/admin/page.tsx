@@ -12,6 +12,11 @@ import {
   Database,
   ArrowUpRight,
   Shield,
+  ShieldCheck,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  ExternalLink,
 } from "lucide-react";
 import { Card, Badge, ProgressBar, Button } from "@/components/ui";
 import { api } from "@/lib/api";
@@ -43,8 +48,10 @@ export default function AdminDashboardPage() {
   const [statsData, setStatsData] = useState(DEFAULT_STATS);
   const [containerStatus, setContainerStatus] = useState(DEFAULT_CONTAINERS);
   const [recentErrors, setRecentErrors] = useState(DEFAULT_ERRORS);
+  const [verifications, setVerifications] = useState<any[]>([]);
   const [resources, setResources] = useState({ cpu: 42, ram: 64, storage: 78, db_conn: 14 });
   const [loading, setLoading] = useState(true);
+  const [reviewingId, setReviewingId] = useState<string | null>(null);
 
   useEffect(() => {
     api.getMe()
@@ -80,6 +87,12 @@ export default function AdminDashboardPage() {
               console.warn("Backend offline, loading fallback metrics:", err);
               setLoading(false);
             });
+
+          api.getAdminVerifications()
+            .then((vList) => {
+              if (vList) setVerifications(vList);
+            })
+            .catch((e) => console.log("Failed to load NID verifications:", e));
         }
       })
       .catch((err) => {
@@ -87,6 +100,20 @@ export default function AdminDashboardPage() {
         router.push("/login");
       });
   }, [router]);
+
+  const handleReview = async (userId: string, newStatus: "verified" | "rejected") => {
+    try {
+      setReviewingId(userId);
+      const updated = await api.reviewNidVerification(userId, { status: newStatus });
+      setVerifications((prev) =>
+        prev.map((v) => (v.user_id === userId ? updated : v))
+      );
+    } catch (e: any) {
+      alert(`Review error: ${e.message}`);
+    } finally {
+      setReviewingId(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -199,6 +226,121 @@ export default function AdminDashboardPage() {
                 </tbody>
               </table>
             </div>
+          </Card>
+
+          {/* NID & Human Verification Audit Table */}
+          <Card padding="lg" className="space-y-4">
+            <div className="flex justify-between items-center pb-2 border-b border-border">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-primary" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">
+                  NID Identity Verifications ({verifications.length})
+                </h3>
+              </div>
+              <span className="text-xs text-muted-foreground font-medium">
+                {verifications.filter((v) => v.verification_status === "pending").length} Pending Audit
+              </span>
+            </div>
+
+            {verifications.length === 0 ? (
+              <p className="text-xs text-muted-foreground py-4 text-center">
+                No National ID submissions currently on file.
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="text-[10px] font-bold uppercase tracking-wider text-foreground-muted border-b border-border/60">
+                      <th className="py-2.5">User</th>
+                      <th className="py-2.5">NID Number</th>
+                      <th className="py-2.5">Documents</th>
+                      <th className="py-2.5">Status</th>
+                      <th className="py-2.5 text-right">Audit Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/40 text-xs">
+                    {verifications.map((item) => (
+                      <tr key={item.user_id} className="hover:bg-surface-elevated/40">
+                        <td className="py-3">
+                          <span className="font-semibold text-foreground block">
+                            {item.full_name || "Applicant"}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">{item.email}</span>
+                        </td>
+                        <td className="py-3 font-mono font-medium text-foreground">
+                          {item.nid_number}
+                        </td>
+                        <td className="py-3">
+                          <div className="flex items-center gap-2">
+                            {item.nid_front_image && (
+                              <a
+                                href={item.nid_front_image}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[10px] text-primary hover:underline flex items-center gap-0.5 font-semibold"
+                              >
+                                Front <ExternalLink className="w-2.5 h-2.5" />
+                              </a>
+                            )}
+                            {item.nid_back_image && (
+                              <a
+                                href={item.nid_back_image}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[10px] text-primary hover:underline flex items-center gap-0.5 font-semibold"
+                              >
+                                Back <ExternalLink className="w-2.5 h-2.5" />
+                              </a>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3">
+                          {item.verification_status === "verified" && (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                              <CheckCircle2 className="w-3 h-3" /> Verified
+                            </span>
+                          )}
+                          {item.verification_status === "pending" && (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full">
+                              <Clock className="w-3 h-3 animate-pulse" /> Pending
+                            </span>
+                          )}
+                          {item.verification_status === "rejected" && (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full">
+                              <XCircle className="w-3 h-3" /> Rejected
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 text-right">
+                          {item.verification_status === "pending" ? (
+                            <div className="inline-flex items-center gap-1.5">
+                              <button
+                                onClick={() => handleReview(item.user_id, "verified")}
+                                disabled={reviewingId === item.user_id}
+                                className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 text-[11px] font-bold transition-all disabled:opacity-50"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => handleReview(item.user_id, "rejected")}
+                                disabled={reviewingId === item.user_id}
+                                className="px-2.5 py-1 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 text-[11px] font-bold transition-all disabled:opacity-50"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground font-mono">
+                              Audited
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </Card>
 
           {/* Node health metrics */}

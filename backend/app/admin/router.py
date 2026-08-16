@@ -1,7 +1,8 @@
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from ..database import get_db
-from .. import models
+from .. import models, schemas
 from ..auth.dependencies import get_current_user
 import random
 
@@ -61,3 +62,78 @@ def get_admin_metrics(
         },
         "errors": recent_errors
     }
+
+@router.get("/verifications", response_model=List[schemas.NidVerificationResponse])
+def get_pending_verifications(
+    status_filter: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_admin)
+):
+    query = db.query(models.User).filter(models.User.nid_number.isnot(None))
+    if status_filter:
+        query = query.filter(models.User.verification_status == status_filter)
+    users = query.order_by(models.User.created_at.desc()).all()
+    
+    return [
+        schemas.NidVerificationResponse(
+            user_id=u.id,
+            full_name=u.full_name,
+            email=u.email,
+            nid_number=u.nid_number,
+            nid_front_image=u.nid_front_image,
+            nid_back_image=u.nid_back_image,
+            verification_status=u.verification_status or "unverified",
+            verification_notes=u.verification_notes,
+            verified_at=u.verified_at,
+            created_at=u.created_at
+        )
+        for u in users
+    ]
+
+@router.post("/verifications/{user_id}/review", response_model=schemas.NidVerificationResponse)
+def review_nid_verification(
+    user_id: str,
+    review: schemas.NidVerificationReviewRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_admin)
+):
+    target_user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not target_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found."
+        )
+
+    if review.status not in ["verified", "rejected", "pending"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Status must be 'verified', 'rejected', or 'pending'."
+        )
+
+    from datetime import datetime, timezone
+    target_user.verification_status = review.status
+    target_user.verification_notes = review.notes or (
+        "National ID verified by Administrator." if review.status == "verified" else "Verification rejected."
+    )
+    if review.status == "verified":
+        target_user.verified_at = datetime.now(timezone.utc)
+        target_user.is_verified = True
+    elif review.status == "rejected":
+        target_user.verified_at = None
+
+    db.commit()
+    db.refresh(target_user)
+
+    return schemas.NidVerificationResponse(
+        user_id=target_user.id,
+        full_name=target_user.full_name,
+        email=target_user.email,
+        nid_number=target_user.nid_number,
+        nid_front_image=target_user.nid_front_image,
+        nid_back_image=target_user.nid_back_image,
+        verification_status=target_user.verification_status,
+        verification_notes=target_user.verification_notes,
+        verified_at=target_user.verified_at,
+        created_at=target_user.created_at
+    )
+

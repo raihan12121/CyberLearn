@@ -14,6 +14,7 @@ import {
   Shield,
   Bot,
   Zap,
+  Award,
 } from "lucide-react";
 import { Card, Badge, Button, ProgressBar } from "@/components/ui";
 import { api } from "@/lib/api";
@@ -524,13 +525,34 @@ export default function CourseDetailPage() {
               <Badge variant="success" size="sm">{course.difficulty}</Badge>
               <span className="text-xs text-foreground-muted">+{course.xp} XP</span>
             </div>
-            <div className="space-y-1 mb-2">
+            <div className="space-y-1 mb-4">
               <div className="flex justify-between text-xs font-semibold">
                 <span className="text-foreground-secondary">Progress</span>
                 <span className="text-primary">{progressPct}% Complete</span>
               </div>
               <ProgressBar value={progressPct} variant="gradient" size="sm" />
             </div>
+
+            {/* Course Final Certification Exam Link */}
+            <Link
+              href={`/courses/${courseId}/exam`}
+              className="w-full flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-primary/15 to-accent/15 border border-primary/30 hover:border-primary text-foreground transition-all group shadow-sm"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-lg bg-primary/20 text-primary">
+                  <Award className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
+                    Course Certification Exam
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    Timed test &amp; official certificate
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-transform group-hover:translate-x-0.5" />
+            </Link>
           </Card>
 
           <div className="space-y-3">

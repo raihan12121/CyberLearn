@@ -197,4 +197,58 @@ export const api = {
     method: "POST",
     body: JSON.stringify({ plan_name: planName, billing_period: billingPeriod }),
   }),
+
+  // Human & NID Verification
+  submitNidVerification: (data: { nid_number: string; nid_front_image?: string; nid_back_image?: string }) => apiFetch("/users/me/verify-nid", {
+    method: "POST",
+    body: JSON.stringify(data),
+  }),
+  getMyNidVerification: () => apiFetch("/users/me/verify-nid"),
+  getAdminVerifications: (statusFilter?: string) => apiFetch(`/admin/verifications${statusFilter ? `?status_filter=${statusFilter}` : ""}`),
+  reviewNidVerification: (userId: string, data: { status: string; notes?: string }) => apiFetch(`/admin/verifications/${userId}/review`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  }),
+
+  // Batches & Cohorts
+  getBatches: () => apiFetch("/batches"),
+  createBatch: (data: Record<string, unknown>) => apiFetch("/batches", {
+    method: "POST",
+    body: JSON.stringify(data),
+  }),
+  getMyBatches: () => apiFetch("/batches/my"),
+  getBatchDetails: (codeOrId: string) => apiFetch(`/batches/${codeOrId}`),
+  joinBatch: (codeOrId: string) => apiFetch(`/batches/${codeOrId}/join`, {
+    method: "POST",
+  }),
+
+  // Multi-Session AI Coach
+  getAiSessions: () => apiFetch("/ai/sessions"),
+  createAiSession: (data: { title?: string; system_prompt?: string; model_type?: string }) => apiFetch("/ai/sessions", {
+    method: "POST",
+    body: JSON.stringify(data),
+  }),
+  getAiSessionDetails: (sessionId: string) => apiFetch(`/ai/sessions/${sessionId}`),
+  updateAiSession: (sessionId: string, data: { title?: string; system_prompt?: string; model_type?: string }) => apiFetch(`/ai/sessions/${sessionId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  }),
+  deleteAiSession: (sessionId: string) => apiFetch(`/ai/sessions/${sessionId}`, {
+    method: "DELETE",
+  }),
+  chatInAiSession: (sessionId: string, message: string, overridePrompt?: string) => apiFetch(`/ai/sessions/${sessionId}/chat`, {
+    method: "POST",
+    body: JSON.stringify({ message, override_system_prompt: overridePrompt }),
+  }),
+
+  // Course Exams & Certification
+  getExams: () => apiFetch("/exams"),
+  getCourseExam: (courseId: string) => apiFetch(`/exams/course/${courseId}`),
+  getExamDetails: (examId: string) => apiFetch(`/exams/${examId}`),
+  submitExam: (examId: string, answers: { question_id: string; selected_answer: string }[]) => apiFetch(`/exams/${examId}/submit`, {
+    method: "POST",
+    body: JSON.stringify({ answers }),
+  }),
+  getMyExamSubmissions: () => apiFetch("/exams/submissions/my"),
 };
+

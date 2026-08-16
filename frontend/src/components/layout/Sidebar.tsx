@@ -19,6 +19,8 @@ import {
   User,
   Zap,
   X,
+  GraduationCap,
+  BadgeCheck,
 } from "lucide-react";
 import { api } from "@/lib/api";
 
@@ -44,6 +46,7 @@ const navSections: NavSection[] = [
     title: "Learn Hub",
     items: [
       { label: "Video & Text Courses", href: "/courses", icon: BookOpen },
+      { label: "Live Batches", href: "/batches", icon: GraduationCap },
       { label: "Practice Labs", href: "/labs", icon: Terminal },
     ],
   },
@@ -53,7 +56,8 @@ const navSections: NavSection[] = [
       { label: "CTF Challenges", href: "/challenges", icon: Swords },
       { label: "1v1 Speed Duels", href: "/challenges/duels", icon: Zap },
       { label: "Leaderboard", href: "/leaderboard", icon: Trophy },
-      { label: "Certificates", href: "/certificates", icon: Award },
+      { label: "Certificates & Exams", href: "/certificates", icon: Award },
+      { label: "ID Verification", href: "/verify-nid", icon: BadgeCheck },
       { label: "Community", href: "/community", icon: Users },
     ],
   },
