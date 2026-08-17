@@ -3,7 +3,7 @@ import secrets
 import warnings
 from typing import Any, Union
 from pydantic import field_validator
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 def _dev_secret_placeholder() -> str:
@@ -69,10 +69,12 @@ class Settings(BaseSettings):
             return [str(item).strip() for item in v]
         return ["*"]
 
-    class Config:
-        case_sensitive = True
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    model_config = SettingsConfigDict(
+        case_sensitive=True,
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
 
 
 settings = Settings()

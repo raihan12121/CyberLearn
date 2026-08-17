@@ -264,7 +264,7 @@ export default function SettingsPage() {
                     Permanently delete your progress data and account records.
                   </p>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <p className="text-xs text-foreground-secondary font-normal">
                     Once deleted, you cannot recover your progress, badges, or certificates.
                   </p>
@@ -272,9 +272,16 @@ export default function SettingsPage() {
                     variant="outline"
                     className="border-error text-error hover:bg-error hover:text-white"
                     size="sm"
-                    onClick={() => {
+                    onClick={async () => {
                       if (confirm("Are you sure you want to permanently delete your account? This action is irreversible.")) {
-                        alert("Account deletion simulated.");
+                        try {
+                          await api.deleteAccount();
+                          alert("Account successfully deleted.");
+                          api.logout();
+                          window.location.href = "/login";
+                        } catch (err: any) {
+                          alert(`Error deleting account: ${err.message}`);
+                        }
                       }
                     }}
                     icon={<Trash2 className="w-3.5 h-3.5" />}

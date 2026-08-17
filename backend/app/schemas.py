@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, ConfigDict
 from typing import Optional, List
 from datetime import datetime
 
@@ -37,8 +37,7 @@ class UserResponse(UserBase):
     avatar_url: Optional[str] = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class VerifyEmailRequest(BaseModel):
     token: str
@@ -74,8 +73,7 @@ class LessonResponse(LessonBase):
     id: str
     course_id: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Course Schemas
 class CourseBase(BaseModel):
@@ -91,8 +89,7 @@ class CourseResponse(CourseBase):
     id: str
     lessons: List[LessonResponse] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Lab Schemas
 class LabBase(BaseModel):
@@ -107,8 +104,7 @@ class LabBase(BaseModel):
 class LabResponse(LabBase):
     id: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Lab Session Schemas
 class LabStartRequest(BaseModel):
@@ -124,8 +120,7 @@ class LabSessionResponse(BaseModel):
     expires_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Community Schemas
 class PostCreate(BaseModel):
@@ -142,8 +137,7 @@ class PostResponse(BaseModel):
     upvotes: int
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class ProgressUpdate(BaseModel):
     course_id: str
@@ -160,8 +154,7 @@ class ProgressResponse(BaseModel):
     completion_pct: float
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class SocialLoginRequest(BaseModel):
     provider: str  # e.g. "google", "github"
@@ -215,8 +208,7 @@ class NidVerificationResponse(BaseModel):
     verified_at: Optional[datetime]
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # Batch Schemas
@@ -244,8 +236,7 @@ class BatchResponse(BatchBase):
     is_enrolled: Optional[bool] = False
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class BatchDetailResponse(BatchResponse):
     students: List[dict] = []
@@ -264,8 +255,7 @@ class AiChatMessageResponse(BaseModel):
     content: str
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class AiSessionResponse(BaseModel):
     id: str
@@ -277,8 +267,7 @@ class AiSessionResponse(BaseModel):
     updated_at: Optional[datetime] = None
     message_count: int = 0
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class AiSessionChatRequest(BaseModel):
     message: str
@@ -301,8 +290,7 @@ class ExamQuestionPublicResponse(ExamQuestionBase):
     id: str
     exam_id: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class ExamBase(BaseModel):
     title: str
@@ -322,8 +310,7 @@ class ExamResponse(ExamBase):
     question_count: int = 0
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class ExamDetailResponse(ExamResponse):
     questions: List[ExamQuestionPublicResponse] = []
@@ -346,6 +333,3 @@ class ExamSubmissionResponse(BaseModel):
     certificate_token: Optional[str] = None
     submitted_at: datetime
     breakdown: Optional[List[dict]] = None
-
-
-

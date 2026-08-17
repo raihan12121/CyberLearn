@@ -30,9 +30,14 @@ def create_checkout_session(
             detail=f"Invalid plan selected. Choose from: {', '.join(valid_plans)}"
         )
         
-    # Upgrade user role / tier status
-    if request.plan_name in ["Pro", "Premium"]:
-        current_user.role = "pro_member" if request.plan_name == "Pro" else "premium_member"
+    # Upgrade user role / tier status while preserving admin / instructor privileges
+    if current_user.role not in ["admin", "instructor"]:
+        if request.plan_name == "Free":
+            current_user.role = "student"
+        elif request.plan_name == "Pro":
+            current_user.role = "pro_member"
+        elif request.plan_name == "Premium":
+            current_user.role = "premium_member"
         db.commit()
         db.refresh(current_user)
         

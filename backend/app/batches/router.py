@@ -2,16 +2,32 @@ import secrets
 import string
 from typing import List, Optional
 from datetime import datetime, timezone, timedelta
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Header
 from sqlalchemy.orm import Session
 from ..database import get_db
 from .. import models, schemas
 from ..auth.dependencies import get_current_user
+from jose import jwt
+from ..config import settings
 
 router = APIRouter(
     prefix="/batches",
     tags=["Batches & Cohorts"]
 )
+
+def get_optional_user(authorization: Optional[str] = Header(None), db: Session = Depends(get_db)) -> Optional[models.User]:
+    if not authorization or not authorization.startswith("Bearer "):
+        return None
+    token = authorization.split(" ")[1]
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            return None
+        user = db.query(models.User).filter(models.User.email == email).first()
+        return user
+    except Exception:
+        return None
 
 def generate_batch_code() -> str:
     chars = string.ascii_uppercase + string.digits
@@ -61,7 +77,7 @@ def seed_default_batches_if_empty(db: Session):
 @router.get("", response_model=List[schemas.BatchResponse])
 def list_batches(
     db: Session = Depends(get_db),
-    current_user: Optional[models.User] = Depends(get_current_user)
+    current_user: Optional[models.User] = Depends(get_optional_user)
 ):
     seed_default_batches_if_empty(db)
     batches = db.query(models.Batch).filter(models.Batch.is_active == True).order_by(models.Batch.created_at.desc()).all()
@@ -193,7 +209,7 @@ def get_my_batches(
 def get_batch_by_code_or_id(
     batch_code_or_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[models.User] = Depends(get_current_user)
+    current_user: Optional[models.User] = Depends(get_optional_user)
 ):
     batch = db.query(models.Batch).filter(
         (models.Batch.batch_code == batch_code_or_id) | (models.Batch.id == batch_code_or_id)

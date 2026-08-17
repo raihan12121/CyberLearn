@@ -13,14 +13,12 @@ router = APIRouter(
 )
 
 def seed_default_exams_if_empty(db: Session):
-    if db.query(models.Exam).count() == 0:
-        # Check courses
-        from ..courses.router import seed_database_if_empty
-        seed_database_if_empty(db)
+    from ..courses.router import seed_database_if_empty
+    seed_database_if_empty(db)
 
+    exam1 = db.query(models.Exam).filter(models.Exam.id == "exam-web-security-cert").first()
+    if not exam1:
         web_course = db.query(models.Course).filter(models.Course.id == "web-security-fundamentals").first()
-        linux_course = db.query(models.Course).filter(models.Course.id == "linux-basics").first()
-
         if web_course:
             exam1 = models.Exam(
                 id="exam-web-security-cert",
@@ -35,61 +33,65 @@ def seed_default_exams_if_empty(db: Session):
             db.add(exam1)
             db.flush()
 
-            questions1 = [
-                models.ExamQuestion(
-                    exam_id=exam1.id,
-                    question_text="Which combination of properties defines an 'Origin' under the browser Same-Origin Policy (SOP)?",
-                    question_type="mcq",
-                    options=["Protocol (Scheme), Host Domain, and Port", "Top-level domain and IP Address only", "HTTP Method, Path, and Query String", "Cookie Domain and SSL Certificate fingerprint"],
-                    correct_answer="0",
-                    explanation="An origin is defined strictly by Scheme (e.g., https), Host (e.g., cyberlearn.io), and Port (e.g., 443).",
-                    points=20,
-                    sort_order=1
-                ),
-                models.ExamQuestion(
-                    exam_id=exam1.id,
-                    question_text="What is the most secure and robust defense mechanism against SQL Injection in modern web backends?",
-                    question_type="mcq",
-                    options=["Client-side regex filtering in JavaScript", "Parameterized Queries / Prepared Statements (ORMs)", "Escaping double quotes only with backslashes", "Blacklisting keywords like SELECT and UNION"],
-                    correct_answer="1",
-                    explanation="Parameterized queries separate SQL query instructions from untrusted data parameters, completely neutralizing code injection.",
-                    points=20,
-                    sort_order=2
-                ),
-                models.ExamQuestion(
-                    exam_id=exam1.id,
-                    question_text="Which HTTP response header is specifically designed to restrict where scripts and resources can be loaded from, mitigating XSS?",
-                    question_type="mcq",
-                    options=["Access-Control-Allow-Origin", "Content-Security-Policy (CSP)", "X-Content-Type-Options", "Strict-Transport-Security (HSTS)"],
-                    correct_answer="1",
-                    explanation="Content-Security-Policy (CSP) restricts allowed script execution sources and disallows inline executable payloads.",
-                    points=20,
-                    sort_order=3
-                ),
-                models.ExamQuestion(
-                    exam_id=exam1.id,
-                    question_text="An attacker tricks an authenticated user into clicking an invisible form that submits a funds transfer. What vulnerability is this?",
-                    question_type="mcq",
-                    options=["Cross-Site Scripting (XSS)", "Cross-Site Request Forgery (CSRF)", "Server-Side Request Forgery (SSRF)", "Insecure Deserialization"],
-                    correct_answer="1",
-                    explanation="CSRF exploits ambient browser credentials (cookies) to execute unauthorized state-changing actions on behalf of the logged-in user.",
-                    points=20,
-                    sort_order=4
-                ),
-                models.ExamQuestion(
-                    exam_id=exam1.id,
-                    question_text="Which flag must be set on a session cookie to prevent client-side JavaScript from accessing it via document.cookie?",
-                    question_type="mcq",
-                    options=["Secure", "HttpOnly", "SameSite=Lax", "Domain=.cyberlearn.io"],
-                    correct_answer="1",
-                    explanation="The HttpOnly flag blocks client JavaScript access, protecting the session token from XSS cookie-theft.",
-                    points=20,
-                    sort_order=5
-                ),
-            ]
-            for q in questions1:
-                db.add(q)
+    if exam1 and db.query(models.ExamQuestion).filter(models.ExamQuestion.exam_id == exam1.id).count() == 0:
+        questions1 = [
+            models.ExamQuestion(
+                exam_id=exam1.id,
+                question_text="Which combination of properties defines an 'Origin' under the browser Same-Origin Policy (SOP)?",
+                question_type="mcq",
+                options=["Protocol (Scheme), Host Domain, and Port", "Top-level domain and IP Address only", "HTTP Method, Path, and Query String", "Cookie Domain and SSL Certificate fingerprint"],
+                correct_answer="0",
+                explanation="An origin is defined strictly by Scheme (e.g., https), Host (e.g., cyberlearn.io), and Port (e.g., 443).",
+                points=20,
+                sort_order=1
+            ),
+            models.ExamQuestion(
+                exam_id=exam1.id,
+                question_text="What is the most secure and robust defense mechanism against SQL Injection in modern web backends?",
+                question_type="mcq",
+                options=["Client-side regex filtering in JavaScript", "Parameterized Queries / Prepared Statements (ORMs)", "Escaping double quotes only with backslashes", "Blacklisting keywords like SELECT and UNION"],
+                correct_answer="1",
+                explanation="Parameterized queries separate SQL query instructions from untrusted data parameters, completely neutralizing code injection.",
+                points=20,
+                sort_order=2
+            ),
+            models.ExamQuestion(
+                exam_id=exam1.id,
+                question_text="Which HTTP response header is specifically designed to restrict where scripts and resources can be loaded from, mitigating XSS?",
+                question_type="mcq",
+                options=["Access-Control-Allow-Origin", "Content-Security-Policy (CSP)", "X-Content-Type-Options", "Strict-Transport-Security (HSTS)"],
+                correct_answer="1",
+                explanation="Content-Security-Policy (CSP) restricts allowed script execution sources and disallows inline executable payloads.",
+                points=20,
+                sort_order=3
+            ),
+            models.ExamQuestion(
+                exam_id=exam1.id,
+                question_text="An attacker tricks an authenticated user into clicking an invisible form that submits a funds transfer. What vulnerability is this?",
+                question_type="mcq",
+                options=["Cross-Site Scripting (XSS)", "Cross-Site Request Forgery (CSRF)", "Server-Side Request Forgery (SSRF)", "Insecure Deserialization"],
+                correct_answer="1",
+                explanation="CSRF exploits ambient browser credentials (cookies) to execute unauthorized state-changing actions on behalf of the logged-in user.",
+                points=20,
+                sort_order=4
+            ),
+            models.ExamQuestion(
+                exam_id=exam1.id,
+                question_text="Which flag must be set on a session cookie to prevent client-side JavaScript from accessing it via document.cookie?",
+                question_type="mcq",
+                options=["Secure", "HttpOnly", "SameSite=Lax", "Domain=.cyberlearn.io"],
+                correct_answer="1",
+                explanation="The HttpOnly flag blocks client JavaScript access, protecting the session token from XSS cookie-theft.",
+                points=20,
+                sort_order=5
+            ),
+        ]
+        for q in questions1:
+            db.add(q)
 
+    exam2 = db.query(models.Exam).filter(models.Exam.id == "exam-linux-basics-cert").first()
+    if not exam2:
+        linux_course = db.query(models.Course).filter(models.Course.id == "linux-basics").first()
         if linux_course:
             exam2 = models.Exam(
                 id="exam-linux-basics-cert",
@@ -104,52 +106,53 @@ def seed_default_exams_if_empty(db: Session):
             db.add(exam2)
             db.flush()
 
-            questions2 = [
-                models.ExamQuestion(
-                    exam_id=exam2.id,
-                    question_text="Which command finds all executable files in the root filesystem with the SUID bit set?",
-                    question_type="mcq",
-                    options=["find / -perm -4000 -type f 2>/dev/null", "ls -la /etc/sudoers.d", "chmod +s /bin/bash", "grep -rn 'suid' /proc"],
-                    correct_answer="0",
-                    explanation="The permission octal 4000 identifies files where the SUID special bit is enabled.",
-                    points=25,
-                    sort_order=1
-                ),
-                models.ExamQuestion(
-                    exam_id=exam2.id,
-                    question_text="What octal permissions represent read and write for owner, read-only for group, and no permissions for others?",
-                    question_type="mcq",
-                    options=["755", "640", "644", "700"],
-                    correct_answer="1",
-                    explanation="Owner (rw- = 4+2=6), Group (r-- = 4), Others (--- = 0) -> 640.",
-                    points=25,
-                    sort_order=2
-                ),
-                models.ExamQuestion(
-                    exam_id=exam2.id,
-                    question_text="Which SSH configuration option in /etc/ssh/sshd_config completely prevents password brute-forcing?",
-                    question_type="mcq",
-                    options=["PasswordAuthentication no", "PermitRootLogin yes", "X11Forwarding yes", "Port 2222"],
-                    correct_answer="0",
-                    explanation="Disabling PasswordAuthentication enforces Public Key Authentication only.",
-                    points=25,
-                    sort_order=3
-                ),
-                models.ExamQuestion(
-                    exam_id=exam2.id,
-                    question_text="Which virtual filesystem in Linux provides real-time information about running processes and kernel parameters?",
-                    question_type="mcq",
-                    options=["/dev", "/proc", "/sys/kernel", "/var/log"],
-                    correct_answer="1",
-                    explanation="/proc is a pseudo-filesystem generated on-the-fly containing process and kernel metrics.",
-                    points=25,
-                    sort_order=4
-                ),
-            ]
-            for q in questions2:
-                db.add(q)
+    if exam2 and db.query(models.ExamQuestion).filter(models.ExamQuestion.exam_id == exam2.id).count() == 0:
+        questions2 = [
+            models.ExamQuestion(
+                exam_id=exam2.id,
+                question_text="Which command finds all executable files in the root filesystem with the SUID bit set?",
+                question_type="mcq",
+                options=["find / -perm -4000 -type f 2>/dev/null", "ls -la /etc/sudoers.d", "chmod +s /bin/bash", "grep -rn 'suid' /proc"],
+                correct_answer="0",
+                explanation="The permission octal 4000 identifies files where the SUID special bit is enabled.",
+                points=25,
+                sort_order=1
+            ),
+            models.ExamQuestion(
+                exam_id=exam2.id,
+                question_text="What octal permissions represent read and write for owner, read-only for group, and no permissions for others?",
+                question_type="mcq",
+                options=["755", "640", "644", "700"],
+                correct_answer="1",
+                explanation="Owner (rw- = 4+2=6), Group (r-- = 4), Others (--- = 0) -> 640.",
+                points=25,
+                sort_order=2
+            ),
+            models.ExamQuestion(
+                exam_id=exam2.id,
+                question_text="Which SSH configuration option in /etc/ssh/sshd_config completely prevents password brute-forcing?",
+                question_type="mcq",
+                options=["PasswordAuthentication no", "PermitRootLogin yes", "X11Forwarding yes", "Port 2222"],
+                correct_answer="0",
+                explanation="Disabling PasswordAuthentication enforces Public Key Authentication only.",
+                points=25,
+                sort_order=3
+            ),
+            models.ExamQuestion(
+                exam_id=exam2.id,
+                question_text="Which virtual filesystem in Linux provides real-time information about running processes and kernel parameters?",
+                question_type="mcq",
+                options=["/dev", "/proc", "/sys/kernel", "/var/log"],
+                correct_answer="1",
+                explanation="/proc is a pseudo-filesystem generated on-the-fly containing process and kernel metrics.",
+                points=25,
+                sort_order=4
+            ),
+        ]
+        for q in questions2:
+            db.add(q)
 
-        db.commit()
+    db.commit()
 
 @router.get("", response_model=List[schemas.ExamResponse])
 def list_all_exams(db: Session = Depends(get_db)):
@@ -178,7 +181,7 @@ def get_course_exam(course_id: str, db: Session = Depends(get_db)):
     exam = db.query(models.Exam).filter(
         models.Exam.course_id == course_id,
         models.Exam.is_published == True
-    ).first()
+    ).order_by(models.Exam.created_at.desc()).first()
 
     if not exam:
         return None

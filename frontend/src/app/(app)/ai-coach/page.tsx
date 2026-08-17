@@ -94,27 +94,6 @@ export default function AICoachPage() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Load Sessions on Mount
-  const loadSessions = async () => {
-    try {
-      setSessionsLoading(true);
-      const res = await api.getAiSessions();
-      setSessions(res || []);
-      if (res && res.length > 0) {
-        // Select first session if none active
-        selectSession(res[0]);
-      }
-    } catch (err) {
-      console.error("Error fetching AI sessions:", err);
-    } finally {
-      setSessionsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadSessions();
-  }, []);
-
   // Select and load specific session
   const selectSession = async (session: AiSession) => {
     setActiveSession(session);
@@ -139,6 +118,27 @@ export default function AICoachPage() {
       setLoading(false);
     }
   };
+
+  // Load Sessions on Mount
+  const loadSessions = async () => {
+    try {
+      setSessionsLoading(true);
+      const res = await api.getAiSessions();
+      setSessions(res || []);
+      if (res && res.length > 0) {
+        // Select first session if none active
+        selectSession(res[0]);
+      }
+    } catch (err) {
+      console.error("Error fetching AI sessions:", err);
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadSessions();
+  }, []);
 
   // Scroll on message updates
   useEffect(() => {

@@ -50,7 +50,6 @@ def get_user_profile_details(
                 badge_icon=m["icon"]
             )
             db.add(new_achievement)
-            current_user.xp += 50
             new_achievements = True
             
     if new_achievements:
@@ -243,12 +242,25 @@ def change_password(
     db.commit()
     return {"detail": "Password updated successfully."}
 
+@router.delete("/me")
+def delete_current_user_account(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """
+    Permanently delete the authenticated user account and cascade delete associated records.
+    """
+    user_id = current_user.id
+    db.delete(current_user)
+    db.commit()
+    return {"status": "success", "detail": f"Account {user_id} deleted permanently."}
+
 @router.get("/{username}/public-profile")
 def get_public_user_profile(username: str, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.username == username).first()
     if not user:
-        # Fallback search by email prefix if username wasn't set explicitly
-        user = db.query(models.User).filter(models.User.email.startswith(username)).first()
+        # Fallback exact search by email if username matches full email
+        user = db.query(models.User).filter(models.User.email == username).first()
         
     if not user:
         raise HTTPException(
@@ -339,6 +351,18 @@ def submit_nid_verification(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="A valid National Identification Number (NID) of at least 8 digits is required."
+        )
+
+    MAX_IMG_CHARS = 7_000_000 # Approx 5MB in Base64
+    if nid_in.nid_front_image and len(nid_in.nid_front_image) > MAX_IMG_CHARS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="NID front image exceeds the 5MB maximum file size limit."
+        )
+    if nid_in.nid_back_image and len(nid_in.nid_back_image) > MAX_IMG_CHARS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="NID back image exceeds the 5MB maximum file size limit."
         )
 
     current_user.nid_number = nid_in.nid_number.strip()

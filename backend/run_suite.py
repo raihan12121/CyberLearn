@@ -367,6 +367,122 @@ def run_all_tests():
         failed += 1
 
     # ---------------------------------------------------------
+    # 3. SQA REGRESSION & SECURITY FIX VERIFICATION TESTS
+    # ---------------------------------------------------------
+    print_header("SECTION 3: SQA REGRESSION & SECURITY FIX VERIFICATION TESTS")
+
+    # Regression Test 1 (BUG-CRIT-01): Social login token validation
+    total += 1
+    try:
+        res = client.post("/auth/social-login", json={
+            "provider": "google",
+            "email": "hacker@evil.com",
+            "provider_token": "dummy_token"
+        })
+        assert res.status_code == 401, f"Expected 401 Unauthorized for fake token, got {res.status_code}"
+        print_test("Regression: Social Login Authentication Bypass Protection (BUG-CRIT-01)", True, "Rejected dummy provider token with 401")
+        passed += 1
+    except Exception as e:
+        print_test("Regression: Social Login Authentication Bypass Protection (BUG-CRIT-01)", False, str(e))
+        failed += 1
+
+    # Regression Test 2 (BUG-CRIT-02): Community feed on unseeded DB / system user
+    total += 1
+    try:
+        res = client.get("/posts")
+        assert res.status_code == 200, f"Expected 200 OK on GET /posts, got {res.status_code}"
+        posts = res.json()
+        assert isinstance(posts, list)
+        print_test("Regression: Community Posts Feed NameError Protection (BUG-CRIT-02)", True, "Successfully retrieved community posts")
+        passed += 1
+    except Exception as e:
+        print_test("Regression: Community Posts Feed NameError Protection (BUG-CRIT-02)", False, str(e))
+        failed += 1
+
+    # Regression Test 3 (BUG-HIGH-01): Billing checkout preserves admin & instructor roles
+    total += 1
+    try:
+        admin_id, admin_headers = get_auth_client("admin")
+        res_checkout = client.post("/billing/checkout", json={"plan_name": "Pro"}, headers=admin_headers)
+        assert res_checkout.status_code == 200
+        # Check current user role via /auth/me
+        res_me = client.get("/auth/me", headers=admin_headers)
+        assert res_me.json()["role"] == "admin", f"Expected admin role to be preserved, got {res_me.json()['role']}"
+        print_test("Regression: Billing Checkout Admin/Instructor Role Preservation (BUG-HIGH-01)", True, "Admin role retained after checkout")
+        passed += 1
+    except Exception as e:
+        print_test("Regression: Billing Checkout Admin/Instructor Role Preservation (BUG-HIGH-01)", False, str(e))
+        failed += 1
+
+    # Regression Test 4 (BUG-HIGH-02): Public unauthenticated access to batches
+    total += 1
+    try:
+        res_batches = client.get("/batches")
+        assert res_batches.status_code == 200, f"Expected 200 OK for anonymous batch list, got {res_batches.status_code}"
+        batches_list = res_batches.json()
+        assert len(batches_list) > 0
+        batch_code = batches_list[0]["batch_code"]
+        res_single = client.get(f"/batches/{batch_code}")
+        assert res_single.status_code == 200, f"Expected 200 OK for anonymous batch detail, got {res_single.status_code}"
+        print_test("Regression: Public Batch Browsing & Shareable Link Access (BUG-HIGH-02)", True, "Anonymous visitors can preview cohorts")
+        passed += 1
+    except Exception as e:
+        print_test("Regression: Public Batch Browsing & Shareable Link Access (BUG-HIGH-02)", False, str(e))
+        failed += 1
+
+    # Regression Test 5 (BUG-HIGH-03): Admin rejection sets is_verified=False
+    total += 1
+    try:
+        st_id, st_headers = get_auth_client("student")
+        adm_id, adm_headers = get_auth_client("admin")
+        # Submit NID
+        client.post("/users/me/verify-nid", json={"nid_number": "1234567890"}, headers=st_headers)
+        # Admin approves
+        client.post(f"/admin/verifications/{st_id}/review", json={"status": "verified"}, headers=adm_headers)
+        # Admin then rejects
+        res_rej = client.post(f"/admin/verifications/{st_id}/review", json={"status": "rejected", "notes": "Fraudulent document"}, headers=adm_headers)
+        assert res_rej.status_code == 200
+        # Check DB user is_verified
+        db_check = SessionLocal()
+        u = db_check.query(models.User).filter(models.User.id == st_id).first()
+        assert u.is_verified is False, f"Expected is_verified=False on rejected user, got {u.is_verified}"
+        assert u.verification_status == "rejected"
+        db_check.close()
+        print_test("Regression: Admin NID Rejection State Consistency (BUG-HIGH-03)", True, "is_verified reset to False on rejection")
+        passed += 1
+    except Exception as e:
+        print_test("Regression: Admin NID Rejection State Consistency (BUG-HIGH-03)", False, str(e))
+        failed += 1
+
+    # Regression Test 6 (BUG-MED-02): Public profile exact username matching
+    total += 1
+    try:
+        # Query non-existent prefix username
+        res_lookup = client.get("/users/non_existent_prefix_12345/public-profile")
+        assert res_lookup.status_code == 404, f"Expected 404 Not Found, got {res_lookup.status_code}"
+        print_test("Regression: Public Profile Exact Matching & Privacy (BUG-MED-02)", True, "Prevented loose prefix user account leakage")
+        passed += 1
+    except Exception as e:
+        print_test("Regression: Public Profile Exact Matching & Privacy (BUG-MED-02)", False, str(e))
+        failed += 1
+
+    # Regression Test 7 (BUG-MED-04): NID upload payload size limits
+    total += 1
+    try:
+        st_id, st_headers = get_auth_client("student")
+        huge_img = "data:image/png;base64," + ("A" * 8_000_000)
+        res_huge = client.post("/users/me/verify-nid", json={
+            "nid_number": "1234567890",
+            "nid_front_image": huge_img
+        }, headers=st_headers)
+        assert res_huge.status_code == 400, f"Expected 400 Bad Request on >5MB image, got {res_huge.status_code}"
+        print_test("Regression: NID Verification Image Size Limits (BUG-MED-04)", True, "Blocked oversized payload (>5MB)")
+        passed += 1
+    except Exception as e:
+        print_test("Regression: NID Verification Image Size Limits (BUG-MED-04)", False, str(e))
+        failed += 1
+
+    # ---------------------------------------------------------
     # SUMMARY
     # ---------------------------------------------------------
     print_header("QA TEST SUMMARY & METRICS")
@@ -379,7 +495,7 @@ def run_all_tests():
     if failed > 0:
         sys.exit(1)
     else:
-        print("[SUCCESS] ALL WHITEBOX AND BLACKBOX TEST CASES PASSED SUCCESSFULLY!")
+        print("[SUCCESS] ALL WHITEBOX, BLACKBOX, AND SQA REGRESSION TEST CASES PASSED SUCCESSFULLY!")
 
 if __name__ == "__main__":
     run_all_tests()

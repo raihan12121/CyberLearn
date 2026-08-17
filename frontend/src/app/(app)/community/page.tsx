@@ -115,10 +115,7 @@ export default function CommunityPage() {
   }, []);
 
   const handleUpvote = (postId: string) => {
-    const numId = parseInt(postId, 10);
-    if (!isNaN(numId)) {
-      api.upvotePost(numId).catch((err) => console.log("Upvote sync error:", err));
-    }
+    api.upvotePost(postId).catch((err) => console.log("Upvote sync error:", err));
     setPosts(
       posts.map((p) => {
         if (p.id === postId) {

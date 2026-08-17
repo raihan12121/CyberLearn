@@ -120,6 +120,10 @@ def review_nid_verification(
         target_user.is_verified = True
     elif review.status == "rejected":
         target_user.verified_at = None
+        target_user.is_verified = False
+    elif review.status == "pending":
+        target_user.verified_at = None
+        target_user.is_verified = False
 
     db.commit()
     db.refresh(target_user)

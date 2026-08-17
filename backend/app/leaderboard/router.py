@@ -29,32 +29,28 @@ def get_optional_user(authorization: Optional[str] = Header(None), db: Session =
     except Exception:
         return None
 
+from sqlalchemy import func
+
 @router.get("")
 def get_leaderboard(
+    limit: int = 100,
     db: Session = Depends(get_db),
     current_user: Optional[models.User] = Depends(get_optional_user)
 ):
-    # Retrieve all users sorted by XP desc
-    users = db.query(models.User).order_by(models.User.xp.desc()).all()
-    
-    # We will compute rankings
-    leaderboard_entries = []
-    
-    # Pre-seed some mock active users in database if db is empty to make leaderboard interesting!
-    # Wait, if there is only 1 user, the leaderboard looks sparse. Let's seed 5 mock learners if there are no other users besides the current one!
-    if len(users) <= 1:
-        # Create some interesting competitors
+    # Pre-seed some mock active competitors if db is essentially empty
+    user_count = db.query(models.User).count()
+    if user_count <= 1:
         mock_competitors = [
-            ("AlexHacker", 45230, 154, 45),
-            ("SecureSam", 42100, 142, 38),
-            ("CyberNinja", 39850, 135, 52),
-            ("NetSlayer", 35120, 110, 28),
-            ("BitShift", 32400, 98, 21),
-            ("FirewallFighter", 11800, 38, 12),
-            ("CookieMonster", 9500, 30, 10),
+            ("AlexHacker", 45230, 45),
+            ("SecureSam", 42100, 38),
+            ("CyberNinja", 39850, 52),
+            ("NetSlayer", 35120, 28),
+            ("BitShift", 32400, 21),
+            ("FirewallFighter", 11800, 12),
+            ("CookieMonster", 9500, 10),
         ]
-        import uuid
-        for username, xp, solved, streak in mock_competitors:
+        new_users = []
+        for username, xp, streak in mock_competitors:
             comp = models.User(
                 email=f"{username.lower()}@cyberlearn.io",
                 username=username,
@@ -64,46 +60,34 @@ def get_leaderboard(
                 streak_days=streak,
                 role="student"
             )
-            db.add(comp)
-            # Add some completed lab sessions to reflect solved count
-            db.commit()
-            db.refresh(comp)
-            # Add one lab session as completed just to have link
-            session = models.LabSession(
-                user_id=comp.id,
-                lab_id="linux-navigation",
-                status="completed",
-                completed_at=datetime.now(timezone.utc)
-            )
-            db.add(session)
-            db.commit()
-            
-        # Re-fetch users
-        users = db.query(models.User).order_by(models.User.xp.desc()).all()
+            new_users.append(comp)
+        db.add_all(new_users)
+        db.commit()
 
-    for idx, u in enumerate(users):
-        # Calculate solved labs count for this user
-        solved_count = db.query(models.LabSession).filter(
-            models.LabSession.user_id == u.id,
+    # Efficient batch query for solved labs count grouped by user
+    solved_counts = dict(
+        db.query(
+            models.LabSession.user_id,
+            func.count(models.LabSession.id)
+        ).filter(
             models.LabSession.status == "completed"
-        ).count()
+        ).group_by(models.LabSession.user_id).all()
+    )
+
+    # Retrieve top users sorted by XP desc
+    users = db.query(models.User).order_by(models.User.xp.desc()).limit(max(1, min(limit, 200))).all()
+    
+    leaderboard_entries = []
+    for idx, u in enumerate(users):
+        solved_count = solved_counts.get(u.id, 0)
         
-        # If the user is seeded from our mock list, use their seeded solved count
-        # or defaults to reflect their high scores!
-        if u.email and u.email.endswith("@cyberlearn.io"):
-            # Find the solved count from mock data
-            for name, mock_xp, mock_solved, mock_streak in [
-                ("AlexHacker", 45230, 154, 45),
-                ("SecureSam", 42100, 142, 38),
-                ("CyberNinja", 39850, 135, 52),
-                ("NetSlayer", 35120, 110, 28),
-                ("BitShift", 32400, 98, 21),
-                ("FirewallFighter", 11800, 38, 12),
-                ("CookieMonster", 9500, 30, 10),
-            ]:
-                if u.username == name:
-                    solved_count = mock_solved
-                    break
+        # Fallback baseline solved count for seeded demo competitors
+        if solved_count == 0 and u.email and u.email.endswith("@cyberlearn.io"):
+            mock_solved_map = {
+                "AlexHacker": 154, "SecureSam": 142, "CyberNinja": 135,
+                "NetSlayer": 110, "BitShift": 98, "FirewallFighter": 38, "CookieMonster": 30
+            }
+            solved_count = mock_solved_map.get(u.username, 0)
 
         leaderboard_entries.append({
             "rank": idx + 1,

@@ -1,16 +1,15 @@
-import requests
 import random
 import sys
-
-API_URL = "http://localhost:8000"
+from fastapi.testclient import TestClient
+from app.main import app
 
 def test_endpoints():
     print("--- STARTING ENDPOINT DEEP AUDIT ---")
-    session = requests.Session()
+    client = TestClient(app)
     
     # 1. Health check
     print("[1] Testing API Health Check...")
-    r = session.get(f"{API_URL}/")
+    r = client.get("/")
     assert r.status_code == 200, f"Health check failed: {r.status_code}"
     print("Health check OK:", r.json())
     
@@ -27,7 +26,7 @@ def test_endpoints():
         "password": password,
         "full_name": full_name
     }
-    r = session.post(f"{API_URL}/auth/register", json=reg_data)
+    r = client.post("/auth/register", json=reg_data)
     assert r.status_code == 201, f"Registration failed: {r.status_code} - {r.text}"
     user_data = r.json()
     print("Registration OK. User ID:", user_data.get("id"))
@@ -38,19 +37,18 @@ def test_endpoints():
         "email": email,
         "password": password
     }
-    r = session.post(f"{API_URL}/auth/login", json=login_data)
+    r = client.post("/auth/login", json=login_data)
     assert r.status_code == 200, f"Login failed: {r.status_code} - {r.text}"
     token_data = r.json()
     access_token = token_data.get("access_token")
     assert access_token, "Access token not returned"
     print("Login OK. Access Token acquired.")
     
-    # Add token to headers for subsequent calls
-    session.headers.update({"Authorization": f"Bearer {access_token}"})
+    auth_headers = {"Authorization": f"Bearer {access_token}"}
     
     # Test unauthorized access to admin metrics (user is currently a student)
     print("Testing unauthorized GET /admin/metrics (expects 403)...")
-    unauth_r = session.get(f"{API_URL}/admin/metrics")
+    unauth_r = client.get("/admin/metrics", headers=auth_headers)
     assert unauth_r.status_code == 403, f"Expected 403 Forbidden for student, got {unauth_r.status_code}"
     print("Unauthorized access check OK (received 403).")
 
@@ -68,7 +66,7 @@ def test_endpoints():
 
     # 4. Get current user (me)
     print("\n[4] Testing GET /auth/me...")
-    r = session.get(f"{API_URL}/auth/me")
+    r = client.get("/auth/me", headers=auth_headers)
     assert r.status_code == 200, f"GET me failed: {r.status_code} - {r.text}"
     profile = r.json()
     assert profile.get("email") == email, "Profile email mismatch"
@@ -76,7 +74,7 @@ def test_endpoints():
     
     # 5. Get courses catalog
     print("\n[5] Testing GET /courses...")
-    r = session.get(f"{API_URL}/courses")
+    r = client.get("/courses")
     assert r.status_code == 200, f"GET courses failed: {r.status_code} - {r.text}"
     courses = r.json()
     assert len(courses) > 0, "No courses found (seeding error?)"
@@ -88,7 +86,7 @@ def test_endpoints():
     
     # 6. Get course details
     print(f"\n[6] Testing GET /courses/{course_id}...")
-    r = session.get(f"{API_URL}/courses/{course_id}")
+    r = client.get(f"/courses/{course_id}")
     assert r.status_code == 200, f"GET course detail failed: {r.status_code} - {r.text}"
     course_detail = r.json()
     print(f"Course detail OK: {course_detail.get('title')}")
@@ -106,21 +104,21 @@ def test_endpoints():
         "status": "completed",
         "completion_pct": 100.0
     }
-    r = session.post(f"{API_URL}/courses/progress", json=progress_data)
+    r = client.post("/courses/progress", json=progress_data, headers=auth_headers)
     assert r.status_code == 200, f"Progress update failed: {r.status_code} - {r.text}"
     prog_res = r.json()
     assert prog_res.get("status") == "completed", "Progress status mismatch"
     print("Progress update OK. Status logged successfully.")
     
     # Verify user XP increased by 50
-    r = session.get(f"{API_URL}/auth/me")
+    r = client.get("/auth/me", headers=auth_headers)
     profile = r.json()
     print("Current User XP (should be 50):", profile.get("xp"))
     assert profile.get("xp") == 50, f"XP not awarded correctly. Expected 50, got {profile.get('xp')}"
     
     # 8. Get user progress list
     print("\n[8] Testing GET /courses/progress...")
-    r = session.get(f"{API_URL}/courses/progress")
+    r = client.get("/courses/progress", headers=auth_headers)
     assert r.status_code == 200, f"GET progress failed: {r.status_code} - {r.text}"
     progress_list = r.json()
     assert len(progress_list) == 1, "Expected exactly 1 progress entry"
@@ -129,7 +127,7 @@ def test_endpoints():
     
     # 9. Get practice labs catalog
     print("\n[9] Testing GET /labs...")
-    r = session.get(f"{API_URL}/labs")
+    r = client.get("/labs")
     assert r.status_code == 200, f"GET labs failed: {r.status_code} - {r.text}"
     labs = r.json()
     assert len(labs) > 0, "No labs found"
@@ -141,7 +139,7 @@ def test_endpoints():
     
     # 10. Start practice lab session
     print(f"\n[10] Testing POST /labs/start (Lab {lab_id})...")
-    r = session.post(f"{API_URL}/labs/start", json={"lab_id": lab_id})
+    r = client.post("/labs/start", json={"lab_id": lab_id}, headers=auth_headers)
     assert r.status_code == 200, f"Start lab failed: {r.status_code} - {r.text}"
     session_data = r.json()
     session_id = session_data.get("id")
@@ -151,7 +149,7 @@ def test_endpoints():
     
     # 11. Submit incorrect flag
     print("\n[11] Testing POST /labs/{session_id}/submit with incorrect flag...")
-    r = session.post(f"{API_URL}/labs/{session_id}/submit?flag_submission=FLAG{{wrong}}")
+    r = client.post(f"/labs/{session_id}/submit?flag_submission=FLAG{{wrong}}", headers=auth_headers)
     assert r.status_code == 200, f"Flag submission API failed: {r.status_code} - {r.text}"
     submit_res = r.json()
     assert not submit_res.get("correct"), "Incorrect flag marked correct"
@@ -160,18 +158,18 @@ def test_endpoints():
     # 12. Submit correct flag (fetch it dynamically via admin endpoint)
     print("\n[12] Testing POST /labs/{session_id}/submit with correct flag...")
     # First retrieve the correct flag via admin endpoint (user was promoted to admin above)
-    r = session.get(f"{API_URL}/labs/{lab_id}/flag")
+    r = client.get(f"/labs/{lab_id}/flag", headers=auth_headers)
     assert r.status_code == 200, f"GET lab flag failed: {r.status_code} - {r.text}"
     correct_flag = r.json().get("flag")
     assert correct_flag and correct_flag.startswith("FLAG{"), f"Invalid flag format: {correct_flag}"
-    r = session.post(f"{API_URL}/labs/{session_id}/submit?flag_submission={correct_flag}")
+    r = client.post(f"/labs/{session_id}/submit?flag_submission={correct_flag}", headers=auth_headers)
     assert r.status_code == 200, f"Flag submission API failed: {r.status_code} - {r.text}"
     submit_res = r.json()
     assert submit_res.get("correct"), "Correct flag marked incorrect"
     print("Correct flag submission OK. Message:", submit_res.get("message"))
     
     # Verify user XP increased by lab reward (100) -> total 150
-    r = session.get(f"{API_URL}/auth/me")
+    r = client.get("/auth/me", headers=auth_headers)
     profile = r.json()
     print("Current User XP (should be 150):", profile.get("xp"))
     assert profile.get("xp") == 150, f"XP reward mismatch. Expected 150, got {profile.get('xp')}"
@@ -182,7 +180,7 @@ def test_endpoints():
         "message": "Explain Same-Origin Policy (SOP)",
         "history": []
     }
-    r = session.post(f"{API_URL}/ai/chat", json=chat_req)
+    r = client.post("/ai/chat", json=chat_req, headers=auth_headers)
     assert r.status_code == 200, f"AI chat failed: {r.status_code} - {r.text}"
     chat_res = r.json()
     assert "reply" in chat_res, "AI reply missing"
@@ -190,7 +188,7 @@ def test_endpoints():
     
     # 14. Get community feed posts
     print("\n[14] Testing GET /posts...")
-    r = session.get(f"{API_URL}/posts")
+    r = client.get("/posts")
     assert r.status_code == 200, f"GET posts failed: {r.status_code} - {r.text}"
     posts = r.json()
     assert len(posts) > 0, "No community posts found"
@@ -203,7 +201,7 @@ def test_endpoints():
         "content": "This is a post created automatically during the endpoint audit.",
         "category": "General"
     }
-    r = session.post(f"{API_URL}/posts", json=post_req)
+    r = client.post("/posts", json=post_req, headers=auth_headers)
     assert r.status_code == 201, f"POST post failed: {r.status_code} - {r.text}"
     created_post = r.json()
     assert created_post.get("title") == "Deep Audit Test Post", "Post title mismatch"
@@ -211,7 +209,7 @@ def test_endpoints():
     
     # 16. Admin metrics
     print("\n[16] Testing GET /admin/metrics...")
-    r = session.get(f"{API_URL}/admin/metrics")
+    r = client.get("/admin/metrics", headers=auth_headers)
     assert r.status_code == 200, f"GET admin metrics failed: {r.status_code} - {r.text}"
     metrics = r.json()
     assert "stats" in metrics, "metrics stats missing"
@@ -227,7 +225,7 @@ def test_endpoints():
         "username": f"audit_username_{rand_id}",
         "avatar_url": "https://api.dicebear.com/7.x/bottts/svg"
     }
-    r = session.put(f"{API_URL}/users/me", json=update_data)
+    r = client.put("/users/me", json=update_data, headers=auth_headers)
     assert r.status_code == 200, f"Profile update failed: {r.status_code} - {r.text}"
     updated_profile = r.json()
     assert updated_profile.get("full_name") == f"Updated Name {rand_id}", "Updated name mismatch"
@@ -241,7 +239,7 @@ def test_endpoints():
         "current_password": password,
         "new_password": new_test_password
     }
-    r = session.put(f"{API_URL}/users/me/password", json=pw_data)
+    r = client.put("/users/me/password", json=pw_data, headers=auth_headers)
     assert r.status_code == 200, f"Change password failed: {r.status_code} - {r.text}"
     
     # Verify login with new password works
@@ -249,16 +247,16 @@ def test_endpoints():
         "email": email,
         "password": new_test_password
     }
-    r = session.post(f"{API_URL}/auth/login", json=re_login_data)
+    r = client.post("/auth/login", json=re_login_data)
     assert r.status_code == 200, f"Re-login with new password failed: {r.status_code} - {r.text}"
     new_token_data = r.json()
     new_access_token = new_token_data.get("access_token")
-    session.headers.update({"Authorization": f"Bearer {new_access_token}"})
+    auth_headers = {"Authorization": f"Bearer {new_access_token}"}
     print("Change password and re-login verification OK.")
     
     # 19. Get Profile Details (GET /users/me/profile)
     print("\n[19] Testing GET /users/me/profile...")
-    r = session.get(f"{API_URL}/users/me/profile")
+    r = client.get("/users/me/profile", headers=auth_headers)
     assert r.status_code == 200, f"GET profile details failed: {r.status_code} - {r.text}"
     profile_details = r.json()
     assert "rank" in profile_details, "profile rank missing"
@@ -269,7 +267,7 @@ def test_endpoints():
     
     # 20. Get Leaderboard (GET /leaderboard)
     print("\n[20] Testing GET /leaderboard...")
-    r = session.get(f"{API_URL}/leaderboard")
+    r = client.get("/leaderboard", headers=auth_headers)
     assert r.status_code == 200, f"GET leaderboard failed: {r.status_code} - {r.text}"
     leaderboard = r.json()
     assert len(leaderboard) > 0, "Leaderboard list is empty"
@@ -279,8 +277,8 @@ def test_endpoints():
     print(f"Leaderboard OK. Leader: {leaderboard[0].get('name')} | User Rank: {user_entry.get('rank')}")
     
     # 21. Get Certificates (GET /certificates)
-    print("\n[21] Testing GET /certificates...")
-    r = session.get(f"{API_URL}/certificates")
+    print("\n[21] Testing GET /certificates...", headers := auth_headers)
+    r = client.get("/certificates", headers=headers)
     assert r.status_code == 200, f"GET certificates failed: {r.status_code} - {r.text}"
     certs = r.json()
     assert len(certs) > 0, "Certificates list empty"

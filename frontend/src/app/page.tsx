@@ -17,7 +17,6 @@ import {
   ArrowRight,
   Zap,
   Award,
-  TrendingUp,
   Menu,
   X,
 } from "lucide-react";

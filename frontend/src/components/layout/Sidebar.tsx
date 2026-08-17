@@ -54,7 +54,6 @@ const navSections: NavSection[] = [
     title: "Compete Hub",
     items: [
       { label: "CTF Challenges", href: "/challenges", icon: Swords },
-      { label: "1v1 Speed Duels", href: "/challenges/duels", icon: Zap },
       { label: "Leaderboard", href: "/leaderboard", icon: Trophy },
       { label: "Certificates & Exams", href: "/certificates", icon: Award },
       { label: "ID Verification", href: "/verify-nid", icon: BadgeCheck },

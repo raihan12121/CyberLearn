@@ -148,10 +148,9 @@ export const api = {
     method: "POST",
     body: JSON.stringify(data),
   }),
-  upvotePost: (postId: number) => apiFetch(`/posts/${postId}/upvote`, {
+  upvotePost: (postId: string) => apiFetch(`/posts/${postId}/upvote`, {
     method: "POST",
   }),
-
 
   // Admin
   getAdminMetrics: () => apiFetch("/admin/metrics"),
@@ -173,6 +172,9 @@ export const api = {
   updatePassword: (data: Record<string, unknown>) => apiFetch("/users/me/password", {
     method: "PUT",
     body: JSON.stringify(data),
+  }),
+  deleteAccount: () => apiFetch("/users/me", {
+    method: "DELETE",
   }),
   getProfileDetails: () => apiFetch("/users/me/profile"),
 

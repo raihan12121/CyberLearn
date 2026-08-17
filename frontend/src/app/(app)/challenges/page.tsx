@@ -132,8 +132,8 @@ export default function ChallengesPage() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [challenges, setChallenges] = useState(mockChallenges);
-  const [userPoints, setUserPoints] = useState(12580);
-  const [userSolved, setUserSolved] = useState(42);
+  const [userPoints, setUserPoints] = useState(0);
+  const [userSolved, setUserSolved] = useState(0);
 
   useEffect(() => {
     // Fetch user stats
@@ -234,7 +234,7 @@ export default function ChallengesPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {filtered.map((challenge, i) => (
           <motion.div
-            key={challenge.title}
+            key={challenge.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}

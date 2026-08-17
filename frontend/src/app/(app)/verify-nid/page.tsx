@@ -66,6 +66,19 @@ export default function VerifyNidPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Selected image exceeds the 5MB maximum file size limit.");
+      return;
+    }
+
+    // Validate image format
+    if (!file.type.startsWith("image/")) {
+      setError("Please select a valid image file (PNG, JPG, JPEG, WEBP).");
+      return;
+    }
+
+    setError(null);
     // Convert to Base64 for instant preview & persistence
     const reader = new FileReader();
     reader.onload = () => {

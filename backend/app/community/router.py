@@ -4,6 +4,7 @@ from typing import List
 from ..database import get_db
 from .. import models, schemas
 from ..auth.dependencies import get_current_user
+from ..auth.utils import get_password_hash
 
 router = APIRouter(
     prefix="/posts",

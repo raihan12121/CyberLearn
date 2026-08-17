@@ -101,31 +101,27 @@ export default function CourseExamPage() {
     if (courseId) fetchExam();
   }, [courseId]);
 
-  // Timer Tick
+  const selectedAnswersRef = useRef(selectedAnswers);
   useEffect(() => {
-    if (started && !result && secondsRemaining > 0) {
-      timerRef.current = setInterval(() => {
-        setSecondsRemaining((prev) => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current!);
-            handleAutoSubmit();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [started, result, secondsRemaining]);
+    selectedAnswersRef.current = selectedAnswers;
+  }, [selectedAnswers]);
 
-  const handleStartExam = () => {
-    setStarted(true);
-    setCurrentIdx(0);
-    setSelectedAnswers({});
-    setResult(null);
-  };
+  // Steady Timer Tick
+  useEffect(() => {
+    if (!started || result || secondsRemaining <= 0) return;
+
+    const interval = setInterval(() => {
+      setSecondsRemaining((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [started, result]);
 
   const handleSelectOption = (questionId: string, optionIndex: number) => {
     setSelectedAnswers((prev) => ({
@@ -134,17 +130,14 @@ export default function CourseExamPage() {
     }));
   };
 
-  const handleAutoSubmit = () => {
-    handleSubmit();
-  };
-
   const handleSubmit = async () => {
-    if (!exam) return;
+    if (!exam || submitting) return;
     try {
       setSubmitting(true);
+      const currentAnswers = selectedAnswersRef.current;
       const payload = exam.questions.map((q) => ({
         question_id: q.id,
-        selected_answer: selectedAnswers[q.id] || "",
+        selected_answer: currentAnswers[q.id] || "",
       }));
 
       const res = await api.submitExam(exam.id, payload);
@@ -155,6 +148,20 @@ export default function CourseExamPage() {
       setSubmitting(false);
     }
   };
+
+  const handleStartExam = () => {
+    setStarted(true);
+    setCurrentIdx(0);
+    setSelectedAnswers({});
+    setResult(null);
+  };
+
+  // Handle Timeout Auto-Submission
+  useEffect(() => {
+    if (started && !result && secondsRemaining === 0 && exam && !submitting) {
+      handleSubmit();
+    }
+  }, [secondsRemaining, started, result, exam]);
 
   if (loading) {
     return (
