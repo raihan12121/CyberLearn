@@ -32,7 +32,12 @@ export default function LoginPage() {
       // Authenticate with CyberLearn API
       const data = await api.login({ email, password });
       setAuthToken(data.access_token);
-      router.push("/dashboard");
+      const user = await api.getMe().catch(() => null);
+      if (user?.role === "admin") {
+        router.push("/admin");
+      } else {
+        router.push("/dashboard");
+      }
     } catch (err: any) {
       setLoading(false);
       setError(err.message || "Incorrect email address or password. Please check your credentials.");
@@ -49,7 +54,12 @@ export default function LoginPage() {
       if (result && result.email) {
         const data = await api.socialLogin("google", result.email, result.fullName, result.token);
         setAuthToken(data.access_token);
-        router.push("/dashboard");
+        const user = await api.getMe().catch(() => null);
+        if (user?.role === "admin") {
+          router.push("/admin");
+        } else {
+          router.push("/dashboard");
+        }
         return;
       }
     } catch (firebaseErr: any) {

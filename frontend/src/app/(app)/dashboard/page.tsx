@@ -15,6 +15,9 @@ import {
   Award,
   TrendingUp,
   Clock,
+  Shield,
+  ArrowUpRight,
+  Activity,
 } from "lucide-react";
 import { Card, Badge, ProgressBar, Avatar, Button } from "@/components/ui";
 import { api } from "@/lib/api";
@@ -49,8 +52,18 @@ export default function DashboardPage() {
   const [leaderboard, setLeaderboard] = useState<{ name: string; xp: number; rank: number }[]>([]);
   const [activeCourses, setActiveCourses] = useState<{ title: string; progress: number; lessons: string; currentLesson: string; image: string; id: string }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    // Check if current user is admin
+    api.getMe()
+      .then((user) => {
+        if (user && user.role === "admin") {
+          setIsAdmin(true);
+        }
+      })
+      .catch(() => {});
+
     // Fetch Profile Details
     const fetchProfilePromise = api.getProfileDetails()
       .then((data) => {
@@ -152,6 +165,41 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      {/* Admin Mode Quick Switcher Banner */}
+      {isAdmin && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-primary/10 to-amber-500/5 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl"
+        >
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center shrink-0 shadow-inner">
+              <Shield className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-bold text-foreground">Administrator Session Active</span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/40">
+                  System Admin
+                </span>
+              </div>
+              <p className="text-xs text-foreground-secondary mt-0.5">
+                You are currently viewing the student dashboard. Switch to the Admin Control Center to manage users, review student KYC verifications, and inspect system telemetry.
+              </p>
+            </div>
+          </div>
+
+          <Button
+            onClick={() => router.push("/admin")}
+            className="shrink-0 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold border-none shadow-md flex items-center gap-2 cursor-pointer text-xs"
+          >
+            <Shield className="w-4 h-4" />
+            <span>Open Admin Portal</span>
+            <ArrowUpRight className="w-4 h-4" />
+          </Button>
+        </motion.div>
+      )}
+
       {/* Welcome */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}

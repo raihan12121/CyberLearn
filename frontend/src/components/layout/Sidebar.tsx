@@ -192,19 +192,19 @@ export default function Sidebar({
                   href="/admin"
                   onClick={handleLinkClick}
                   className={`
-                    flex items-center gap-3 px-3 py-2 rounded-[var(--radius)]
-                    text-sm font-medium transition-all duration-200
+                    flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius-lg)]
+                    text-sm font-semibold transition-all duration-200
                     ${
                       pathname?.startsWith("/admin")
-                        ? "bg-primary/10 text-primary border-l-2 border-primary"
-                        : "text-foreground-secondary hover:text-foreground hover:bg-surface-elevated"
+                        ? "bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm"
+                        : "text-amber-400 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 hover:text-amber-300"
                     }
                     ${collapsed ? "justify-center px-0" : ""}
                   `}
                   title={collapsed ? "Admin Portal" : undefined}
                 >
                   <Shield className="w-4 h-4 shrink-0 text-amber-400" />
-                  {!collapsed && <span className="text-amber-400 font-semibold">Admin Portal</span>}
+                  {!collapsed && <span>Admin Portal</span>}
                 </Link>
               </li>
             </ul>

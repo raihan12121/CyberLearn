@@ -23,9 +23,14 @@ function OAuthCallbackContent() {
     const redirectUri = `${window.location.origin}/auth/callback`;
 
     api.exchangeOAuthCode(provider, code, redirectUri)
-      .then((data) => {
+      .then(async (data) => {
         setAuthToken(data.access_token);
-        router.push("/dashboard");
+        const user = await api.getMe().catch(() => null);
+        if (user?.role === "admin") {
+          router.push("/admin");
+        } else {
+          router.push("/dashboard");
+        }
       })
       .catch((err) => {
         setError(err.message || "Social login authentication failed.");
