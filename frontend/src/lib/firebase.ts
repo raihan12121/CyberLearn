@@ -5,6 +5,7 @@ import {
   signInWithPopup,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signOut,
   UserCredential
 } from "firebase/auth";
 
@@ -47,4 +48,12 @@ export async function signUpWithEmailFirebase(email: string, password: string): 
 
 export async function signInWithEmailFirebase(email: string, password: string): Promise<UserCredential> {
   return await signInWithEmailAndPassword(auth, email, password);
+}
+
+export async function signOutFirebase(): Promise<void> {
+  try {
+    await signOut(auth);
+  } catch (err) {
+    console.warn("Firebase signout error:", err);
+  }
 }
