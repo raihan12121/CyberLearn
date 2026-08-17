@@ -97,7 +97,10 @@ export const api = {
     });
   },
 
-  getOAuthUrl: (provider: string) => apiFetch(`/auth/oauth/url/${provider}`),
+  getOAuthUrl: (provider: string, redirectUri?: string) => {
+    const query = redirectUri ? `?redirect_uri=${encodeURIComponent(redirectUri)}` : "";
+    return apiFetch(`/auth/oauth/url/${provider}${query}`);
+  },
 
   exchangeOAuthCode: (provider: string, code: string, redirectUri?: string) => apiFetch("/auth/oauth/exchange", {
     method: "POST",

@@ -44,23 +44,30 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
+      // 1. Attempt Firebase Google Sign-In Popup
       const result = await signInWithGoogleFirebase();
-      if (!result || !result.email) {
-        throw new Error("No verified email returned from Google account.");
+      if (result && result.email) {
+        const data = await api.socialLogin("google", result.email, result.fullName, result.token);
+        setAuthToken(data.access_token);
+        router.push("/dashboard");
+        return;
       }
+    } catch (firebaseErr: any) {
+      console.warn("Firebase popup sign-in encountered an issue, transitioning to direct Google OAuth flow:", firebaseErr);
+    }
 
-      const data = await api.socialLogin("google", result.email, result.fullName, result.token);
-      setAuthToken(data.access_token);
-      router.push("/dashboard");
-    } catch (err: any) {
-      setLoading(false);
-      if (err?.code === "auth/popup-closed-by-user") {
-        setError("Google sign-in popup was closed before completing.");
-      } else if (err?.code === "auth/unauthorized-domain") {
-        setError("Domain not authorized in Firebase Console. Please add cyber-learn-three.vercel.app to Authorized Domains in Firebase.");
-      } else {
-        setError(err?.message || "Google authentication failed. Please try again.");
+    try {
+      // 2. Seamless Direct Google OAuth Fallback
+      const redirectUri = typeof window !== "undefined" ? `${window.location.origin}/auth/callback` : undefined;
+      const res = await api.getOAuthUrl("google", redirectUri);
+      if (res && res.url) {
+        window.location.href = res.url;
+        return;
       }
+      throw new Error("Unable to initialize Google OAuth session.");
+    } catch (oauthErr: any) {
+      setLoading(false);
+      setError(oauthErr.message || "Google authentication failed. Please try again.");
     }
   };
 
