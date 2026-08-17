@@ -412,16 +412,6 @@ function AdminDashboardContent() {
                   </div>
                 )}
               </div>
-
-              <div className="pt-2">
-                <Button
-                  fullWidth
-                  onClick={() => setActiveTab("users")}
-                  className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs"
-                >
-                  Manage All Registered Users
-                </Button>
-              </div>
             </Card>
           </div>
         </div>

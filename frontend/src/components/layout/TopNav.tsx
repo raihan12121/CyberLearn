@@ -509,23 +509,27 @@ export default function TopNav({ onMenuClick }: TopNavProps) {
 
                 {/* Nav Links */}
                 <div className="py-1.5 px-1.5 space-y-0.5 text-xs">
-                  <Link
-                    href="/profile"
-                    onClick={() => setDropdownOpen(false)}
-                    className="flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius)] text-foreground-secondary hover:text-foreground hover:bg-surface-elevated transition-colors font-medium cursor-pointer"
-                  >
-                    <User className="w-4 h-4 text-primary" />
-                    <span>My Profile & Stats</span>
-                  </Link>
+                  {userRole !== "admin" && (
+                    <>
+                      <Link
+                        href="/profile"
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius)] text-foreground-secondary hover:text-foreground hover:bg-surface-elevated transition-colors font-medium cursor-pointer"
+                      >
+                        <User className="w-4 h-4 text-primary" />
+                        <span>My Profile & Stats</span>
+                      </Link>
 
-                  <Link
-                    href="/certificates"
-                    onClick={() => setDropdownOpen(false)}
-                    className="flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius)] text-foreground-secondary hover:text-foreground hover:bg-surface-elevated transition-colors font-medium cursor-pointer"
-                  >
-                    <Award className="w-4 h-4 text-accent" />
-                    <span>Certificates & Credentials</span>
-                  </Link>
+                      <Link
+                        href="/certificates"
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius)] text-foreground-secondary hover:text-foreground hover:bg-surface-elevated transition-colors font-medium cursor-pointer"
+                      >
+                        <Award className="w-4 h-4 text-accent" />
+                        <span>Certificates & Credentials</span>
+                      </Link>
+                    </>
+                  )}
 
                   <Link
                     href="/settings"
@@ -533,19 +537,8 @@ export default function TopNav({ onMenuClick }: TopNavProps) {
                     className="flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius)] text-foreground-secondary hover:text-foreground hover:bg-surface-elevated transition-colors font-medium cursor-pointer"
                   >
                     <Settings className="w-4 h-4 text-foreground-muted" />
-                    <span>Settings & Security</span>
+                    <span>Settings & Preferences</span>
                   </Link>
-
-                  {userRole === "admin" && (
-                    <Link
-                      href="/admin"
-                      onClick={() => setDropdownOpen(false)}
-                      className="flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius)] text-foreground-secondary hover:text-primary hover:bg-primary/10 transition-colors font-medium cursor-pointer"
-                    >
-                      <Shield className="w-4 h-4 text-primary" />
-                      <span>Admin Control Center</span>
-                    </Link>
-                  )}
                 </div>
 
                 {/* Logout Action */}
