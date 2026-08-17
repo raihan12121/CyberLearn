@@ -21,6 +21,9 @@ import {
   X,
   GraduationCap,
   BadgeCheck,
+  Activity,
+  Server,
+  ShieldAlert,
 } from "lucide-react";
 import { api } from "@/lib/api";
 
@@ -33,7 +36,7 @@ interface NavSection {
   }[];
 }
 
-const navSections: NavSection[] = [
+const studentNavSections: NavSection[] = [
   {
     title: "Overview",
     items: [
@@ -58,6 +61,19 @@ const navSections: NavSection[] = [
       { label: "Certificates & Exams", href: "/certificates", icon: Award },
       { label: "ID Verification", href: "/verify-nid", icon: BadgeCheck },
       { label: "Community", href: "/community", icon: Users },
+    ],
+  },
+];
+
+const adminNavSections: NavSection[] = [
+  {
+    title: "Admin Command Center",
+    items: [
+      { label: "Admin Overview", href: "/admin", icon: Shield },
+      { label: "User Management", href: "/admin?tab=users", icon: Users },
+      { label: "KYC Verification", href: "/admin?tab=verifications", icon: BadgeCheck },
+      { label: "Active Sandboxes", href: "/admin?tab=containers", icon: Terminal },
+      { label: "System Telemetry", href: "/admin?tab=telemetry", icon: Activity },
     ],
   },
 ];
@@ -97,6 +113,8 @@ export default function Sidebar({
     }
   };
 
+  const sectionsToRender = isAdmin ? adminNavSections : studentNavSections;
+
   return (
     <>
       {/* Mobile Backdrop */}
@@ -115,16 +133,23 @@ export default function Sidebar({
           ${collapsed ? "w-[72px]" : "w-[240px]"}
         `}
       >
-        {/* Logo */}
+        {/* Logo Header */}
         <div className="flex items-center justify-between px-4 h-16 border-b border-border shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
-              <Shield className="w-5 h-5 text-primary" />
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isAdmin ? "bg-amber-500/20 text-amber-400" : "bg-primary/20 text-primary"}`}>
+              <Shield className="w-5 h-5" />
             </div>
             {!collapsed && (
-              <span className="text-lg font-bold text-foreground tracking-tight">
-                CyberLearn
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-bold text-foreground tracking-tight">
+                  CyberLearn
+                </span>
+                {isAdmin && (
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                    Admin
+                  </span>
+                )}
+              </div>
             )}
           </div>
           {/* Mobile Close Button */}
@@ -138,8 +163,8 @@ export default function Sidebar({
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 py-4 px-2 overflow-y-auto space-y-6">
-          {navSections.map((section) => (
+        <nav className="flex-1 overflow-y-auto p-3 space-y-6 scrollbar-thin">
+          {sectionsToRender.map((section) => (
             <div key={section.title}>
               {!collapsed && (
                 <h3 className="px-3 text-[10px] font-semibold text-foreground-muted uppercase tracking-wider mb-2">
@@ -150,7 +175,8 @@ export default function Sidebar({
                 {section.items.map((item) => {
                   const isActive =
                     pathname === item.href ||
-                    (item.href !== "/dashboard" && pathname?.startsWith(item.href));
+                    (item.href !== "/dashboard" && pathname?.startsWith(item.href.split("?")[0]));
+
                   const Icon = item.icon;
                   return (
                     <li key={item.href}>
@@ -158,18 +184,20 @@ export default function Sidebar({
                         href={item.href}
                         onClick={handleLinkClick}
                         className={`
-                          flex items-center gap-3 px-3 py-2 rounded-[var(--radius)]
+                          flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius-lg)]
                           text-sm font-medium transition-all duration-200
                           ${
                             isActive
-                              ? "bg-primary/10 text-primary border-l-2 border-primary"
+                              ? isAdmin
+                                ? "bg-amber-500/20 text-amber-300 font-semibold border-l-2 border-amber-400"
+                                : "bg-primary/10 text-primary border-l-2 border-primary"
                               : "text-foreground-secondary hover:text-foreground hover:bg-surface-elevated"
                           }
                           ${collapsed ? "justify-center px-0" : ""}
                         `}
                         title={collapsed ? item.label : undefined}
                       >
-                        <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-primary" : ""}`} />
+                        <Icon className={`w-4 h-4 shrink-0 ${isActive ? (isAdmin ? "text-amber-400" : "text-primary") : ""}`} />
                         {!collapsed && <span>{item.label}</span>}
                       </Link>
                     </li>
@@ -178,72 +206,42 @@ export default function Sidebar({
               </ul>
             </div>
           ))}
+        </nav>
 
-        {isAdmin && (
-          <div>
-            {!collapsed && (
-              <h3 className="px-3 text-[10px] font-semibold text-foreground-muted uppercase tracking-wider mb-2">
-                Admin
-              </h3>
+        {/* Bottom */}
+        <div className="border-t border-border p-2 shrink-0">
+          <Link
+            href="/settings"
+            onClick={handleLinkClick}
+            className={`
+              flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)]
+              text-sm font-medium text-foreground-secondary
+              hover:text-foreground hover:bg-surface-elevated transition-all duration-200
+              ${collapsed ? "justify-center px-0" : ""}
+            `}
+            title={collapsed ? "Settings" : undefined}
+          >
+            <Settings className="w-4 h-4 shrink-0" />
+            {!collapsed && <span>Settings</span>}
+          </Link>
+
+          {/* Collapse Button (desktop) */}
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="hidden lg:flex items-center justify-center w-full py-2 mt-1 rounded-[var(--radius)] text-foreground-muted hover:text-foreground hover:bg-surface-elevated transition-all duration-200 cursor-pointer"
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? (
+              <ChevronRight className="w-4 h-4" />
+            ) : (
+              <div className="flex items-center gap-2 text-xs">
+                <ChevronLeft className="w-4 h-4" />
+                <span>Collapse Sidebar</span>
+              </div>
             )}
-            <ul className="space-y-1">
-              <li>
-                <Link
-                  href="/admin"
-                  onClick={handleLinkClick}
-                  className={`
-                    flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius-lg)]
-                    text-sm font-semibold transition-all duration-200
-                    ${
-                      pathname?.startsWith("/admin")
-                        ? "bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm"
-                        : "text-amber-400 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 hover:text-amber-300"
-                    }
-                    ${collapsed ? "justify-center px-0" : ""}
-                  `}
-                  title={collapsed ? "Admin Portal" : undefined}
-                >
-                  <Shield className="w-4 h-4 shrink-0 text-amber-400" />
-                  {!collapsed && <span>Admin Portal</span>}
-                </Link>
-              </li>
-            </ul>
-          </div>
-        )}
-      </nav>
-
-      {/* Bottom */}
-      <div className="border-t border-border p-2 shrink-0">
-        <Link
-          href="/settings"
-          onClick={handleLinkClick}
-          className={`
-            flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius)]
-            text-sm font-medium text-foreground-secondary
-            hover:text-foreground hover:bg-surface-elevated transition-all duration-200
-            ${collapsed ? "justify-center px-0" : ""}
-          `}
-        >
-          <Settings className="w-5 h-5 shrink-0" />
-          {!collapsed && <span>Settings</span>}
-        </Link>
-
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="hidden lg:flex w-full items-center justify-center gap-2 px-3 py-2 mt-1 rounded-[var(--radius)] text-foreground-muted hover:text-foreground-secondary hover:bg-surface-elevated transition-all duration-200 cursor-pointer"
-        >
-          {collapsed ? (
-            <ChevronRight className="w-4 h-4" />
-          ) : (
-            <>
-              <ChevronLeft className="w-4 h-4" />
-              <span className="text-xs">Collapse</span>
-            </>
-          )}
-        </button>
-      </div>
-    </aside>
+          </button>
+        </div>
+      </aside>
     </>
   );
 }
-

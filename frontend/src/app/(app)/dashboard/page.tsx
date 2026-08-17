@@ -60,6 +60,8 @@ export default function DashboardPage() {
       .then((user) => {
         if (user && user.role === "admin") {
           setIsAdmin(true);
+          router.replace("/admin");
+          return;
         }
       })
       .catch(() => {});

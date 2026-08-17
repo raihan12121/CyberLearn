@@ -141,3 +141,13 @@ def review_nid_verification(
         created_at=target_user.created_at
     )
 
+@router.get("/users", response_model=List[schemas.UserResponse])
+def get_all_users(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_admin)
+):
+    """
+    Retrieve all registered users for the admin portal user management table.
+    """
+    return db.query(models.User).order_by(models.User.created_at.desc()).all()
+

@@ -157,6 +157,7 @@ export const api = {
 
   // Admin
   getAdminMetrics: () => apiFetch("/admin/metrics"),
+  getAdminUsers: () => apiFetch("/admin/users"),
 
   // Leaderboard
   getLeaderboard: () => apiFetch("/leaderboard"),
