@@ -91,13 +91,16 @@ async def _query_external_llm(
     if gemini_key:
         contents = []
         if history_messages:
-            for h in history_messages[-8:]:
+            for h in history_messages[-10:]:
+                raw_text = (h.get("content") or "").strip()
+                if not raw_text:
+                    continue
                 role = "user" if h.get("role") == "user" else "model"
-                text_val = h.get("content", "")
-                if text_val:
-                    contents.append({"role": role, "parts": [{"text": text_val}]})
+                contents.append({"role": role, "parts": [{"text": raw_text}]})
         
-        contents.append({"role": "user", "parts": [{"text": user_message}]})
+        # Append current user prompt if not duplicate
+        if not contents or contents[-1].get("parts", [{}])[0].get("text") != user_message:
+            contents.append({"role": "user", "parts": [{"text": user_message}]})
 
         payload = {
             "system_instruction": {
@@ -137,10 +140,15 @@ async def _query_external_llm(
             url = "https://api.openai.com/v1/chat/completions"
             messages = [{"role": "system", "content": effective_system}]
             if history_messages:
-                for h in history_messages[-8:]:
+                for h in history_messages[-10:]:
+                    raw_text = (h.get("content") or "").strip()
+                    if not raw_text:
+                        continue
                     r = "user" if h.get("role") == "user" else "assistant"
-                    messages.append({"role": r, "content": h.get("content", "")})
-            messages.append({"role": "user", "content": user_message})
+                    messages.append({"role": r, "content": raw_text})
+            
+            if not messages or messages[-1].get("content") != user_message:
+                messages.append({"role": "user", "content": user_message})
 
             async with httpx.AsyncClient(timeout=12.0) as client:
                 res = await client.post(
@@ -165,62 +173,87 @@ async def _query_external_llm(
 
     return None
 
-
 def _generate_fallback_response(query: str, user_name: str, system_prompt: Optional[str] = None) -> str:
     prompt_tag = f" (Focus: {system_prompt})" if system_prompt else ""
     
-    if "same-origin" in query or "sop" in query:
+    # 1. Learning roadmaps, help, beginner guidance
+    if any(k in query for k in ["how can you help", "learn", "start", "roadmap", "begin", "study", "plan", "where to start"]):
+        return (
+            f"Hello {user_name}! Welcome to CyberLearn Academy. I am Coach Jarvis, your AI Security Mentor.{prompt_tag}\n\n"
+            "Here is how we can accelerate your cybersecurity learning journey:\n\n"
+            "### 🎯 Step-by-Step Learning Framework:\n"
+            "1. **Hands-on Sandboxes**: Practice in our live virtual labs to master Linux command line, networking protocols, and web exploitation.\n"
+            "2. **Concept Deconstruction**: Ask me any concept (e.g. *Same-Origin Policy*, *Buffer Overflow*, *Kerberos*) and I will break it down with simple real-world analogies.\n"
+            "3. **Exam & Cert Drills**: Practice scenario-based quizzes for CompTIA Security+, CEH, and CyberLearn Certified Defender exams.\n"
+            "4. **CTF Challenges**: Get Socratic hints on live challenges without spoiling the final flag.\n\n"
+            "What cybersecurity area would you like to explore right now? (Web Security, Linux, Network Defense, or Cert Prep?)"
+        )
+    # 2. Same-Origin Policy / SOP
+    elif "same-origin" in query or "sop" in query:
         return (
             f"Hello {user_name}!{prompt_tag}\n\n"
             "The Same-Origin Policy (SOP) is a foundational web browser security model. "
             "It restricts how scripts running on one origin (e.g. https://attacker.com) can access cookies, localStorage, "
             "or DOM content on a different origin (e.g. https://yourbank.com).\n\n"
             "An origin is strictly defined by three components:\n"
-            "1. Scheme (e.g. http, https)\n"
-            "2. Host Domain (e.g. app.cyberlearn.io)\n"
-            "3. Port (e.g. 80, 443)\n\n"
+            "1. **Scheme** (e.g. `http`, `https`)\n"
+            "2. **Host Domain** (e.g. `app.cyberlearn.io`)\n"
+            "3. **Port** (e.g. `80`, `443`)\n\n"
             "If any of these three differ, browsers enforce isolation to protect user privacy!"
         )
+    # 3. Cross-Site Scripting / XSS
     elif "xss" in query or "cross-site" in query:
         return (
             f"Great question on XSS, {user_name}!{prompt_tag}\n\n"
-            "Cross-Site Scripting occurs when untrusted user input is rendered in the DOM without sanitization.\n\n"
-            "Key XSS Variations:\n"
-            "• Reflected XSS: Payload comes from the immediate HTTP request (e.g. search query URL).\n"
-            "• Stored XSS: Payload is saved in a database (e.g. user profile, forum comment) and served to subsequent visitors.\n"
-            "• DOM XSS: Client-side JavaScript reads input (e.g. location.hash) and writes it directly to innerHTML.\n\n"
-            "Mitigation: Always use context-aware HTML entity encoding and strict Content Security Policies (CSP)!"
+            "Cross-Site Scripting (XSS) occurs when untrusted user input is rendered in the DOM without proper sanitization.\n\n"
+            "### Key Variations:\n"
+            "• **Reflected XSS**: Payload is reflected immediately from HTTP request parameters (e.g. `?search=<script>...`).\n"
+            "• **Stored XSS**: Payload is stored in a database (e.g. user comments) and executed whenever others view the page.\n"
+            "• **DOM-based XSS**: Client-side JavaScript writes unvalidated input directly to dangerous sinks (`innerHTML`, `document.write`).\n\n"
+            "### Defense:\n"
+            "Always context-encode outputs (HTML entities) and enforce a strict **Content Security Policy (CSP)**!"
         )
+    # 4. SQL Injection
     elif "sql" in query or "sqli" in query:
         return (
             f"SQL Injection (SQLi) is a critical database flaw, {user_name}!{prompt_tag}\n\n"
             "When input fields concatenate user strings directly into SQL queries, "
-            "attackers can break out of string context using single quotes (') and inject boolean conditions like `OR '1'='1` or UNION SELECT statements.\n\n"
-            "Defense: Use Prepared Statements and Parameterized Queries (ORMs like SQLAlchemy or PDO)!"
+            "attackers can break out of string context using single quotes (`'`) and inject boolean conditions like `OR '1'='1` or `UNION SELECT` statements.\n\n"
+            "### Defense:\n"
+            "Always use **Prepared Statements** and Parameterized Queries (ORMs like SQLAlchemy or PDO). Never concatenate raw input into SQL strings!"
         )
-    elif "privilege" in query or "privesc" in query or "sudo" in query:
+    # 5. Linux Privilege Escalation
+    elif any(k in query for k in ["privilege", "privesc", "sudo", "suid", "cron"]):
         return (
-            f"Privilege Escalation in Linux involves turning lower-level shell access into root access, {user_name}.\n\n"
-            "Common Vectors to inspect:\n"
-            "1. SUID Executables: `find / -perm -4000 -type f 2>/dev/null`\n"
-            "2. Sudo Privileges: `sudo -l` to see binaries runnable without a password.\n"
-            "3. Vulnerable Cron Jobs: Inspect `/etc/crontab` and writeable cron script permissions."
+            f"Privilege Escalation in Linux involves elevating low-privilege shell access into root access, {user_name}.\n\n"
+            "### Common Inspection Vectors:\n"
+            "1. **SUID Executables**: `find / -perm -4000 -type f 2>/dev/null`\n"
+            "2. **Sudo Privileges**: `sudo -l` to check binaries runnable without passwords.\n"
+            "3. **Vulnerable Cron Jobs**: Inspect `/etc/crontab` and writeable script permissions.\n"
+            "4. **Capabilities**: `getcap -r / 2>/dev/null`"
         )
-    elif "nmap" in query or "scan" in query or "recon" in query:
+    # 6. Network Recon / Nmap
+    elif any(k in query for k in ["nmap", "scan", "recon", "port", "wireshark"]):
         return (
-            f"Reconnaissance is step #1 in ethical penetration testing, {user_name}!\n\n"
-            "Essential Nmap Cheat Sheet:\n"
+            f"Reconnaissance is step #1 in penetration testing, {user_name}!\n\n"
+            "### Essential Nmap Cheat Sheet:\n"
             "• `nmap -sV -sC <IP>`: Detect service versions and run default NSE scripts.\n"
             "• `nmap -p- <IP>`: Scan all 65,535 TCP ports.\n"
-            "• `nmap -O <IP>`: Perform OS fingerprinting."
+            "• `nmap -O <IP>`: Perform OS fingerprinting.\n"
+            "• `nmap -sU <IP>`: Scan common UDP ports."
         )
+    # 7. Default Contextual Fallback
     else:
         return (
             f"Hello {user_name}! I am Coach Jarvis, your AI Security Mentor.{prompt_tag}\n\n"
-            f"Regarding your query: In cybersecurity assessment, we systematically trace attack vectors, audit network logs, "
-            "inspect authentication cookies, and enforce least-privilege configurations.\n\n"
-            "Feel free to ask about Web Security (SQLi/XSS), Linux PrivEsc, Nmap Scanning, or Exam Prep!"
+            f"Regarding your query on **\"{query[:60]}\"**:\n\n"
+            "In practical cybersecurity defense and offensive operations, we analyze this by:\n"
+            "1. **Threat Modeling**: Identifying assets, threat actors, and potential attack vectors.\n"
+            "2. **Hands-On Verification**: Testing behaviors inside our isolated sandbox labs.\n"
+            "3. **Hardening**: Implementing least privilege, defense-in-depth, and automated monitoring.\n\n"
+            "Feel free to ask me for a code example, lab walkthrough, or conceptual breakdown!"
         )
+
 
 # Legacy Chat Route (Backward compatibility)
 @router.post("/chat")
@@ -437,7 +470,14 @@ async def chat_in_session(
             detail="AI Session not found."
         )
 
-    # Record User Message
+    # 1. Fetch prior conversation history BEFORE appending current message
+    past_messages = db.query(models.AiChatMessage).filter(
+        models.AiChatMessage.session_id == session.id
+    ).order_by(models.AiChatMessage.created_at.asc()).all()
+
+    history_dicts = [{"role": m.role, "content": m.content} for m in past_messages]
+
+    # 2. Record Current User Message
     user_msg = models.AiChatMessage(
         session_id=session.id,
         role="user",
@@ -446,28 +486,24 @@ async def chat_in_session(
     db.add(user_msg)
     db.commit()
 
-    # Load recent history for context
-    past_messages = db.query(models.AiChatMessage).filter(
-        models.AiChatMessage.session_id == session.id
-    ).order_by(models.AiChatMessage.created_at.asc()).all()
-
-    history_dicts = [{"role": m.role, "content": m.content} for m in past_messages]
-
     user_name = current_user.full_name.split()[0] if (current_user.full_name and current_user.full_name.strip()) else "Agent"
     effective_prompt = req.override_system_prompt or session.system_prompt
 
-    # Query LLM asynchronously or fallback
+    # 3. Query LLM asynchronously with clean history or fallback
     llm_reply = await _query_external_llm(req.message, user_name, effective_prompt, history_dicts)
     if not llm_reply:
         llm_reply = _generate_fallback_response(req.message.lower(), user_name, effective_prompt)
 
-    # Record Assistant Message
+    # 4. Record Assistant Message
     assistant_msg = models.AiChatMessage(
         session_id=session.id,
         role="assistant",
         content=llm_reply
     )
     db.add(assistant_msg)
+    
+    # Touch session updated_at
+    session.updated_at = func.now()
     db.commit()
 
     return {
@@ -476,4 +512,5 @@ async def chat_in_session(
         "session_id": session.id,
         "system_prompt": effective_prompt
     }
+
 

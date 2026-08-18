@@ -147,7 +147,27 @@ export default function AICoachPage() {
 
   // Handle Send Chat
   const handleSend = async (textToSend: string) => {
-    if (!textToSend.trim() || !activeSession) return;
+    if (!textToSend.trim()) return;
+
+    let currentSession = activeSession;
+    if (!currentSession) {
+      // Auto-provision a starter session if none active
+      try {
+        setLoading(true);
+        currentSession = await api.createAiSession({
+          title: "General Cybersecurity Tutoring",
+          system_prompt: "You are Coach Jarvis, an expert and patient cybersecurity mentor specializing in practical hands-on labs and exam preparation.",
+        });
+        if (currentSession) {
+          setSessions((prev) => [currentSession!, ...prev]);
+          setActiveSession(currentSession);
+        }
+      } catch (err) {
+        console.error("Failed to auto-create session:", err);
+      }
+    }
+
+    if (!currentSession) return;
 
     const userMessageContent = textToSend.trim();
     setInput("");
@@ -162,7 +182,7 @@ export default function AICoachPage() {
     setLoading(true);
 
     try {
-      const res = await api.chatInAiSession(activeSession.id, userMessageContent);
+      const res = await api.chatInAiSession(currentSession.id, userMessageContent);
       const botMsg: ChatMessage = {
         role: "assistant",
         content: res.reply || "No response received.",
@@ -180,6 +200,7 @@ export default function AICoachPage() {
       setLoading(false);
     }
   };
+
 
   // Create New Session
   const handleCreateSession = async (e: React.FormEvent) => {

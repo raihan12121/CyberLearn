@@ -48,14 +48,20 @@ app.add_middleware(
 _rate_limit_records = defaultdict(list)
 
 RATE_LIMITS = {
-    "/auth/login": (20, 60),       # 20 requests per 60 seconds
-    "/auth/register": (10, 60),    # 10 requests per 60 seconds
-    "/ai/chat": (30, 60),          # 30 requests per 60 seconds
+    "/auth/login": (30, 60),       # 30 requests per 60 seconds
+    "/auth/register": (15, 60),    # 15 requests per 60 seconds
+    "/ai/chat": (120, 60),         # 120 requests per 60 seconds
 }
 
 @app.middleware("http")
 async def rate_limiting_middleware(request: Request, call_next):
-    client_ip = request.client.host if request.client else "unknown"
+    # Extract real client IP behind reverse proxy (Vercel / Cloudflare / Render)
+    forwarded_for = request.headers.get("x-forwarded-for")
+    if forwarded_for:
+        client_ip = forwarded_for.split(",")[0].strip()
+    else:
+        client_ip = request.client.host if request.client else "unknown"
+
     path = request.url.path
 
     # Check matching rate limit rule
@@ -86,6 +92,7 @@ async def rate_limiting_middleware(request: Request, call_next):
 
     response = await call_next(request)
     return response
+
 
 # Register routers
 app.include_router(auth_router)
