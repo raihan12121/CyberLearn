@@ -196,8 +196,9 @@ class AiSession(Base):
     user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
     title = Column(String(255), nullable=False, default="Cyber Security Tutoring")
     system_prompt = Column(Text, nullable=True) # Custom Persona/Instructions
-    model_type = Column(String(50), default="gemini-1.5-flash")
+    model_type = Column(String(50), default="gemini-3.5-flash-lite")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), index=True)
 
     user = relationship("User", back_populates="ai_sessions")

@@ -246,7 +246,8 @@ class BatchDetailResponse(BatchResponse):
 class AiSessionCreate(BaseModel):
     title: Optional[str] = "New AI Security Session"
     system_prompt: Optional[str] = None
-    model_type: Optional[str] = "gemini-1.5-flash"
+    model_type: Optional[str] = "gemini-3.5-flash-lite"
+
 
 class AiChatMessageResponse(BaseModel):
     id: str

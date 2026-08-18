@@ -21,9 +21,17 @@ router = APIRouter(
     tags=["AI Cyber Coach"]
 )
 
-# In-Memory Zero-Cost Response Cache for repetitive prompts (1 hour TTL)
+# Zero-cost in-memory cache for repetitive queries (10 min TTL)
 _ai_response_cache: Dict[str, Dict[str, Any]] = {}
-AI_CACHE_TTL_SECONDS = 3600
+AI_CACHE_TTL_SECONDS = 600
+
+# Active high-availability Gemini models on Google AI Studio
+GEMINI_MODELS = [
+    "gemini-3.5-flash-lite",
+    "gemini-3.5-flash",
+    "gemini-3.6-flash",
+    "gemini-flash-latest"
+]
 
 def _get_cache_key(query: str, system_prompt: Optional[str]) -> str:
     raw = f"{query.strip().lower()}|||{(system_prompt or '').strip().lower()}"
@@ -40,8 +48,7 @@ def _get_from_cache(cache_key: str) -> Optional[str]:
     return None
 
 def _store_in_cache(cache_key: str, response: str):
-    # Cap cache size at 500 items to keep memory well under 5MB on 512MB Render tier
-    if len(_ai_response_cache) > 500:
+    if len(_ai_response_cache) > 200:
         _ai_response_cache.clear()
     _ai_response_cache[cache_key] = {
         "response": response,
@@ -63,57 +70,66 @@ async def _query_external_llm(
     history_messages: Optional[List[dict]] = None
 ) -> Optional[str]:
     """
-    Non-blocking Async query to Google Gemini API or OpenAI API with in-memory caching.
+    Non-blocking async query to Google Gemini API (with multi-model fallback chain) or OpenAI.
     """
     default_prompt = (
-        f"You are Coach Jarvis, an expert, encouraging ethical cybersecurity tutor at CyberLearn Academy. "
-        f"Answer the student's question clearly, concisely, and accurately. Student Name: {user_name}."
+        f"You are Coach Jarvis, an expert, enthusiastic, and encouraging cybersecurity mentor at CyberLearn Academy. "
+        f"Address the student warmly (Name: {user_name}). Provide clear, structured, actionable, and practical guidance."
     )
     effective_system = system_prompt.strip() if (system_prompt and system_prompt.strip()) else default_prompt
 
-    # Check cache for standalone queries without recent dynamic history
+    # Check cache only for simple standalone single-turn queries
     cache_key = None
     if not history_messages or len(history_messages) == 0:
         cache_key = _get_cache_key(user_message, effective_system)
         cached_reply = _get_from_cache(cache_key)
         if cached_reply:
-            logger.info("Serving AI coach response from zero-cost in-memory cache")
+            logger.info("Serving AI response from in-memory cache")
             return cached_reply
 
     gemini_key = settings.GEMINI_API_KEY or os.environ.get("GEMINI_API_KEY")
     if gemini_key:
-        try:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
-            
-            contents = []
-            if history_messages:
-                for h in history_messages[-6:]:
-                    role = "user" if h.get("role") == "user" else "model"
-                    contents.append({"role": role, "parts": [{"text": h.get("content", "")}]})
-            
-            prompt_full = f"[System Instructions: {effective_system}]\nStudent Question: {user_message}"
-            contents.append({"role": "user", "parts": [{"text": prompt_full}]})
+        contents = []
+        if history_messages:
+            for h in history_messages[-8:]:
+                role = "user" if h.get("role") == "user" else "model"
+                text_val = h.get("content", "")
+                if text_val:
+                    contents.append({"role": role, "parts": [{"text": text_val}]})
+        
+        contents.append({"role": "user", "parts": [{"text": user_message}]})
 
-            async with httpx.AsyncClient(timeout=12.0) as client:
-                res = await client.post(
-                    url,
-                    json={"contents": contents},
-                    headers={"Content-Type": "application/json"}
-                )
-                if res.status_code == 200:
-                    res_data = res.json()
-                    candidates = res_data.get("candidates", [])
-                    if candidates:
-                        parts = candidates[0].get("content", {}).get("parts", [])
-                        if parts:
-                            reply = parts[0].get("text")
-                            if reply and cache_key:
-                                _store_in_cache(cache_key, reply)
-                            return reply
-                else:
-                    logger.warning(f"Gemini API returned status {res.status_code}: {res.text}")
-        except Exception as e:
-            logger.warning(f"Gemini async API call failed, attempting fallback: {e}")
+        payload = {
+            "system_instruction": {
+                "parts": [{"text": effective_system}]
+            },
+            "contents": contents
+        }
+
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            for model_name in GEMINI_MODELS:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key}"
+                try:
+                    res = await client.post(
+                        url,
+                        json=payload,
+                        headers={"Content-Type": "application/json"}
+                    )
+                    if res.status_code == 200:
+                        res_data = res.json()
+                        candidates = res_data.get("candidates", [])
+                        if candidates:
+                            parts = candidates[0].get("content", {}).get("parts", [])
+                            if parts:
+                                reply = parts[0].get("text")
+                                if reply:
+                                    if cache_key:
+                                        _store_in_cache(cache_key, reply)
+                                    return reply
+                    else:
+                        logger.warning(f"Gemini model {model_name} returned status {res.status_code}: {res.text[:120]}")
+                except Exception as e:
+                    logger.warning(f"Gemini model {model_name} failed: {e}")
 
     openai_key = settings.OPENAI_API_KEY or os.environ.get("OPENAI_API_KEY")
     if openai_key:
@@ -121,7 +137,7 @@ async def _query_external_llm(
             url = "https://api.openai.com/v1/chat/completions"
             messages = [{"role": "system", "content": effective_system}]
             if history_messages:
-                for h in history_messages[-6:]:
+                for h in history_messages[-8:]:
                     r = "user" if h.get("role") == "user" else "assistant"
                     messages.append({"role": r, "content": h.get("content", "")})
             messages.append({"role": "user", "content": user_message})
@@ -140,14 +156,15 @@ async def _query_external_llm(
                     choices = res_data.get("choices", [])
                     if choices:
                         reply = choices[0].get("message", {}).get("content")
-                        if reply and cache_key:
-                            _store_in_cache(cache_key, reply)
-                        return reply
+                        if reply:
+                            if cache_key:
+                                _store_in_cache(cache_key, reply)
+                            return reply
         except Exception as e:
-            logger.warning(f"OpenAI async API call failed, attempting fallback: {e}")
-
+            logger.warning(f"OpenAI async API call failed: {e}")
 
     return None
+
 
 def _generate_fallback_response(query: str, user_name: str, system_prompt: Optional[str] = None) -> str:
     prompt_tag = f" (Focus: {system_prompt})" if system_prompt else ""
@@ -262,7 +279,7 @@ def list_ai_sessions(
             user_id=s.user_id,
             title=s.title,
             system_prompt=s.system_prompt,
-            model_type=s.model_type or "gemini-1.5-flash",
+            model_type=s.model_type or "gemini-3.5-flash-lite",
             created_at=s.created_at,
             updated_at=s.updated_at,
             message_count=msg_count
@@ -279,8 +296,9 @@ def create_ai_session(
         user_id=current_user.id,
         title=session_in.title or "New AI Security Session",
         system_prompt=session_in.system_prompt,
-        model_type=session_in.model_type or "gemini-1.5-flash"
+        model_type=session_in.model_type or "gemini-3.5-flash-lite"
     )
+
     db.add(new_session)
     db.commit()
     db.refresh(new_session)
