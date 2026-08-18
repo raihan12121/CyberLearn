@@ -255,13 +255,25 @@ def _generate_fallback_response(query: str, user_name: str, system_prompt: Optio
         )
 
 
+from datetime import datetime, timezone
+from ..database import get_db
+from ..auth.dependencies import get_current_user, get_optional_user
+from ..config import settings
+from .. import models, schemas
+
+logger = logging.getLogger("cyberlearn.ai")
+
 # Legacy Chat Route (Backward compatibility)
 @router.post("/chat")
-async def chat_with_coach(request: ChatRequest, current_user: models.User = Depends(get_current_user)):
-    user_name = current_user.full_name.split()[0] if (current_user.full_name and current_user.full_name.strip()) else "Agent"
+async def chat_with_coach(
+    request: ChatRequest,
+    current_user: Optional[models.User] = Depends(get_optional_user)
+):
+    user_name = current_user.full_name.split()[0] if (current_user and current_user.full_name and current_user.full_name.strip()) else "Learner"
     query = request.message.lower()
     
-    llm_reply = await _query_external_llm(request.message, user_name)
+    history_dicts = [{"role": ("user" if m.sender == "user" else "model"), "content": m.text} for m in request.history]
+    llm_reply = await _query_external_llm(request.message, user_name, None, history_dicts)
     if llm_reply:
         return {"reply": llm_reply, "coach_name": "Jarvis (AI LLM Active)"}
 
@@ -275,8 +287,21 @@ async def chat_with_coach(request: ChatRequest, current_user: models.User = Depe
 @router.get("/sessions", response_model=List[schemas.AiSessionResponse])
 def list_ai_sessions(
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
+    current_user: Optional[models.User] = Depends(get_optional_user)
 ):
+    if not current_user:
+        # Return default guest starter session for unauthenticated visitors
+        return [schemas.AiSessionResponse(
+            id="guest-session",
+            user_id="guest",
+            title="General Cybersecurity Tutoring",
+            system_prompt="You are Coach Jarvis, an expert and patient cybersecurity mentor specializing in practical hands-on labs and exam preparation.",
+            model_type="gemini-3.5-flash-lite",
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
+            message_count=0
+        )]
+
     sessions = db.query(models.AiSession).filter(
         models.AiSession.user_id == current_user.id
     ).order_by(models.AiSession.updated_at.desc()).all()
@@ -323,8 +348,20 @@ def list_ai_sessions(
 def create_ai_session(
     session_in: schemas.AiSessionCreate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
+    current_user: Optional[models.User] = Depends(get_optional_user)
 ):
+    if not current_user:
+        return schemas.AiSessionResponse(
+            id="guest-session",
+            user_id="guest",
+            title=session_in.title or "General Cybersecurity Tutoring",
+            system_prompt=session_in.system_prompt,
+            model_type=session_in.model_type or "gemini-3.5-flash-lite",
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
+            message_count=0
+        )
+
     new_session = models.AiSession(
         user_id=current_user.id,
         title=session_in.title or "New AI Security Session",
@@ -351,8 +388,23 @@ def create_ai_session(
 def get_ai_session_details(
     session_id: str,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
+    current_user: Optional[models.User] = Depends(get_optional_user)
 ):
+    if not current_user or session_id == "guest-session":
+        return {
+            "session": schemas.AiSessionResponse(
+                id="guest-session",
+                user_id="guest",
+                title="General Cybersecurity Tutoring",
+                system_prompt="You are Coach Jarvis, an expert and patient cybersecurity mentor specializing in practical hands-on labs and exam preparation.",
+                model_type="gemini-3.5-flash-lite",
+                created_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(timezone.utc),
+                message_count=0
+            ),
+            "messages": []
+        }
+
     session = db.query(models.AiSession).filter(
         models.AiSession.id == session_id,
         models.AiSession.user_id == current_user.id
@@ -457,8 +509,22 @@ async def chat_in_session(
     session_id: str,
     req: schemas.AiSessionChatRequest,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
+    current_user: Optional[models.User] = Depends(get_optional_user)
 ):
+    if not current_user or session_id == "guest-session":
+        # Instant Guest Mode without database dependencies
+        user_name = current_user.full_name.split()[0] if (current_user and current_user.full_name and current_user.full_name.strip()) else "Learner"
+        effective_prompt = req.override_system_prompt or "You are Coach Jarvis, an expert and patient cybersecurity mentor specializing in practical hands-on labs and exam preparation."
+        llm_reply = await _query_external_llm(req.message, user_name, effective_prompt, [])
+        if not llm_reply:
+            llm_reply = _generate_fallback_response(req.message.lower(), user_name, effective_prompt)
+        return {
+            "reply": llm_reply,
+            "coach_name": "Jarvis",
+            "session_id": "guest-session",
+            "system_prompt": effective_prompt
+        }
+
     session = db.query(models.AiSession).filter(
         models.AiSession.id == session_id,
         models.AiSession.user_id == current_user.id
@@ -512,5 +578,6 @@ async def chat_in_session(
         "session_id": session.id,
         "system_prompt": effective_prompt
     }
+
 
 

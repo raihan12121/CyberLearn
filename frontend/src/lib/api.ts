@@ -139,11 +139,12 @@ export const api = {
   },
 
   // AI Cyber Coach
-  chatWithCoach: (message: string, history: { sender: string; text: string }[]) => 
+  chatWithCoach: (message: string, history: { sender: string; text: string }[] = []) => 
     apiFetch("/ai/chat", {
       method: "POST",
       body: JSON.stringify({ message, history }),
     }),
+
 
   // Community Feed
   getPosts: () => apiFetch("/posts"),
@@ -248,6 +249,7 @@ export const api = {
   }),
 
   // Course Exams & Certification
+
   getExams: () => apiFetch("/exams"),
   getCourseExam: (courseId: string) => apiFetch(`/exams/course/${courseId}`),
   getExamDetails: (examId: string) => apiFetch(`/exams/${examId}`),
