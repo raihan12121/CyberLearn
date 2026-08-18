@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Card, Badge, ProgressBar, Avatar, Button } from "@/components/ui";
 import { api } from "@/lib/api";
+import { useAuthStore } from "@/lib/authStore";
 import SkillRadarChart from "@/components/dashboard/SkillRadarChart";
 
 interface ProfileState {
@@ -36,13 +37,14 @@ interface ProfileState {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { user, fetchUser } = useAuthStore();
 
   // Dynamic States
   const [profile, setProfile] = useState<ProfileState>({
-    full_name: "Learner",
-    username: "learner",
-    xp: 0,
-    streak_days: 0,
+    full_name: user?.full_name || "Learner",
+    username: user?.username || "learner",
+    xp: user?.xp || 0,
+    streak_days: user?.streak_days || 0,
     solved_labs_count: 0,
     rank: 1,
     timeline: [],
@@ -55,16 +57,15 @@ export default function DashboardPage() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    // Check if current user is admin
-    api.getMe()
-      .then((user) => {
-        if (user && user.role === "admin") {
-          setIsAdmin(true);
-          router.replace("/admin");
-          return;
-        }
-      })
-      .catch(() => {});
+    // Check if current user is admin via cached auth store
+    fetchUser().then((currentUser) => {
+      if (currentUser && currentUser.role === "admin") {
+        setIsAdmin(true);
+        router.replace("/admin");
+        return;
+      }
+    }).catch(() => {});
+
 
     // Fetch Profile Details
     const fetchProfilePromise = api.getProfileDetails()

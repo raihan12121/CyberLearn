@@ -1,19 +1,27 @@
+import time
 from fastapi import APIRouter, Depends, Header
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 from ..database import get_db
 from .. import models
 from ..auth.dependencies import get_current_user
-from ..auth.utils import create_access_token, get_password_hash # simple helper
-# We will do optional authentication
+from ..auth.utils import create_access_token, get_password_hash
 from jose import JWTError, jwt
 from ..config import settings
+from sqlalchemy import func
 
 router = APIRouter(
     prefix="/leaderboard",
     tags=["Leaderboard"]
 )
+
+# Zero-cost in-memory TTL cache for the top leaderboard
+_leaderboard_cache: Dict[str, Any] = {
+    "data": None,
+    "timestamp": 0
+}
+LEADERBOARD_CACHE_TTL = 30  # 30 seconds
 
 def get_optional_user(authorization: Optional[str] = Header(None), db: Session = Depends(get_db)) -> Optional[models.User]:
     if not authorization or not authorization.startswith("Bearer "):
@@ -29,14 +37,25 @@ def get_optional_user(authorization: Optional[str] = Header(None), db: Session =
     except Exception:
         return None
 
-from sqlalchemy import func
-
 @router.get("")
 def get_leaderboard(
     limit: int = 100,
     db: Session = Depends(get_db),
     current_user: Optional[models.User] = Depends(get_optional_user)
 ):
+    now = time.time()
+    
+    # Check in-memory cache
+    if _leaderboard_cache["data"] is not None and (now - _leaderboard_cache["timestamp"] < LEADERBOARD_CACHE_TTL):
+        base_entries = _leaderboard_cache["data"]
+        # Customize "current" flag per requesting user
+        result = []
+        for entry in base_entries:
+            e = dict(entry)
+            e["current"] = True if current_user and e.get("user_id") == current_user.id else False
+            result.append(e)
+        return result
+
     # Pre-seed some mock active competitors if db is essentially empty
     user_count = db.query(models.User).count()
     if user_count <= 1:
@@ -64,20 +83,24 @@ def get_leaderboard(
         db.add_all(new_users)
         db.commit()
 
-    # Efficient batch query for solved labs count grouped by user
-    solved_counts = dict(
-        db.query(
-            models.LabSession.user_id,
-            func.count(models.LabSession.id)
-        ).filter(
-            models.LabSession.status == "completed"
-        ).group_by(models.LabSession.user_id).all()
-    )
-
-    # Retrieve top users sorted by XP desc
+    # Retrieve top users sorted by XP desc (indexed)
     users = db.query(models.User).order_by(models.User.xp.desc()).limit(max(1, min(limit, 200))).all()
-    
-    leaderboard_entries = []
+    user_ids = [u.id for u in users]
+
+    # Bounded query for solved labs count grouped only by the top users (prevents full-table scan)
+    solved_counts = {}
+    if user_ids:
+        solved_counts = dict(
+            db.query(
+                models.LabSession.user_id,
+                func.count(models.LabSession.id)
+            ).filter(
+                models.LabSession.user_id.in_(user_ids),
+                models.LabSession.status == "completed"
+            ).group_by(models.LabSession.user_id).all()
+        )
+
+    base_entries = []
     for idx, u in enumerate(users):
         solved_count = solved_counts.get(u.id, 0)
         
@@ -89,13 +112,26 @@ def get_leaderboard(
             }
             solved_count = mock_solved_map.get(u.username, 0)
 
-        leaderboard_entries.append({
+        base_entries.append({
             "rank": idx + 1,
+            "user_id": u.id,
             "name": u.full_name or u.username or u.email.split("@")[0],
             "xp": u.xp,
             "solved": solved_count,
             "activeDays": u.streak_days,
-            "current": True if current_user and u.id == current_user.id else False
+            "current": False
         })
+
+    # Cache calculated top entries
+    _leaderboard_cache["data"] = base_entries
+    _leaderboard_cache["timestamp"] = now
+
+    # Customize "current" flag for the response
+    response_entries = []
+    for entry in base_entries:
+        e = dict(entry)
+        e["current"] = True if current_user and e.get("user_id") == current_user.id else False
+        response_entries.append(e)
         
-    return leaderboard_entries
+    return response_entries
+

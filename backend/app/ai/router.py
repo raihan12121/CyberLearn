@@ -1,19 +1,52 @@
 import os
 import json
-import urllib.request
-import urllib.error
+import time
+import hashlib
+import logging
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from ..database import get_db
 from ..auth.dependencies import get_current_user
+from ..config import settings
 from .. import models, schemas
+
+logger = logging.getLogger("cyberlearn.ai")
 
 router = APIRouter(
     prefix="/ai",
     tags=["AI Cyber Coach"]
 )
+
+# In-Memory Zero-Cost Response Cache for repetitive prompts (1 hour TTL)
+_ai_response_cache: Dict[str, Dict[str, Any]] = {}
+AI_CACHE_TTL_SECONDS = 3600
+
+def _get_cache_key(query: str, system_prompt: Optional[str]) -> str:
+    raw = f"{query.strip().lower()}|||{(system_prompt or '').strip().lower()}"
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+def _get_from_cache(cache_key: str) -> Optional[str]:
+    now = time.time()
+    if cache_key in _ai_response_cache:
+        entry = _ai_response_cache[cache_key]
+        if now - entry["timestamp"] < AI_CACHE_TTL_SECONDS:
+            return entry["response"]
+        else:
+            del _ai_response_cache[cache_key]
+    return None
+
+def _store_in_cache(cache_key: str, response: str):
+    # Cap cache size at 500 items to keep memory well under 5MB on 512MB Render tier
+    if len(_ai_response_cache) > 500:
+        _ai_response_cache.clear()
+    _ai_response_cache[cache_key] = {
+        "response": response,
+        "timestamp": time.time()
+    }
 
 class ChatMessage(BaseModel):
     sender: str
@@ -23,9 +56,14 @@ class ChatRequest(BaseModel):
     message: str
     history: List[ChatMessage] = []
 
-def _query_external_llm(user_message: str, user_name: str, system_prompt: Optional[str] = None, history_messages: Optional[List[dict]] = None) -> Optional[str]:
+async def _query_external_llm(
+    user_message: str,
+    user_name: str,
+    system_prompt: Optional[str] = None,
+    history_messages: Optional[List[dict]] = None
+) -> Optional[str]:
     """
-    Attempt to query Gemini API or OpenAI API with custom system instructions.
+    Non-blocking Async query to Google Gemini API or OpenAI API with in-memory caching.
     """
     default_prompt = (
         f"You are Coach Jarvis, an expert, encouraging ethical cybersecurity tutor at CyberLearn Academy. "
@@ -33,13 +71,21 @@ def _query_external_llm(user_message: str, user_name: str, system_prompt: Option
     )
     effective_system = system_prompt.strip() if (system_prompt and system_prompt.strip()) else default_prompt
 
-    gemini_key = os.environ.get("GEMINI_API_KEY")
+    # Check cache for standalone queries without recent dynamic history
+    cache_key = None
+    if not history_messages or len(history_messages) == 0:
+        cache_key = _get_cache_key(user_message, effective_system)
+        cached_reply = _get_from_cache(cache_key)
+        if cached_reply:
+            logger.info("Serving AI coach response from zero-cost in-memory cache")
+            return cached_reply
+
+    gemini_key = settings.GEMINI_API_KEY or os.environ.get("GEMINI_API_KEY")
     if gemini_key:
         try:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
             
             contents = []
-            # Add past history if available
             if history_messages:
                 for h in history_messages[-6:]:
                     role = "user" if h.get("role") == "user" else "model"
@@ -48,19 +94,28 @@ def _query_external_llm(user_message: str, user_name: str, system_prompt: Option
             prompt_full = f"[System Instructions: {effective_system}]\nStudent Question: {user_message}"
             contents.append({"role": "user", "parts": [{"text": prompt_full}]})
 
-            payload = json.dumps({"contents": contents}).encode("utf-8")
-            req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                res_data = json.loads(resp.read().decode("utf-8"))
-                candidates = res_data.get("candidates", [])
-                if candidates:
-                    parts = candidates[0].get("content", {}).get("parts", [])
-                    if parts:
-                        return parts[0].get("text")
+            async with httpx.AsyncClient(timeout=12.0) as client:
+                res = await client.post(
+                    url,
+                    json={"contents": contents},
+                    headers={"Content-Type": "application/json"}
+                )
+                if res.status_code == 200:
+                    res_data = res.json()
+                    candidates = res_data.get("candidates", [])
+                    if candidates:
+                        parts = candidates[0].get("content", {}).get("parts", [])
+                        if parts:
+                            reply = parts[0].get("text")
+                            if reply and cache_key:
+                                _store_in_cache(cache_key, reply)
+                            return reply
+                else:
+                    logger.warning(f"Gemini API returned status {res.status_code}: {res.text}")
         except Exception as e:
-            print("Gemini API call failed, falling back to security engine:", e)
+            logger.warning(f"Gemini async API call failed, attempting fallback: {e}")
 
-    openai_key = os.environ.get("OPENAI_API_KEY")
+    openai_key = settings.OPENAI_API_KEY or os.environ.get("OPENAI_API_KEY")
     if openai_key:
         try:
             url = "https://api.openai.com/v1/chat/completions"
@@ -71,21 +126,26 @@ def _query_external_llm(user_message: str, user_name: str, system_prompt: Option
                     messages.append({"role": r, "content": h.get("content", "")})
             messages.append({"role": "user", "content": user_message})
 
-            payload = json.dumps({
-                "model": "gpt-4o-mini",
-                "messages": messages
-            }).encode("utf-8")
-            req = urllib.request.Request(url, data=payload, headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {openai_key}"
-            })
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                res_data = json.loads(resp.read().decode("utf-8"))
-                choices = res_data.get("choices", [])
-                if choices:
-                    return choices[0].get("message", {}).get("content")
+            async with httpx.AsyncClient(timeout=12.0) as client:
+                res = await client.post(
+                    url,
+                    json={"model": "gpt-4o-mini", "messages": messages, "max_tokens": 800},
+                    headers={
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {openai_key}"
+                    }
+                )
+                if res.status_code == 200:
+                    res_data = res.json()
+                    choices = res_data.get("choices", [])
+                    if choices:
+                        reply = choices[0].get("message", {}).get("content")
+                        if reply and cache_key:
+                            _store_in_cache(cache_key, reply)
+                        return reply
         except Exception as e:
-            print("OpenAI API call failed, falling back to security engine:", e)
+            logger.warning(f"OpenAI async API call failed, attempting fallback: {e}")
+
 
     return None
 
@@ -147,11 +207,11 @@ def _generate_fallback_response(query: str, user_name: str, system_prompt: Optio
 
 # Legacy Chat Route (Backward compatibility)
 @router.post("/chat")
-def chat_with_coach(request: ChatRequest, current_user: models.User = Depends(get_current_user)):
+async def chat_with_coach(request: ChatRequest, current_user: models.User = Depends(get_current_user)):
     user_name = current_user.full_name.split()[0] if (current_user.full_name and current_user.full_name.strip()) else "Agent"
     query = request.message.lower()
     
-    llm_reply = _query_external_llm(request.message, user_name)
+    llm_reply = await _query_external_llm(request.message, user_name)
     if llm_reply:
         return {"reply": llm_reply, "coach_name": "Jarvis (AI LLM Active)"}
 
@@ -183,9 +243,20 @@ def list_ai_sessions(
         db.refresh(starter)
         sessions = [starter]
 
+    # Batch count messages across all sessions in a single SQL query (eliminates N+1)
+    session_ids = [s.id for s in sessions]
+    msg_counts = dict(
+        db.query(
+            models.AiChatMessage.session_id,
+            func.count(models.AiChatMessage.id)
+        ).filter(
+            models.AiChatMessage.session_id.in_(session_ids)
+        ).group_by(models.AiChatMessage.session_id).all()
+    )
+
     result = []
     for s in sessions:
-        msg_count = db.query(models.AiChatMessage).filter(models.AiChatMessage.session_id == s.id).count()
+        msg_count = msg_counts.get(s.id, 0)
         result.append(schemas.AiSessionResponse(
             id=s.id,
             user_id=s.user_id,
@@ -331,7 +402,7 @@ def delete_ai_session(
     return {"status": "deleted", "session_id": session_id}
 
 @router.post("/sessions/{session_id}/chat")
-def chat_in_session(
+async def chat_in_session(
     session_id: str,
     req: schemas.AiSessionChatRequest,
     db: Session = Depends(get_db),
@@ -357,7 +428,7 @@ def chat_in_session(
     db.add(user_msg)
     db.commit()
 
-    # Load history for context
+    # Load recent history for context
     past_messages = db.query(models.AiChatMessage).filter(
         models.AiChatMessage.session_id == session.id
     ).order_by(models.AiChatMessage.created_at.asc()).all()
@@ -367,8 +438,8 @@ def chat_in_session(
     user_name = current_user.full_name.split()[0] if (current_user.full_name and current_user.full_name.strip()) else "Agent"
     effective_prompt = req.override_system_prompt or session.system_prompt
 
-    # Query LLM or fallback
-    llm_reply = _query_external_llm(req.message, user_name, effective_prompt, history_dicts)
+    # Query LLM asynchronously or fallback
+    llm_reply = await _query_external_llm(req.message, user_name, effective_prompt, history_dicts)
     if not llm_reply:
         llm_reply = _generate_fallback_response(req.message.lower(), user_name, effective_prompt)
 
@@ -387,3 +458,4 @@ def chat_in_session(
         "session_id": session.id,
         "system_prompt": effective_prompt
     }
+

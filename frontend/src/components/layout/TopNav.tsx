@@ -29,20 +29,10 @@ import {
 import Avatar from "../ui/Avatar";
 import { api } from "@/lib/api";
 import { signOutFirebase } from "@/lib/firebase";
+import { useAuthStore, UserProfile } from "@/lib/authStore";
 
 interface TopNavProps {
   onMenuClick?: () => void;
-}
-
-interface UserProfile {
-  id: string;
-  email: string;
-  full_name?: string;
-  username?: string;
-  role: string;
-  xp: number;
-  verification_status?: string;
-  avatar_url?: string;
 }
 
 export interface NotificationItem {
@@ -57,7 +47,7 @@ export interface NotificationItem {
 
 export default function TopNav({ onMenuClick }: TopNavProps) {
   const router = useRouter();
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const { user, fetchUser, clearUser } = useAuthStore();
 
   // Profile Dropdown
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -71,18 +61,16 @@ export default function TopNav({ onMenuClick }: TopNavProps) {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
   useEffect(() => {
-    api.getMe()
+    fetchUser()
       .then((data) => {
-        if (data) {
-          setUser(data);
-          initializeNotifications(data);
-        }
+        initializeNotifications(data);
       })
       .catch((err) => {
         console.error("Error loading user profile in topnav:", err);
         initializeNotifications(null);
       });
-  }, []);
+  }, [fetchUser]);
+
 
   // Initialize notifications with persistence
   const initializeNotifications = (userData: UserProfile | null) => {
@@ -180,9 +168,11 @@ export default function TopNav({ onMenuClick }: TopNavProps) {
     try {
       await signOutFirebase();
     } catch {}
+    clearUser();
     api.logout();
     router.push("/login");
   };
+
 
   // Notification actions
   const markAsRead = (id: string, link?: string) => {

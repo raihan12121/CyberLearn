@@ -74,6 +74,8 @@ def seed_default_batches_if_empty(db: Session):
             db.add(b2)
             db.commit()
 
+from sqlalchemy import func
+
 @router.get("", response_model=List[schemas.BatchResponse])
 def list_batches(
     db: Session = Depends(get_db),
@@ -81,16 +83,30 @@ def list_batches(
 ):
     seed_default_batches_if_empty(db)
     batches = db.query(models.Batch).filter(models.Batch.is_active == True).order_by(models.Batch.created_at.desc()).all()
+    batch_ids = [b.id for b in batches]
     
+    # Batch query enrollment counts across all batches (1 query instead of N)
+    enrolled_counts = dict(
+        db.query(
+            models.BatchEnrollment.batch_id,
+            func.count(models.BatchEnrollment.id)
+        ).filter(
+            models.BatchEnrollment.batch_id.in_(batch_ids)
+        ).group_by(models.BatchEnrollment.batch_id).all()
+    ) if batch_ids else {}
+
+    # Batch query user enrollment statuses (1 query instead of N)
+    user_enrolled_batch_ids = set(
+        row[0] for row in db.query(models.BatchEnrollment.batch_id).filter(
+            models.BatchEnrollment.batch_id.in_(batch_ids),
+            models.BatchEnrollment.user_id == current_user.id
+        ).all()
+    ) if current_user and batch_ids else set()
+
     result = []
     for b in batches:
-        enrolled_count = db.query(models.BatchEnrollment).filter(models.BatchEnrollment.batch_id == b.id).count()
-        is_enrolled = False
-        if current_user:
-            is_enrolled = db.query(models.BatchEnrollment).filter(
-                models.BatchEnrollment.batch_id == b.id,
-                models.BatchEnrollment.user_id == current_user.id
-            ).first() is not None
+        enrolled_count = enrolled_counts.get(b.id, 0)
+        is_enrolled = b.id in user_enrolled_batch_ids
 
         result.append(schemas.BatchResponse(
             id=b.id,
@@ -112,6 +128,7 @@ def list_batches(
             created_at=b.created_at
         ))
     return result
+
 
 @router.post("", response_model=schemas.BatchResponse, status_code=status.HTTP_201_CREATED)
 def create_batch(

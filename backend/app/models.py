@@ -1,5 +1,8 @@
 import uuid
-from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, DateTime, Text, JSON, Numeric
+from sqlalchemy import (
+    Column, String, Integer, Boolean, ForeignKey, DateTime, Text, JSON, Numeric,
+    Index, UniqueConstraint
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from .database import Base
@@ -15,22 +18,22 @@ class User(Base):
     username = Column(String(255), unique=True, index=True, nullable=True)
     password_hash = Column(String(255), nullable=False)
     full_name = Column(String(255), nullable=True)
-    role = Column(String(20), default="student") # student, instructor, admin
+    role = Column(String(20), default="student", index=True) # student, instructor, admin
     is_verified = Column(Boolean, default=False)
     verification_token = Column(String(255), nullable=True, index=True)
-    xp = Column(Integer, default=0)
+    xp = Column(Integer, default=0, index=True)
     streak_days = Column(Integer, default=0)
     avatar_url = Column(Text, nullable=True)
     
     # Human/NID Identity Verification fields
-    nid_number = Column(String(50), nullable=True)
+    nid_number = Column(String(50), nullable=True, index=True)
     nid_front_image = Column(Text, nullable=True)
     nid_back_image = Column(Text, nullable=True)
-    verification_status = Column(String(20), default="unverified") # unverified, pending, verified, rejected
+    verification_status = Column(String(20), default="unverified", index=True) # unverified, pending, verified, rejected
     verification_notes = Column(Text, nullable=True)
     verified_at = Column(DateTime(timezone=True), nullable=True)
 
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     sessions = relationship("LabSession", back_populates="user")
@@ -49,11 +52,11 @@ class Course(Base):
     id = Column(String(36), primary_key=True, default=generate_uuid)
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
-    difficulty = Column(String(20), nullable=True) # beginner, intermediate, advanced, expert
-    category = Column(String(100), nullable=True)
+    difficulty = Column(String(20), nullable=True, index=True) # beginner, intermediate, advanced, expert
+    category = Column(String(100), nullable=True, index=True)
     estimated_duration = Column(Integer, nullable=True) # minutes
     thumbnail_url = Column(Text, nullable=True)
-    is_published = Column(Boolean, default=False)
+    is_published = Column(Boolean, default=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     lessons = relationship("Lesson", back_populates="course", cascade="all, delete-orphan")
@@ -67,12 +70,12 @@ class Lesson(Base):
     __tablename__ = "lessons"
     
     id = Column(String(36), primary_key=True, default=generate_uuid)
-    course_id = Column(String(36), ForeignKey("courses.id"), nullable=False)
+    course_id = Column(String(36), ForeignKey("courses.id"), nullable=False, index=True)
     title = Column(String(255), nullable=False)
     content_type = Column(String(20), nullable=False) # video, reading, quiz
     content = Column(Text, nullable=True) # Markdown reading or JSON structure
     video_url = Column(Text, nullable=True) # Embedded YouTube video URL
-    sort_order = Column(Integer, default=0)
+    sort_order = Column(Integer, default=0, index=True)
     duration = Column(Integer, default=0) # minutes
 
     course = relationship("Course", back_populates="lessons")
@@ -85,8 +88,8 @@ class Lab(Base):
     id = Column(String(36), primary_key=True, default=generate_uuid)
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
-    type = Column(String(50), nullable=True) # linux, networking, web_security, cloud, blue_team, ai_security
-    difficulty = Column(String(20), nullable=True)
+    type = Column(String(50), nullable=True, index=True) # linux, networking, web_security, cloud, blue_team, ai_security
+    difficulty = Column(String(20), nullable=True, index=True)
     container_template = Column(String(100), nullable=True)
     xp_reward = Column(Integer, default=100)
     time_limit = Column(Integer, default=3600) # seconds
@@ -98,11 +101,11 @@ class LabSession(Base):
     __tablename__ = "lab_sessions"
     
     id = Column(String(36), primary_key=True, default=generate_uuid)
-    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
-    lab_id = Column(String(36), ForeignKey("labs.id"), nullable=False)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    lab_id = Column(String(36), ForeignKey("labs.id"), nullable=False, index=True)
     container_id = Column(String(255), nullable=True)
-    status = Column(String(20), default="starting") # starting, running, paused, completed, stopped
-    started_at = Column(DateTime(timezone=True), server_default=func.now())
+    status = Column(String(20), default="starting", index=True) # starting, running, paused, completed, stopped
+    started_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     expires_at = Column(DateTime(timezone=True), nullable=True)
     completed_at = Column(DateTime(timezone=True), nullable=True)
 
@@ -112,12 +115,16 @@ class LabSession(Base):
 
 class Progress(Base):
     __tablename__ = "progress"
+    __table_args__ = (
+        UniqueConstraint("user_id", "course_id", "lesson_id", name="uq_user_course_lesson"),
+        Index("ix_progress_user_course", "user_id", "course_id"),
+    )
     
     id = Column(String(36), primary_key=True, default=generate_uuid)
-    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
-    course_id = Column(String(36), ForeignKey("courses.id"), nullable=False)
-    lesson_id = Column(String(36), ForeignKey("lessons.id"), nullable=False)
-    status = Column(String(20), default="in_progress") # in_progress, completed
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    course_id = Column(String(36), ForeignKey("courses.id"), nullable=False, index=True)
+    lesson_id = Column(String(36), ForeignKey("lessons.id"), nullable=False, index=True)
+    status = Column(String(20), default="in_progress", index=True) # in_progress, completed
     completion_pct = Column(Numeric(5, 2), default=0.0)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -128,12 +135,15 @@ class Progress(Base):
 
 class Achievement(Base):
     __tablename__ = "achievements"
+    __table_args__ = (
+        Index("ix_achievements_user_badge", "user_id", "badge_name"),
+    )
     
     id = Column(String(36), primary_key=True, default=generate_uuid)
-    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
     badge_name = Column(String(100), nullable=False)
     badge_icon = Column(Text, nullable=True)
-    earned_at = Column(DateTime(timezone=True), server_default=func.now())
+    earned_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
 
     user = relationship("User", back_populates="achievements")
 
@@ -146,15 +156,15 @@ class Batch(Base):
     name = Column(String(255), nullable=False)
     batch_code = Column(String(50), unique=True, index=True, nullable=False)
     description = Column(Text, nullable=True)
-    instructor_id = Column(String(36), ForeignKey("users.id"), nullable=False)
-    course_id = Column(String(36), ForeignKey("courses.id"), nullable=True)
+    instructor_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    course_id = Column(String(36), ForeignKey("courses.id"), nullable=True, index=True)
     start_date = Column(DateTime(timezone=True), nullable=True)
     end_date = Column(DateTime(timezone=True), nullable=True)
     max_students = Column(Integer, default=50)
     meeting_link = Column(String(255), nullable=True)
     schedule_details = Column(Text, nullable=True) # e.g. "Sat & Tue at 8:00 PM GMT+6"
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    is_active = Column(Boolean, default=True, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
 
     instructor = relationship("User", foreign_keys=[instructor_id])
     course = relationship("Course", back_populates="batches")
@@ -163,12 +173,16 @@ class Batch(Base):
 
 class BatchEnrollment(Base):
     __tablename__ = "batch_enrollments"
+    __table_args__ = (
+        UniqueConstraint("batch_id", "user_id", name="uq_batch_user_enrollment"),
+        Index("ix_batch_enrollment_lookup", "batch_id", "user_id"),
+    )
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
-    batch_id = Column(String(36), ForeignKey("batches.id"), nullable=False)
-    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
-    status = Column(String(20), default="enrolled") # enrolled, completed, dropped
-    enrolled_at = Column(DateTime(timezone=True), server_default=func.now())
+    batch_id = Column(String(36), ForeignKey("batches.id"), nullable=False, index=True)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    status = Column(String(20), default="enrolled", index=True) # enrolled, completed, dropped
+    enrolled_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
 
     batch = relationship("Batch", back_populates="enrollments")
     user = relationship("User", back_populates="batch_enrollments")
@@ -179,12 +193,12 @@ class AiSession(Base):
     __tablename__ = "ai_sessions"
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
-    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
     title = Column(String(255), nullable=False, default="Cyber Security Tutoring")
     system_prompt = Column(Text, nullable=True) # Custom Persona/Instructions
     model_type = Column(String(50), default="gemini-1.5-flash")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), index=True)
 
     user = relationship("User", back_populates="ai_sessions")
     messages = relationship("AiChatMessage", back_populates="session", cascade="all, delete-orphan")
@@ -194,10 +208,10 @@ class AiChatMessage(Base):
     __tablename__ = "ai_chat_messages"
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
-    session_id = Column(String(36), ForeignKey("ai_sessions.id"), nullable=False)
+    session_id = Column(String(36), ForeignKey("ai_sessions.id"), nullable=False, index=True)
     role = Column(String(20), nullable=False) # user, assistant, system
     content = Column(Text, nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
 
     session = relationship("AiSession", back_populates="messages")
 
@@ -207,13 +221,13 @@ class Exam(Base):
     __tablename__ = "exams"
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
-    course_id = Column(String(36), ForeignKey("courses.id"), nullable=False)
+    course_id = Column(String(36), ForeignKey("courses.id"), nullable=False, index=True)
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     duration_minutes = Column(Integer, default=30)
     passing_score_pct = Column(Integer, default=70)
     total_marks = Column(Integer, default=100)
-    is_published = Column(Boolean, default=True)
+    is_published = Column(Boolean, default=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     course = relationship("Course", back_populates="exams")
@@ -226,14 +240,14 @@ class ExamQuestion(Base):
     __tablename__ = "exam_questions"
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
-    exam_id = Column(String(36), ForeignKey("exams.id"), nullable=False)
+    exam_id = Column(String(36), ForeignKey("exams.id"), nullable=False, index=True)
     question_text = Column(Text, nullable=False)
     question_type = Column(String(20), default="mcq") # mcq, boolean, practical
     options = Column(JSON, nullable=True) # list of option strings
     correct_answer = Column(Text, nullable=False) # string index or text
     explanation = Column(Text, nullable=True)
     points = Column(Integer, default=10)
-    sort_order = Column(Integer, default=0)
+    sort_order = Column(Integer, default=0, index=True)
 
     exam = relationship("Exam", back_populates="questions")
 
@@ -242,15 +256,15 @@ class ExamSubmission(Base):
     __tablename__ = "exam_submissions"
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
-    exam_id = Column(String(36), ForeignKey("exams.id"), nullable=False)
-    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+    exam_id = Column(String(36), ForeignKey("exams.id"), nullable=False, index=True)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
     score = Column(Numeric(5, 2), default=0.0)
     total_score = Column(Numeric(5, 2), default=0.0)
     score_pct = Column(Numeric(5, 2), default=0.0)
-    passed = Column(Boolean, default=False)
+    passed = Column(Boolean, default=False, index=True)
     answers = Column(JSON, nullable=True) # user submitted answers map
     certificate_token = Column(String(255), nullable=True)
-    submitted_at = Column(DateTime(timezone=True), server_default=func.now())
+    submitted_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
 
     exam = relationship("Exam", back_populates="submissions")
     user = relationship("User", back_populates="exam_submissions")
@@ -258,15 +272,18 @@ class ExamSubmission(Base):
 
 class Certificate(Base):
     __tablename__ = "certificates"
+    __table_args__ = (
+        Index("ix_certificate_user_course", "user_id", "course_id"),
+    )
     
     id = Column(String(36), primary_key=True, default=generate_uuid)
-    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
-    course_id = Column(String(36), ForeignKey("courses.id"), nullable=False)
-    exam_id = Column(String(36), ForeignKey("exams.id"), nullable=True)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    course_id = Column(String(36), ForeignKey("courses.id"), nullable=False, index=True)
+    exam_id = Column(String(36), ForeignKey("exams.id"), nullable=True, index=True)
     score_pct = Column(Numeric(5, 2), nullable=True)
-    certificate_type = Column(String(50), default="course_completion") # course_completion, exam_certified
+    certificate_type = Column(String(50), default="course_completion", index=True) # course_completion, exam_certified
     verification_token = Column(String(255), unique=True, nullable=False)
-    issued_at = Column(DateTime(timezone=True), server_default=func.now())
+    issued_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
 
     user = relationship("User", back_populates="certificates")
     course = relationship("Course", back_populates="certificates")
@@ -277,11 +294,12 @@ class Post(Base):
     __tablename__ = "posts"
     
     id = Column(String(36), primary_key=True, default=generate_uuid)
-    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
     title = Column(String(255), nullable=False)
     content = Column(Text, nullable=False)
-    category = Column(String(50), nullable=True)
-    upvotes = Column(Integer, default=0)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    category = Column(String(50), nullable=True, index=True)
+    upvotes = Column(Integer, default=0, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
 
     user = relationship("User", back_populates="posts")
+

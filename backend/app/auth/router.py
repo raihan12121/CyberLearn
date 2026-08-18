@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 import secrets
@@ -8,6 +8,7 @@ from ..database import get_db
 from .. import models, schemas
 from .utils import get_password_hash, verify_password, create_access_token
 from .dependencies import get_current_user
+from .email import send_verification_email
 
 logger = logging.getLogger(__name__)
 
@@ -16,10 +17,12 @@ router = APIRouter(
     tags=["Authentication"]
 )
 
-from .email import send_verification_email
-
 @router.post("/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
-def register_user(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
+def register_user(
+    user_in: schemas.UserCreate,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
     # Check if user already exists
     existing_user = db.query(models.User).filter(models.User.email == user_in.email).first()
     if existing_user:
@@ -48,8 +51,8 @@ def register_user(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_user)
 
-    # Dispatch verification HTML email
-    send_verification_email(db_user.email, token, db_user.full_name or "Learner")
+    # Dispatch verification email non-blockingly via FastAPI BackgroundTasks
+    background_tasks.add_task(send_verification_email, db_user.email, token, db_user.full_name or "Learner")
     return db_user
 
 @router.get("/verify-email")
@@ -75,7 +78,11 @@ def verify_email(token: str, db: Session = Depends(get_db)):
     }
 
 @router.post("/resend-verification")
-def resend_verification_email(req: schemas.ResendVerificationRequest, db: Session = Depends(get_db)):
+def resend_verification_email(
+    req: schemas.ResendVerificationRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
     user = db.query(models.User).filter(models.User.email == req.email).first()
     if not user:
         raise HTTPException(
@@ -90,8 +97,9 @@ def resend_verification_email(req: schemas.ResendVerificationRequest, db: Sessio
     user.verification_token = token
     db.commit()
     
-    send_verification_email(user.email, token, user.full_name or "Learner")
+    background_tasks.add_task(send_verification_email, user.email, token, user.full_name or "Learner")
     return {"detail": "Verification email dispatched successfully."}
+
 
 @router.post("/login", response_model=schemas.Token)
 def login_user(user_in: schemas.UserLogin, db: Session = Depends(get_db)):

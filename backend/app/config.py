@@ -36,11 +36,16 @@ class Settings(BaseSettings):
     EMAILS_FROM_NAME: str = "CyberLearn Security Academy"
     FRONTEND_URL: str = "https://cyber-learn-three.vercel.app"
 
+    # AI Coach LLM API Keys (Google Gemini / OpenAI)
+    GEMINI_API_KEY: str = ""
+    OPENAI_API_KEY: str = ""
+
     # OAuth Credentials (Google & GitHub)
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
     GITHUB_CLIENT_ID: str = ""
     GITHUB_CLIENT_SECRET: str = ""
+
 
     # CORS Origins: accepts List[str], JSON string, or comma-separated string from environment
     BACKEND_CORS_ORIGINS: Union[list[str], str] = [

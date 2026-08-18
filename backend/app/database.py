@@ -1,5 +1,5 @@
 import logging
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 from .config import settings
 
@@ -16,13 +16,18 @@ if "ep-xyz-123.neon.tech" in db_url or "username:password" in db_url:
     logger.warning("Placeholder DATABASE_URL detected. Falling back to local SQLite database.")
     db_url = "sqlite:///./cyberlearn.db"
 
-connect_args = {}
+engine_kwargs = {}
 if db_url.startswith("sqlite"):
-    connect_args = {"check_same_thread": False}
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    # Production PostgreSQL connection pool settings for cloud databases (Neon, Supabase, Render Postgres)
+    engine_kwargs["pool_pre_ping"] = True
+    engine_kwargs["pool_recycle"] = 300
+    engine_kwargs["pool_size"] = 10
+    engine_kwargs["max_overflow"] = 5
 
 try:
-    engine = create_engine(db_url, connect_args=connect_args)
-    # Validate connection
+    engine = create_engine(db_url, **engine_kwargs)
     with engine.connect() as conn:
         pass
 except Exception as e:
@@ -36,40 +41,78 @@ Base = declarative_base()
 
 def run_auto_migrations(engine):
     """
-    Safely adds newly introduced columns to existing SQLite tables if they do not already exist.
+    Safely adds newly introduced columns to existing database tables if they do not already exist.
+    Supports both SQLite and PostgreSQL dialects without breaking DDL syntax.
     """
-    from sqlalchemy import text
+    dialect = engine.dialect.name
     with engine.connect() as conn:
-        # Check users table columns
         try:
-            res = conn.execute(text("PRAGMA table_info(users)")).fetchall()
-            existing_cols = {row[1] for row in res}
-            
-            new_user_cols = [
-                ("nid_number", "VARCHAR(50)"),
-                ("nid_front_image", "TEXT"),
-                ("nid_back_image", "TEXT"),
-                ("verification_status", "VARCHAR(20) DEFAULT 'unverified'"),
-                ("verification_notes", "TEXT"),
-                ("verified_at", "DATETIME")
-            ]
-            for col_name, col_type in new_user_cols:
-                if col_name not in existing_cols:
-                    conn.execute(text(f"ALTER TABLE users ADD COLUMN {col_name} {col_type}"))
-                    
-            # Check certificates table columns
-            res_cert = conn.execute(text("PRAGMA table_info(certificates)")).fetchall()
-            existing_cert_cols = {row[1] for row in res_cert}
-            new_cert_cols = [
-                ("exam_id", "VARCHAR(36)"),
-                ("score_pct", "NUMERIC(5, 2)"),
-                ("certificate_type", "VARCHAR(50) DEFAULT 'course_completion'")
-            ]
-            for col_name, col_type in new_cert_cols:
-                if col_name not in existing_cert_cols:
-                    conn.execute(text(f"ALTER TABLE certificates ADD COLUMN {col_name} {col_type}"))
+            if dialect == "sqlite":
+                # Check users table columns in SQLite
+                res = conn.execute(text("PRAGMA table_info(users)")).fetchall()
+                existing_user_cols = {row[1] for row in res}
+                
+                new_user_cols = [
+                    ("nid_number", "VARCHAR(50)"),
+                    ("nid_front_image", "TEXT"),
+                    ("nid_back_image", "TEXT"),
+                    ("verification_status", "VARCHAR(20) DEFAULT 'unverified'"),
+                    ("verification_notes", "TEXT"),
+                    ("verified_at", "DATETIME")
+                ]
+                for col_name, col_type in new_user_cols:
+                    if col_name not in existing_user_cols:
+                        conn.execute(text(f"ALTER TABLE users ADD COLUMN {col_name} {col_type}"))
 
-            conn.commit()
+                # Check certificates table columns in SQLite
+                res_cert = conn.execute(text("PRAGMA table_info(certificates)")).fetchall()
+                existing_cert_cols = {row[1] for row in res_cert}
+                new_cert_cols = [
+                    ("exam_id", "VARCHAR(36)"),
+                    ("score_pct", "NUMERIC(5, 2)"),
+                    ("certificate_type", "VARCHAR(50) DEFAULT 'course_completion'")
+                ]
+                for col_name, col_type in new_cert_cols:
+                    if col_name not in existing_cert_cols:
+                        conn.execute(text(f"ALTER TABLE certificates ADD COLUMN {col_name} {col_type}"))
+
+                conn.commit()
+
+            elif dialect == "postgresql":
+                # Check users table in PostgreSQL
+                res = conn.execute(text(
+                    "SELECT column_name FROM information_schema.columns WHERE table_name = 'users'"
+                )).fetchall()
+                existing_user_cols = {row[0] for row in res}
+
+                new_user_cols = [
+                    ("nid_number", "VARCHAR(50)"),
+                    ("nid_front_image", "TEXT"),
+                    ("nid_back_image", "TEXT"),
+                    ("verification_status", "VARCHAR(20) DEFAULT 'unverified'"),
+                    ("verification_notes", "TEXT"),
+                    ("verified_at", "TIMESTAMPTZ")
+                ]
+                for col_name, col_type in new_user_cols:
+                    if col_name not in existing_user_cols:
+                        conn.execute(text(f"ALTER TABLE users ADD COLUMN IF NOT EXISTS {col_name} {col_type}"))
+
+                # Check certificates table in PostgreSQL
+                res_cert = conn.execute(text(
+                    "SELECT column_name FROM information_schema.columns WHERE table_name = 'certificates'"
+                )).fetchall()
+                existing_cert_cols = {row[0] for row in res_cert}
+                new_cert_cols = [
+                    ("exam_id", "VARCHAR(36)"),
+                    ("score_pct", "NUMERIC(5, 2)"),
+                    ("certificate_type", "VARCHAR(50) DEFAULT 'course_completion'")
+                ]
+                for col_name, col_type in new_cert_cols:
+                    if col_name not in existing_cert_cols:
+                        conn.execute(text(f"ALTER TABLE certificates ADD COLUMN IF NOT EXISTS {col_name} {col_type}"))
+
+                conn.commit()
+
         except Exception as e:
             logger.warning(f"Auto-migration notice: {e}")
 
@@ -80,4 +123,5 @@ def get_db():
         yield db
     finally:
         db.close()
+
 

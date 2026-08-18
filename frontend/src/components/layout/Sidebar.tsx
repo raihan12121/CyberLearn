@@ -26,6 +26,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { api } from "@/lib/api";
+import { useAuthStore } from "@/lib/authStore";
 
 interface NavSection {
   title: string;
@@ -95,17 +96,14 @@ export default function Sidebar({
   const [internalCollapsed, setInternalCollapsed] = useState(false);
   const collapsed = collapsedProp !== undefined ? collapsedProp : internalCollapsed;
   const setCollapsed = setCollapsedProp || setInternalCollapsed;
-  const [isAdmin, setIsAdmin] = useState(false);
+  
+  const { user, fetchUser } = useAuthStore();
+  const isAdmin = user?.role === "admin";
 
   useEffect(() => {
-    api.getMe()
-      .then((user) => {
-        if (user && user.role === "admin") {
-          setIsAdmin(true);
-        }
-      })
-      .catch(() => {});
-  }, []);
+    fetchUser().catch(() => {});
+  }, [fetchUser]);
+
 
   const handleLinkClick = () => {
     if (setMobileOpen) {

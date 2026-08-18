@@ -56,35 +56,39 @@ def get_user_profile_details(
         db.commit()
         db.refresh(current_user)
 
-    # Compute Skillsets based on lab category completion
+    # Compute Skillsets based on lab category completion (Batch query: 2 queries instead of 10)
     categories = [
-        {"name": "Web Security", "db_types": ["Web Security", "Web"]},
-        {"name": "Linux Administration", "db_types": ["Linux basics", "Linux", "Privilege Escalation"]},
-        {"name": "Network Defense", "db_types": ["Networking", "Network"]},
-        {"name": "Cryptography", "db_types": ["Crypto"]},
-        {"name": "AI Safety", "db_types": ["AI Security", "AI"]},
+        {"name": "Web Security", "db_types": {"Web Security", "Web"}},
+        {"name": "Linux Administration", "db_types": {"Linux basics", "Linux", "Privilege Escalation"}},
+        {"name": "Network Defense", "db_types": {"Networking", "Network"}},
+        {"name": "Cryptography", "db_types": {"Crypto"}},
+        {"name": "AI Safety", "db_types": {"AI Security", "AI"}},
     ]
     
+    all_labs = db.query(models.Lab.id, models.Lab.type).all()
+    completed_lab_ids = set(
+        r[0] for r in db.query(models.LabSession.lab_id).filter(
+            models.LabSession.user_id == current_user.id,
+            models.LabSession.status == "completed"
+        ).all()
+    )
+
     skill_stats = []
     for cat in categories:
-        total_labs = db.query(models.Lab).filter(models.Lab.type.in_(cat["db_types"])).count()
+        cat_labs = [l for l in all_labs if l.type in cat["db_types"]]
+        total_labs = len(cat_labs)
         if total_labs == 0:
-            # Fallback so skills aren't completely empty for unseeded categories
             val = 20 if "AI" in cat["name"] else 40
         else:
-            completed_labs = db.query(models.LabSession).join(models.Lab).filter(
-                models.LabSession.user_id == current_user.id,
-                models.LabSession.status == "completed",
-                models.Lab.type.in_(cat["db_types"])
-            ).count()
-            val = int((completed_labs / total_labs) * 100)
-            # Add a base percentage if they completed at least one lab to make it look active
-            if completed_labs > 0 and val < 30:
+            completed_in_cat = sum(1 for l in cat_labs if l.id in completed_lab_ids)
+            val = int((completed_in_cat / total_labs) * 100)
+            if completed_in_cat > 0 and val < 30:
                 val = 30
         skill_stats.append({
             "name": cat["name"],
-            "value": max(val, 10 if solved_labs_count > 0 else 0)  # show some initial progression if they solved anything
+            "value": max(val, 10 if solved_labs_count > 0 else 0)
         })
+
         
     # Get Achievements
     achievements = []
