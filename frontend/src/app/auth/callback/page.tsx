@@ -9,16 +9,14 @@ import { api, setAuthToken } from "@/lib/api";
 function OAuthCallbackContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
+  const code = searchParams.get("code");
+  const provider = searchParams.get("provider") || "google";
+  const [error, setError] = useState<string | null>(
+    code ? null : "No authorization code received from OAuth provider."
+  );
 
   useEffect(() => {
-    const code = searchParams.get("code");
-    const provider = searchParams.get("provider") || "google";
-
-    if (!code) {
-      setError("No authorization code received from OAuth provider.");
-      return;
-    }
+    if (!code) return;
 
     const redirectUri = `${window.location.origin}/auth/callback`;
 
@@ -35,7 +33,7 @@ function OAuthCallbackContent() {
       .catch((err) => {
         setError(err.message || "Social login authentication failed.");
       });
-  }, [searchParams, router]);
+  }, [code, provider, router]);
 
   return (
     <div className="w-full max-w-md text-center">

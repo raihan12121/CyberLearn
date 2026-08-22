@@ -144,13 +144,10 @@ export default function LabWorkspacePage() {
       })
       .catch((err) => {
         setIsSubmitting(false);
-        // Fallback flag format validation for offline testing
-        if (userFlag.trim().startsWith("FLAG{") && userFlag.trim().endsWith("}")) {
-          setFlagFeedback({ success: true, msg: "Flag accepted! XP awarded." });
-          setSessionStatus("completed");
-        } else {
-          setFlagFeedback({ success: false, msg: err.message || "Invalid flag pattern. Expected format: FLAG{...}" });
-        }
+        setFlagFeedback({
+          success: false,
+          msg: err.message || "Failed to submit flag. Please verify backend connection and try again."
+        });
       });
   };
 

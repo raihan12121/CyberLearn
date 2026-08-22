@@ -73,7 +73,7 @@ const courseData: Record<string, {
             title: "How the Web Works: HTTP and HTML",
             type: "video",
             duration: "10 mins",
-            completed: true,
+            completed: false,
             videoUrl: "https://www.youtube-nocookie.com/embed/2JYT5f2isg4",
             content: "Welcome to Web Security Fundamentals! In this lesson, we will explore the underlying architecture of the web, focusing on HTTP protocol, client-server models, headers, and basic HTML structure. Understanding these basics is critical before searching for vulnerabilities.",
           },
@@ -82,7 +82,7 @@ const courseData: Record<string, {
             title: "The Same-Origin Policy (SOP)",
             type: "reading",
             duration: "15 mins",
-            completed: true,
+            completed: false,
             content: `The Same-Origin Policy (SOP) is a critical security mechanism that restricts how a document or script loaded from one origin can interact with a resource from another origin. 
             
 Origin is defined by:

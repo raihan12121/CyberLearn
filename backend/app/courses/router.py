@@ -304,9 +304,17 @@ def seed_database_if_empty(db: Session):
             db_lesson.content = l["content"]
     db.commit()
 
+COURSE_XP_MAP = {c["id"]: c.get("xp", 1200) for c in SEED_COURSES}
+
 @router.get("", response_model=List[schemas.CourseResponse])
 def get_courses(db: Session = Depends(get_db)):
-    return db.query(models.Course).filter(models.Course.is_published == True).all()
+    courses = db.query(models.Course).filter(models.Course.is_published == True).all()
+    results = []
+    for c in courses:
+        res = schemas.CourseResponse.model_validate(c)
+        res.xp = COURSE_XP_MAP.get(c.id, 1200)
+        results.append(res)
+    return results
 
 @router.get("/progress", response_model=List[schemas.ProgressResponse])
 def get_user_progress(
@@ -370,7 +378,9 @@ def get_course(course_id: str, db: Session = Depends(get_db)):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Course with ID '{course_id}' was not found."
         )
-    return course
+    res = schemas.CourseResponse.model_validate(course)
+    res.xp = COURSE_XP_MAP.get(course.id, 1200)
+    return res
 
 import json
 

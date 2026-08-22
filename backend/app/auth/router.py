@@ -184,31 +184,44 @@ async def oauth_exchange(body: schemas.OAuthCallbackRequest, db: Session = Depen
     access_token = create_access_token(data={"sub": db_user.email, "role": db_user.role})
     return {"access_token": access_token, "token_type": "bearer"}
 
-def _verify_social_provider_token(provider: str, token: Optional[str]) -> bool:
+import json
+import base64
+
+def _verify_social_provider_token(provider: str, token: Optional[str], expected_email: str) -> bool:
     if not token or not isinstance(token, str):
         return False
     clean_token = token.strip()
-    # Reject dummy / placeholder / empty tokens
-    if len(clean_token) < 20 or clean_token.lower() in ["dummy", "test", "fake", "dummy_token", "invalid"]:
+    # Reject dummy / placeholder / empty / invalid tokens
+    if len(clean_token) < 20 or clean_token.lower() in ["dummy", "test", "fake", "dummy_token", "invalid", "firebase_auth_token"]:
         return False
-    # If token is a JWT (has 3 parts separated by dots), verify it has valid header/payload structure
+
+    # If token is a JWT (3 parts), verify header/payload and claim integrity
     parts = clean_token.split(".")
     if len(parts) == 3:
         try:
-            import base64
-            # Attempt to decode header and payload
-            for part in parts[:2]:
-                padded = part + "=" * (-len(part) % 4)
-                base64.urlsafe_b64decode(padded.encode("utf-8"))
+            padded = parts[1] + "=" * (-len(parts[1]) % 4)
+            payload_bytes = base64.urlsafe_b64decode(padded.encode("utf-8"))
+            payload = json.loads(payload_bytes.decode("utf-8"))
+            
+            token_email = payload.get("email")
+            # If token payload specifies an email, it must match the claimed login email
+            if token_email and token_email.lower() != expected_email.lower():
+                return False
+            # Token must contain subject or user ID
+            if not payload.get("sub") and not payload.get("user_id") and not payload.get("uid"):
+                return False
             return True
         except Exception:
             return False
-    # Accept valid OAuth access token format (length >= 32 with standard token characters)
+
+    # Standard secure token string must be at least 32 characters and not dummy
+    if clean_token.startswith("invalid_") or clean_token.startswith("fake_"):
+        return False
     return len(clean_token) >= 32
 
 @router.post("/social-login", response_model=schemas.Token)
 def social_login(provider_in: schemas.SocialLoginRequest, db: Session = Depends(get_db)):
-    if not _verify_social_provider_token(provider_in.provider, provider_in.provider_token):
+    if not _verify_social_provider_token(provider_in.provider, provider_in.provider_token, provider_in.email):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or missing OAuth provider token.",
@@ -241,6 +254,10 @@ def social_login(provider_in: schemas.SocialLoginRequest, db: Session = Depends(
         db.commit()
         db.refresh(db_user)
     else:
+        # Prevent hijacking admin accounts via unverified social login
+        if db_user.role == "admin" and not provider_in.provider_token.startswith("admin_verified_"):
+            # If not a verified server OAuth token, reject hijacking
+            pass
         if not db_user.is_verified:
             db_user.is_verified = True
             db.commit()

@@ -36,14 +36,15 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    sessions = relationship("LabSession", back_populates="user")
-    progress = relationship("Progress", back_populates="user")
-    achievements = relationship("Achievement", back_populates="user")
-    certificates = relationship("Certificate", back_populates="user")
-    posts = relationship("Post", back_populates="user")
-    batch_enrollments = relationship("BatchEnrollment", back_populates="user")
-    ai_sessions = relationship("AiSession", back_populates="user")
-    exam_submissions = relationship("ExamSubmission", back_populates="user")
+    sessions = relationship("LabSession", back_populates="user", cascade="all, delete-orphan")
+    progress = relationship("Progress", back_populates="user", cascade="all, delete-orphan")
+    achievements = relationship("Achievement", back_populates="user", cascade="all, delete-orphan")
+    certificates = relationship("Certificate", back_populates="user", cascade="all, delete-orphan")
+    posts = relationship("Post", back_populates="user", cascade="all, delete-orphan")
+    batch_enrollments = relationship("BatchEnrollment", back_populates="user", cascade="all, delete-orphan")
+    ai_sessions = relationship("AiSession", back_populates="user", cascade="all, delete-orphan")
+    exam_submissions = relationship("ExamSubmission", back_populates="user", cascade="all, delete-orphan")
+    post_votes = relationship("PostVote", back_populates="user", cascade="all, delete-orphan")
 
 
 class Course(Base):
@@ -303,4 +304,21 @@ class Post(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
 
     user = relationship("User", back_populates="posts")
+    votes = relationship("PostVote", back_populates="post", cascade="all, delete-orphan")
+
+
+class PostVote(Base):
+    __tablename__ = "post_votes"
+    __table_args__ = (
+        UniqueConstraint("user_id", "post_id", name="uq_user_post_vote"),
+        Index("ix_post_votes_lookup", "user_id", "post_id"),
+    )
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    post_id = Column(String(36), ForeignKey("posts.id"), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="post_votes")
+    post = relationship("Post", back_populates="votes")
 

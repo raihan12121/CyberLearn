@@ -13,19 +13,17 @@ function VerifyEmailContent() {
   const router = useRouter();
   const token = searchParams.get("token") || "";
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(token));
   const [success, setSuccess] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    token ? null : "No verification token provided. Please check your activation email link."
+  );
   const [emailToResend, setEmailToResend] = useState("");
   const [resendStatus, setResendStatus] = useState<string | null>(null);
   const [resending, setResending] = useState(false);
 
   useEffect(() => {
-    if (!token) {
-      setLoading(false);
-      setError("No verification token provided. Please check your activation email link.");
-      return;
-    }
+    if (!token) return;
 
     api.verifyEmail(token)
       .then(() => {

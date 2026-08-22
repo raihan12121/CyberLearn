@@ -198,9 +198,14 @@ def get_user_profile_details(
         "badges": achievements
     }
 
+import secrets
+from fastapi import BackgroundTasks
+from ..auth.email import send_verification_email
+
 @router.put("/me", response_model=schemas.UserResponse)
 def update_profile(
     user_update: schemas.UserUpdate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
@@ -210,6 +215,10 @@ def update_profile(
         if exists:
             raise HTTPException(status_code=400, detail="A user with this email already exists.")
         current_user.email = user_update.email
+        current_user.is_verified = False
+        new_token = secrets.token_urlsafe(32)
+        current_user.verification_token = new_token
+        background_tasks.add_task(send_verification_email, current_user.email, new_token, current_user.full_name or "Learner")
         
     if user_update.username is not None and user_update.username != current_user.username:
         # Check if username is already taken
@@ -255,6 +264,11 @@ def delete_current_user_account(
     Permanently delete the authenticated user account and cascade delete associated records.
     """
     user_id = current_user.id
+    # Reassign or clean up any batches where this user is the instructor
+    instructed_batches = db.query(models.Batch).filter(models.Batch.instructor_id == user_id).all()
+    for batch in instructed_batches:
+        db.delete(batch)
+
     db.delete(current_user)
     db.commit()
     return {"status": "success", "detail": f"Account {user_id} deleted permanently."}

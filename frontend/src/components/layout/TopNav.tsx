@@ -60,20 +60,8 @@ export default function TopNav({ onMenuClick }: TopNavProps) {
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
-  useEffect(() => {
-    fetchUser()
-      .then((data) => {
-        initializeNotifications(data);
-      })
-      .catch((err) => {
-        console.error("Error loading user profile in topnav:", err);
-        initializeNotifications(null);
-      });
-  }, [fetchUser]);
-
-
   // Initialize notifications with persistence
-  const initializeNotifications = (userData: UserProfile | null) => {
+  const initializeNotifications = React.useCallback((userData: UserProfile | null) => {
     let readIds: string[] = [];
     try {
       const stored = localStorage.getItem("cyberlearn_read_notifs");
@@ -134,7 +122,18 @@ export default function TopNav({ onMenuClick }: TopNavProps) {
     ];
 
     setNotifications(baseNotifs);
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchUser()
+      .then((data) => {
+        initializeNotifications(data);
+      })
+      .catch((err) => {
+        console.error("Error loading user profile in topnav:", err);
+        initializeNotifications(null);
+      });
+  }, [fetchUser, initializeNotifications]);
 
   // Close dropdowns on outside click or Escape key
   useEffect(() => {

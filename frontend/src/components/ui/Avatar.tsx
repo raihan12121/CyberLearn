@@ -49,6 +49,7 @@ export default function Avatar({
   return (
     <div className={`relative inline-flex shrink-0 ${className}`}>
       {src ? (
+        /* eslint-disable-next-line @next/next/no-img-element */
         <img
           src={src}
           alt={alt || name || "Avatar"}

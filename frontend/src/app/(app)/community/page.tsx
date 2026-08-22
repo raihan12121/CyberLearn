@@ -92,18 +92,39 @@ export default function CommunityPage() {
     api.getPosts()
       .then((data) => {
         if (data && data.length > 0) {
-          const formatted = data.map((p: { id: string; title: string; category?: string; user_id?: string; content: string; upvotes?: number }) => ({
-            id: p.id,
-            title: p.title,
-            category: p.category || "General",
-            author: p.user_id === "system-admin-id" ? "Admin" : "Learner",
-            avatar: "LN",
-            time: "Recently",
-            preview: p.content,
-            upvotes: p.upvotes || 1,
-            comments: 0,
-            hasUpvoted: false,
-          }));
+          const formatted = data.map((p: {
+            id: string;
+            title: string;
+            category?: string;
+            user_id?: string;
+            author_name?: string;
+            author_username?: string;
+            author_avatar?: string;
+            content: string;
+            upvotes?: number;
+            has_upvoted?: boolean;
+          }) => {
+            const author = p.author_name || (p.user_id === "system-admin-id" ? "Admin" : "Learner");
+            const initials = author
+              .split(" ")
+              .map((w) => w[0])
+              .join("")
+              .slice(0, 2)
+              .toUpperCase() || "LN";
+
+            return {
+              id: p.id,
+              title: p.title,
+              category: p.category || "General",
+              author,
+              avatar: initials,
+              time: "Recently",
+              preview: p.content,
+              upvotes: p.upvotes ?? 1,
+              comments: 0,
+              hasUpvoted: Boolean(p.has_upvoted),
+            };
+          });
           setPosts(formatted);
         }
       })

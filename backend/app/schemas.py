@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import BaseModel, EmailStr, ConfigDict, Field
 from typing import Optional, List
 from datetime import datetime
 
@@ -87,6 +87,7 @@ class CourseBase(BaseModel):
 
 class CourseResponse(CourseBase):
     id: str
+    xp: Optional[int] = 1200
     lessons: List[LessonResponse] = []
 
     model_config = ConfigDict(from_attributes=True)
@@ -131,10 +132,14 @@ class PostCreate(BaseModel):
 class PostResponse(BaseModel):
     id: str
     user_id: str
+    author_name: Optional[str] = None
+    author_username: Optional[str] = None
+    author_avatar: Optional[str] = None
     title: str
     content: str
     category: Optional[str]
     upvotes: int
+    has_upvoted: Optional[bool] = False
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -142,8 +147,8 @@ class PostResponse(BaseModel):
 class ProgressUpdate(BaseModel):
     course_id: str
     lesson_id: str
-    status: str  # in_progress, completed
-    completion_pct: float
+    status: str = Field(..., pattern="^(in_progress|completed)$")  # in_progress, completed
+    completion_pct: float = Field(..., ge=0.0, le=100.0)
 
 class ProgressResponse(BaseModel):
     id: str
