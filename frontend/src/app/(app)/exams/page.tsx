@@ -51,6 +51,54 @@ interface QuestionItem {
   sort_order: number;
 }
 
+const DEFAULT_EXAM_CATALOG: ExamItem[] = [
+  {
+    id: "exam-ccna-security",
+    title: "Cisco CCNA Security & Network Defense Exam",
+    description: "Official qualification exam testing IPv4/IPv6 subnetting, TCP/IP handshakes, Access Control Lists (ACLs), VLAN trunking, Dynamic ARP Inspection, DHCP snooping, and IPSec VPNs.",
+    duration_minutes: 45,
+    passing_score_pct: 70,
+    total_marks: 100,
+    question_count: 20,
+  },
+  {
+    id: "exam-comptia-secplus",
+    title: "CompTIA Security+ (SY0-701) Certification Exam",
+    description: "Industry-standard certification exam covering Threat Landscape, Cryptography & PKI, Identity & Access Management, Zero Trust Architecture, and Incident Response.",
+    duration_minutes: 45,
+    passing_score_pct: 70,
+    total_marks: 100,
+    question_count: 20,
+  },
+  {
+    id: "exam-ceh-associate",
+    title: "Certified Ethical Hacker (CEH) Associate Exam",
+    description: "Comprehensive penetration testing exam evaluating Reconnaissance, Port Scanning, Metasploit Exploitation, Buffer Overflows, Privilege Escalation, and Pivoting.",
+    duration_minutes: 45,
+    passing_score_pct: 70,
+    total_marks: 100,
+    question_count: 20,
+  },
+  {
+    id: "exam-web-security-cert",
+    title: "Web Application Security Certified Specialist (WASCS) Exam",
+    description: "Comprehensive qualification exam covering Same-Origin Policy, XSS vectors, SQL Injection mitigation, CSRF, SSRF, IDOR, and secure session architectures.",
+    duration_minutes: 45,
+    passing_score_pct: 70,
+    total_marks: 100,
+    question_count: 20,
+  },
+  {
+    id: "exam-linux-basics-cert",
+    title: "Linux Security & Systems Administration Exam",
+    description: "Final qualification exam covering Linux permissions, SUID binaries, SSH hardening, process inspection, PAM, iptables, and kernel namespaces.",
+    duration_minutes: 45,
+    passing_score_pct: 70,
+    total_marks: 100,
+    question_count: 20,
+  },
+];
+
 const EXAM_PRESETS: Record<string, { icon: any; tag: string; xp: number; certCode: string }> = {
   "exam-ccna-security": {
     icon: Network,
@@ -87,9 +135,9 @@ const EXAM_PRESETS: Record<string, { icon: any; tag: string; xp: number; certCod
 export default function ExamsPage() {
   const router = useRouter();
   const { user } = useAuthStore();
-  const [exams, setExams] = useState<ExamItem[]>([]);
+  const [exams, setExams] = useState<ExamItem[]>(DEFAULT_EXAM_CATALOG);
   const [submissions, setSubmissions] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   // Active Exam Taking Session
   const [activeExam, setActiveExam] = useState<ExamItem | null>(null);
@@ -103,10 +151,18 @@ export default function ExamsPage() {
 
   const loadExams = () => {
     setLoading(true);
-    Promise.all([api.getExams(), api.getMyExamSubmissions().catch(() => [])])
+    Promise.all([
+      api.getExams().catch((err) => {
+        console.warn("Could not fetch exams from API, using catalog defaults:", err);
+        return DEFAULT_EXAM_CATALOG;
+      }),
+      api.getMyExamSubmissions().catch(() => [])
+    ])
       .then(([examData, subData]) => {
-        if (Array.isArray(examData)) {
+        if (Array.isArray(examData) && examData.length > 0) {
           setExams(examData);
+        } else {
+          setExams(DEFAULT_EXAM_CATALOG);
         }
         if (Array.isArray(subData)) {
           setSubmissions(subData);
@@ -114,6 +170,7 @@ export default function ExamsPage() {
       })
       .catch((err) => {
         console.warn("Failed to load exams:", err);
+        setExams(DEFAULT_EXAM_CATALOG);
       })
       .finally(() => setLoading(false));
   };
@@ -149,7 +206,7 @@ export default function ExamsPage() {
       setCurrentQuestionIndex(0);
       setSelectedAnswers({});
       setExamResult(null);
-      setTimeRemaining(exam.duration_minutes * 60);
+      setTimeRemaining((exam.duration_minutes || 45) * 60);
     } catch (err: any) {
       alert(err.message || "Failed to load exam questions.");
     } finally {
@@ -195,6 +252,7 @@ export default function ExamsPage() {
   };
 
   const passedExamCount = submissions.filter((s) => s.passed).length;
+  const isVerified = user?.verification_status === "verified";
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 py-2">
@@ -228,149 +286,138 @@ export default function ExamsPage() {
       </motion.div>
 
       {/* Catalog Grid */}
-      {loading ? (
-        <div className="py-16 text-center text-sm text-foreground-muted">Loading available certification exams...</div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {exams.map((exam, i) => {
-            const meta = EXAM_PRESETS[exam.id] || {
-              icon: FileCheck,
-              tag: "Certification",
-              xp: 2000,
-              certCode: "CERT",
-            };
-            const Icon = meta.icon;
-            const pastSubmissions = submissions.filter((s) => s.exam_id === exam.id);
-            const latestPass = pastSubmissions.find((s) => s.passed);
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {exams.map((exam, i) => {
+          const meta = EXAM_PRESETS[exam.id] || {
+            icon: FileCheck,
+            tag: "Certification",
+            xp: 2000,
+            certCode: "CERT",
+          };
+          const Icon = meta.icon;
+          const pastSubmissions = submissions.filter((s) => s.exam_id === exam.id);
+          const latestPass = pastSubmissions.find((s) => s.passed);
 
-            return (
-              <motion.div
-                key={exam.id}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-              >
-                <Card hover padding="lg" className="h-full flex flex-col justify-between relative overflow-hidden border-border/80 group">
-                  <div className="space-y-4">
-                    {/* Top Tag & Status */}
-                    <div className="flex items-center justify-between">
-                      <div className="p-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary group-hover:scale-105 transition-transform">
-                        <Icon className="w-6 h-6" />
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        {latestPass ? (
-                          <Badge variant="success" size="sm" className="gap-1 font-bold text-[10px]">
-                            <CheckCircle2 className="w-3 h-3 text-success" />
-                            PASSED ({Math.round(latestPass.score_pct)}%)
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" size="sm" className="font-mono text-[10px]">
-                            {meta.tag}
-                          </Badge>
-                        )}
-                      </div>
+          return (
+            <motion.div
+              key={exam.id}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05 }}
+            >
+              <Card hover padding="lg" className="h-full flex flex-col justify-between relative overflow-hidden border-border/80 group">
+                <div className="space-y-4">
+                  {/* Top Tag & Status */}
+                  <div className="flex items-center justify-between">
+                    <div className="p-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary group-hover:scale-105 transition-transform">
+                      <Icon className="w-6 h-6" />
                     </div>
-
-                    {/* Title & Description */}
-                    <div>
-                      <h3 className="text-lg font-bold text-foreground leading-snug group-hover:text-primary transition-colors">
-                        {exam.title}
-                      </h3>
-                      <p className="text-xs text-foreground-secondary mt-2 line-clamp-3 leading-relaxed">
-                        {exam.description}
-                      </p>
-                    </div>
-
-                    {/* Meta Specs */}
-                    <div className="grid grid-cols-3 gap-2 py-2 border-y border-border/40 text-center text-xs">
-                      <div>
-                        <span className="text-[10px] text-foreground-muted block">Duration</span>
-                        <span className="font-bold text-foreground flex items-center justify-center gap-1 mt-0.5">
-                          <Clock className="w-3 h-3 text-primary" />
-                          {exam.duration_minutes}m
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-foreground-muted block">Passing Bar</span>
-                        <span className="font-bold text-foreground mt-0.5 block">
-                          {exam.passing_score_pct}%
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-foreground-muted block">Questions</span>
-                        <span className="font-bold text-foreground mt-0.5 block">
-                          {exam.question_count || 4} MCQs
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="pt-4 space-y-2">
-                    <div className="flex items-center justify-between text-xs text-foreground-muted mb-2">
-                      <span className="flex items-center gap-1 text-primary font-bold">
-                        <Sparkles className="w-3.5 h-3.5" />
-                        +{meta.xp} XP &amp; Diploma
-                      </span>
-                      {pastSubmissions.length > 0 && (
-                        <span>{pastSubmissions.length} Attempt{pastSubmissions.length !== 1 ? "s" : ""}</span>
+                    <div className="flex items-center gap-1.5">
+                      {latestPass ? (
+                        <Badge variant="success" size="sm" className="flex items-center gap-1 font-bold">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>Certified ({Math.round(latestPass.score_pct)}%)</span>
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" size="sm" className="font-mono text-[10px]">
+                          {meta.tag}
+                        </Badge>
                       )}
                     </div>
-
-                    <Button
-                      fullWidth
-                      variant={latestPass ? "outline" : "primary"}
-                      onClick={() => handleStartExam(exam)}
-                      loading={examLoading && activeExam?.id === exam.id}
-                      icon={latestPass ? <RotateCcw className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                    >
-                      {latestPass ? "Retake for Score Improvement" : "Begin Certification Exam"}
-                    </Button>
                   </div>
-                </Card>
-              </motion.div>
-            );
-          })}
-        </div>
-      )}
+
+                  {/* Title & Description */}
+                  <div>
+                    <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">
+                      {exam.title}
+                    </h3>
+                    <p className="text-xs text-foreground-secondary mt-2 line-clamp-3 leading-relaxed">
+                      {exam.description}
+                    </p>
+                  </div>
+
+                  {/* Exam Specs Table */}
+                  <div className="grid grid-cols-3 gap-2 p-3 rounded-xl bg-surface-elevated/60 border border-border/60 text-center">
+                    <div>
+                      <span className="text-[10px] text-foreground-muted block uppercase font-mono">Questions</span>
+                      <span className="text-xs font-extrabold text-foreground">{exam.question_count || 20} MCQs</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-foreground-muted block uppercase font-mono">Duration</span>
+                      <span className="text-xs font-extrabold text-foreground">{exam.duration_minutes || 45} Mins</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-foreground-muted block uppercase font-mono">Passing</span>
+                      <span className="text-xs font-extrabold text-accent">{exam.passing_score_pct || 70}%</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer Action */}
+                <div className="pt-5 border-t border-border mt-4 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-primary">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>+{meta.xp} XP Bonus</span>
+                  </div>
+
+                  <Button
+                    variant={latestPass ? "outline" : "primary"}
+                    size="sm"
+                    loading={examLoading && activeExam?.id === exam.id}
+                    onClick={() => handleStartExam(exam)}
+                    className="font-bold shrink-0"
+                  >
+                    <Play className="w-3.5 h-3.5 mr-1" />
+                    <span>{latestPass ? "Retake Exam" : "Start Exam →"}</span>
+                  </Button>
+                </div>
+              </Card>
+            </motion.div>
+          );
+        })}
+      </div>
 
       {/* ACTIVE EXAM TAKING MODAL */}
       <AnimatePresence>
-        {activeExam && examQuestions.length > 0 && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+        {activeExam && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-surface rounded-3xl border border-border w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+              exit={{ opacity: 0, scale: 0.96 }}
+              className="w-full max-w-4xl max-h-[90vh] bg-surface border border-border rounded-3xl shadow-2xl flex flex-col overflow-hidden relative"
             >
               {/* Exam Header */}
-              <div className="p-5 border-b border-border bg-surface-elevated flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <span className="text-[10px] font-bold text-primary uppercase tracking-wider font-mono">
-                    Official Proctored Exam Session
-                  </span>
-                  <h3 className="text-base font-bold text-foreground">{activeExam.title}</h3>
+              <div className="p-5 border-b border-border flex items-center justify-between bg-surface-elevated">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                    <GraduationCap className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-foreground line-clamp-1">{activeExam.title}</h2>
+                    <p className="text-xs text-foreground-muted">Standardized Proctored Evaluation • 20 Multiple Choice Questions</p>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <div className={`px-3 py-1.5 rounded-xl border flex items-center gap-2 font-mono font-bold text-xs ${
-                    timeRemaining < 180
-                      ? "bg-error/15 border-error/40 text-error animate-pulse"
+                  {/* Live Timer */}
+                  <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border font-mono text-xs font-bold ${
+                    timeRemaining < 300
+                      ? "bg-error/15 border-error/30 text-error animate-pulse"
                       : "bg-surface border-border text-foreground"
                   }`}>
-                    <Clock className="w-4 h-4 text-primary" />
+                    <Clock className="w-3.5 h-3.5 text-primary" />
                     <span>{formatTime(timeRemaining)}</span>
                   </div>
 
                   {!examResult && (
                     <button
                       onClick={() => {
-                        if (confirm("Are you sure you want to exit the exam? Your current progress will be lost.")) {
+                        if (confirm("Are you sure you want to exit? Your exam progress will not be saved.")) {
                           setActiveExam(null);
                         }
                       }}
-                      className="p-1.5 rounded-lg hover:bg-surface-bright text-foreground-muted hover:text-foreground cursor-pointer"
+                      className="p-1.5 rounded-full text-foreground-muted hover:text-foreground hover:bg-surface transition-colors cursor-pointer"
                     >
                       <X className="w-5 h-5" />
                     </button>
@@ -378,56 +425,56 @@ export default function ExamsPage() {
                 </div>
               </div>
 
-              {/* Exam Content or Result */}
               {!examResult ? (
                 <>
-                  {/* Progress Indicator */}
-                  <div className="px-6 pt-4 pb-2">
-                    <div className="flex items-center justify-between text-xs text-foreground-muted mb-2">
-                      <span>Question {currentQuestionIndex + 1} of {examQuestions.length}</span>
-                      <span>{Object.keys(selectedAnswers).length} answered</span>
+                  {/* Question Viewport */}
+                  <div className="p-6 md:p-8 space-y-6 overflow-y-auto flex-1">
+                    {/* Progress Indicator */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-xs font-semibold text-foreground-muted">
+                        <span>Question {currentQuestionIndex + 1} of {examQuestions.length || 20}</span>
+                        <span>{Object.keys(selectedAnswers).length} / {examQuestions.length || 20} Answered</span>
+                      </div>
+                      <ProgressBar
+                        value={((currentQuestionIndex + 1) / (examQuestions.length || 1)) * 100}
+                        variant="primary"
+                        size="sm"
+                      />
                     </div>
-                    <ProgressBar
-                      value={((currentQuestionIndex + 1) / examQuestions.length) * 100}
-                      size="sm"
-                      variant="primary"
-                    />
-                  </div>
 
-                  {/* Question Body */}
-                  <div className="p-6 overflow-y-auto space-y-6 flex-1">
+                    {/* Question Content */}
                     {examQuestions[currentQuestionIndex] && (
-                      <div className="space-y-4">
-                        <div className="p-4 rounded-2xl bg-surface-elevated/60 border border-border">
-                          <h4 className="text-base font-bold text-foreground leading-relaxed">
-                            {examQuestions[currentQuestionIndex].question_text}
-                          </h4>
-                        </div>
+                      <div className="space-y-5">
+                        <h3 className="text-lg md:text-xl font-extrabold text-foreground leading-relaxed">
+                          {examQuestions[currentQuestionIndex].question_text}
+                        </h3>
 
-                        <div className="space-y-2.5">
-                          {examQuestions[currentQuestionIndex].options.map((opt, optIdx) => {
-                            const qId = examQuestions[currentQuestionIndex].id;
-                            const isSelected = selectedAnswers[qId] === String(optIdx);
+                        {/* Options List */}
+                        <div className="space-y-3 pt-2">
+                          {examQuestions[currentQuestionIndex].options.map((option, idx) => {
+                            const optionIndexStr = String(idx);
+                            const isSelected = selectedAnswers[examQuestions[currentQuestionIndex].id] === optionIndexStr;
 
                             return (
                               <button
-                                key={optIdx}
-                                type="button"
-                                onClick={() => handleSelectAnswer(qId, String(optIdx))}
-                                className={`w-full p-4 rounded-xl border text-left text-xs md:text-sm font-medium transition-all duration-150 cursor-pointer flex items-start gap-3 ${
+                                key={idx}
+                                onClick={() => handleSelectAnswer(examQuestions[currentQuestionIndex].id, optionIndexStr)}
+                                className={`w-full p-4 rounded-2xl border text-left flex items-start gap-3.5 transition-all cursor-pointer ${
                                   isSelected
-                                    ? "bg-primary/15 border-primary text-primary shadow-sm ring-1 ring-primary/40"
-                                    : "bg-surface hover:bg-surface-elevated border-border text-foreground-secondary hover:text-foreground"
+                                    ? "bg-primary/10 border-primary shadow-sm text-foreground ring-1 ring-primary"
+                                    : "bg-surface-elevated/60 border-border hover:border-primary/40 hover:bg-surface-elevated text-foreground-secondary hover:text-foreground"
                                 }`}
                               >
-                                <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 mt-0.5 text-xs font-mono font-bold ${
+                                <span className={`w-7 h-7 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 transition-colors ${
                                   isSelected
-                                    ? "border-primary bg-primary text-black"
-                                    : "border-border text-foreground-muted"
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-surface border border-border text-foreground-muted"
                                 }`}>
-                                  {String.fromCharCode(65 + optIdx)}
-                                </div>
-                                <span className="flex-1 leading-relaxed">{opt}</span>
+                                  {String.fromCharCode(65 + idx)}
+                                </span>
+                                <span className="text-sm font-medium leading-relaxed pt-0.5">
+                                  {option}
+                                </span>
                               </button>
                             );
                           })}
@@ -447,6 +494,29 @@ export default function ExamsPage() {
                       ← Previous
                     </Button>
 
+                    {/* Question Bubbles */}
+                    <div className="hidden sm:flex items-center gap-1.5 overflow-x-auto px-2">
+                      {examQuestions.map((q, idx) => {
+                        const isAnswered = selectedAnswers[q.id] !== undefined;
+                        const isCurrent = idx === currentQuestionIndex;
+                        return (
+                          <button
+                            key={q.id || idx}
+                            onClick={() => setCurrentQuestionIndex(idx)}
+                            className={`w-7 h-7 rounded-lg text-xs font-bold transition-all ${
+                              isCurrent
+                                ? "bg-primary text-primary-foreground ring-2 ring-primary/40 scale-105"
+                                : isAnswered
+                                ? "bg-primary/20 text-primary border border-primary/30"
+                                : "bg-surface border border-border text-foreground-muted hover:text-foreground"
+                            }`}
+                          >
+                            {idx + 1}
+                          </button>
+                        );
+                      })}
+                    </div>
+
                     <div className="flex items-center gap-2">
                       {currentQuestionIndex < examQuestions.length - 1 ? (
                         <Button
@@ -464,7 +534,7 @@ export default function ExamsPage() {
                           onClick={handleSubmitExam}
                           className="font-bold shadow-lg"
                         >
-                          Submit &amp; Evaluate Exam
+                          Submit Exam
                         </Button>
                       )}
                     </div>
@@ -487,14 +557,14 @@ export default function ExamsPage() {
 
                   <div className="space-y-2">
                     <Badge variant={examResult.passed ? "success" : "danger"} size="md" className="font-bold uppercase tracking-wider">
-                      {examResult.passed ? "Certification Granted" : "Did Not Meet 70% Passing Threshold"}
+                      {examResult.passed ? "Exam Passed ✓" : "Did Not Meet 70% Passing Threshold"}
                     </Badge>
                     <h2 className="text-2xl font-extrabold text-foreground">
-                      {examResult.passed ? "Congratulations! You Passed!" : "Exam Completed"}
+                      {examResult.passed ? "Congratulations, Specialist!" : "Exam Completed"}
                     </h2>
                     <p className="text-xs md:text-sm text-foreground-secondary max-w-md mx-auto leading-relaxed">
                       {examResult.passed
-                        ? `You have demonstrated verified competency in ${activeExam.title}. Your verifiable certification credential has been issued to your profile.`
+                        ? `You have achieved a passing score of ${Math.round(examResult.score_pct)}% in ${activeExam.title}.`
                         : "You did not achieve the required 70% passing threshold for this certification. Review the curriculum and retake when ready."}
                     </p>
                   </div>
@@ -506,12 +576,14 @@ export default function ExamsPage() {
                       <span className="text-xl font-extrabold text-foreground">{Math.round(examResult.score_pct)}%</span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-foreground-muted block uppercase">Correct</span>
-                      <span className="text-xl font-extrabold text-foreground">{examResult.correct_count}/{examResult.total_questions}</span>
+                      <span className="text-[10px] text-foreground-muted block uppercase">Marks</span>
+                      <span className="text-xl font-extrabold text-foreground">{examResult.score}/{examResult.total_score}</span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-foreground-muted block uppercase">XP Awarded</span>
-                      <span className="text-xl font-extrabold text-primary">+{examResult.xp_awarded}</span>
+                      <span className="text-[10px] text-foreground-muted block uppercase">Status</span>
+                      <span className={`text-xl font-extrabold ${examResult.passed ? "text-success" : "text-error"}`}>
+                        {examResult.passed ? "PASSED" : "FAILED"}
+                      </span>
                     </div>
                   </div>
 
