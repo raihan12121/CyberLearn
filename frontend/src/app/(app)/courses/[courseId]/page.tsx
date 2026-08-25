@@ -74,12 +74,12 @@ const courseData: Record<string, {
         lessons: [
           {
             id: "web-intro",
-            title: "How the Web Works: HTTP, HTML & Client-Server Architecture",
+            title: "How the Web Works: HTTP Server Architecture",
             type: "video",
             duration: "12 mins",
             completed: false,
-            videoUrl: "https://www.youtube-nocookie.com/embed/2_a10h63d50",
-            content: "Explore the foundational architecture of the web: HTTP request/response lifecycles, headers, methods (GET, POST, PUT, DELETE), status codes, and the client-server interaction model.",
+            videoUrl: "https://www.youtube-nocookie.com/embed/7GBlCinu9yg",
+            content: "Explore the foundational architecture of the web: HTTP request/response lifecycles, headers, status codes, socket connections, and how web servers parse incoming requests.",
           },
           {
             id: "same-origin-policy",
@@ -135,16 +135,16 @@ Cross-Origin Resource Sharing (CORS) relaxes SOP through explicit server respons
         lessons: [
           {
             id: "xss-deep-dive",
-            title: "Cross-Site Scripting (XSS) Types & Exploitation",
+            title: "Cross-Site Scripting (XSS) Origins & Exploitation",
             type: "video",
             duration: "18 mins",
             completed: false,
-            videoUrl: "https://www.youtube-nocookie.com/embed/EoaDgUgS6QA",
+            videoUrl: "https://www.youtube-nocookie.com/embed/mKAWpFdVcPY",
             content: "Learn how Stored XSS, Reflected XSS, and DOM-based XSS execute malicious JavaScript within victim browsers. We review real payload samples, cookie theft mechanics, and defensive contextual encoding.",
           },
           {
             id: "sqli-mechanics",
-            title: "SQL Injection (SQLi) Attacks & Prepared Statements",
+            title: "Running an SQL Injection Attack & Prepared Statements",
             type: "video",
             duration: "20 mins",
             completed: false,
@@ -152,17 +152,13 @@ Cross-Origin Resource Sharing (CORS) relaxes SOP through explicit server respons
             content: "Master SQL injection vulnerability mechanics from classic authentication bypass (' OR 1=1 --) to UNION-based extraction and error-based payloads, alongside defensive parameterized queries.",
           },
           {
-            id: "csrf-defense",
-            title: "Cross-Site Request Forgery (CSRF) & Defense-in-Depth",
-            type: "reading",
+            id: "csrf-video-lesson",
+            title: "Cross-Site Request Forgery (CSRF) Deep Dive",
+            type: "video",
             duration: "15 mins",
             completed: false,
-            content: `Cross-Site Request Forgery (CSRF) tricks an authenticated victim's browser into sending unauthorized commands to a vulnerable application.
-
-Primary Mitigations:
-1. Anti-CSRF Synchronizer Tokens: Cryptographically random tokens tied to user sessions.
-2. SameSite Cookie Attribute: SameSite=Lax or SameSite=Strict prevents ambient credential transmission on cross-site requests.
-3. Re-authentication for sensitive actions (password change, fund transfer).`,
+            videoUrl: "https://www.youtube-nocookie.com/embed/vRBihr41JTo",
+            content: "Understand how CSRF attacks trick authenticated victim browsers into dispatching state-changing requests and how Anti-CSRF tokens and SameSite cookies prevent them.",
           },
         ],
       },
@@ -180,28 +176,21 @@ Primary Mitigations:
         lessons: [
           {
             id: "linux-nav-video",
-            title: "Linux Command Line Navigation & Essential Commands",
+            title: "Linux Tutorial: Basic Command Line Navigation",
             type: "video",
             duration: "15 mins",
             completed: false,
-            videoUrl: "https://www.youtube-nocookie.com/embed/sWbUDq4S6XA",
+            videoUrl: "https://www.youtube-nocookie.com/embed/cBokz0LTizk",
             content: "Master the Linux command line hierarchy. Learn pwd, cd, ls -la, mkdir, touch, cat, grep, find, and piping commands (|) in standard Bash environments.",
           },
           {
-            id: "linux-perms-reading",
-            title: "Linux Permissions: Read, Write, Execute (Octal vs Symbolic)",
-            type: "reading",
-            duration: "15 mins",
+            id: "linux-perms-video",
+            title: "Linux File Permissions in 5 Minutes (Chmod & Chown)",
+            type: "video",
+            duration: "8 mins",
             completed: false,
-            content: `Linux file permissions are divided into User (Owner), Group, and Others:
-- Read (r) = 4
-- Write (w) = 2
-- Execute (x) = 1
-
-Example: chmod 755 script.sh gives:
-- Owner: rwx (4+2+1 = 7)
-- Group: r-x (4+0+1 = 5)
-- Others: r-x (4+0+1 = 5)`,
+            videoUrl: "https://www.youtube-nocookie.com/embed/LnKoncbQBsM",
+            content: "Understand read (r=4), write (w=2), and execute (x=1) permissions across User, Group, and Others with octal and symbolic chmod operations.",
           },
         ],
       },
@@ -209,22 +198,22 @@ Example: chmod 755 script.sh gives:
         title: "Module 2: Permissions, SUID & Process Control",
         lessons: [
           {
-            id: "linux-suid-video",
-            title: "Linux Permissions & SUID Privilege Exploits",
-            type: "video",
-            duration: "18 mins",
-            completed: false,
-            videoUrl: "https://www.youtube-nocookie.com/embed/5okdbhyzN5k",
-            content: "Deep dive into Setuid (SUID), Setgid (SGID), and Sticky Bits. Understand how SUID binaries execute with owner privileges and how attackers leverage misconfigured SUID binaries to escalate privileges.",
-          },
-          {
-            id: "linux-process-video",
-            title: "Process Management, Systemctl & Shell Automation",
+            id: "linux-shell-video",
+            title: "Shell Scripting Crash Course: Beginner to Pro",
             type: "video",
             duration: "22 mins",
             completed: false,
             videoUrl: "https://www.youtube-nocookie.com/embed/v-F3YLd6oMw",
-            content: "Understand background processes, ps aux, top/htop, kill signals, systemd service management (systemctl start/status), and writing basic Bash automation scripts.",
+            content: "Learn variables, loops, conditional statements, positional arguments, and automating routine system maintenance tasks with Bash scripts.",
+          },
+          {
+            id: "linux-suid-video",
+            title: "Linux Privilege Escalation for Beginners (SUID & GTFOBins)",
+            type: "video",
+            duration: "20 mins",
+            completed: false,
+            videoUrl: "https://www.youtube-nocookie.com/embed/ZTnwg3qCdVM",
+            content: "Deep dive into Setuid (SUID), Setgid (SGID), and capabilities. Learn how misconfigured binaries allow low-privilege users to spawn root shells.",
           },
           {
             id: "linux-quiz",
@@ -261,7 +250,7 @@ Example: chmod 755 script.sh gives:
         lessons: [
           {
             id: "net-tcpip-video",
-            title: "TCP/IP 4-Layer Model, 3-Way Handshake & Packet Flow",
+            title: "Computer Networks & The TCP/IP Protocol Suite",
             type: "video",
             duration: "18 mins",
             completed: false,
@@ -284,20 +273,20 @@ Packet filtering firewalls (iptables, nftables, UFW) evaluate incoming/outgoing 
         lessons: [
           {
             id: "wireshark-video",
-            title: "Wireshark Packet Analysis & Traffic Inspection",
+            title: "Wireshark Tutorial for Beginners: Network Traffic Analysis",
             type: "video",
             duration: "20 mins",
             completed: false,
-            videoUrl: "https://www.youtube-nocookie.com/embed/lb1Dw0elw0Q",
+            videoUrl: "https://www.youtube-nocookie.com/embed/qTaOZrDnMzQ",
             content: "Master Wireshark filters (http, tcp.flags.syn==1, ip.addr==x.x.x.x), stream reconstruction (Follow TCP Stream), and finding plaintext credentials in captured PCAP files.",
           },
           {
             id: "nmap-video",
-            title: "Port Scanning & Network Reconnaissance with Nmap",
+            title: "Nmap Tutorial to Find Network Vulnerabilities",
             type: "video",
             duration: "22 mins",
             completed: false,
-            videoUrl: "https://www.youtube-nocookie.com/embed/4t4kBkMsDbY",
+            videoUrl: "https://www.youtube-nocookie.com/embed/4t4kBkMsDbQ",
             content: "Learn Nmap scan types: SYN Stealth Scan (-sS), Version Detection (-sV), Default Scripts (-sC), Aggressive Scan (-A), and timing templates (-T4).",
           },
           {
@@ -335,21 +324,21 @@ Packet filtering firewalls (iptables, nftables, UFW) evaluate incoming/outgoing 
         lessons: [
           {
             id: "py-sec-intro-video",
-            title: "Python Socket Programming & Network Scripting",
+            title: "Python for Beginners: Full Course & Fundamentals",
             type: "video",
             duration: "20 mins",
             completed: false,
-            videoUrl: "https://www.youtube-nocookie.com/embed/3Kq1MIfTWCE",
-            content: "Learn how to use Python's built-in socket library to create client/server connections, send raw bytes, handle timeouts, and parse network banners.",
+            videoUrl: "https://www.youtube-nocookie.com/embed/eWRfhZUzrAc",
+            content: "Review core Python syntax: variables, control flow, functions, lists, dictionaries, error handling, and string manipulation for security scripts.",
           },
           {
-            id: "py-scanner-video",
-            title: "Building a Multi-Threaded Port Scanner in Python",
+            id: "py-sockets-video",
+            title: "Python Socket Programming Tutorial",
             type: "video",
-            duration: "24 mins",
+            duration: "20 mins",
             completed: false,
-            videoUrl: "https://www.youtube-nocookie.com/embed/fgTGADljAeg",
-            content: "Step-by-step implementation of a fast multi-threaded port scanner using Python's threading/concurrent.futures modules and socket connections.",
+            videoUrl: "https://www.youtube-nocookie.com/embed/3QiPPX-KeSc",
+            content: "Learn how to use Python's built-in socket library to create TCP client/server connections, send raw bytes, handle timeouts, and parse banners.",
           },
         ],
       },
@@ -357,21 +346,22 @@ Packet filtering firewalls (iptables, nftables, UFW) evaluate incoming/outgoing 
         title: "Module 2: Web Automation & Exploit Scripting",
         lessons: [
           {
-            id: "py-web-auto-video",
-            title: "Automating Web Exploitation & Scapy Packet Crafting in Python",
+            id: "py-scanner-video",
+            title: "Sockets Tutorial with Python 3: Making a Port Scanner",
             type: "video",
-            duration: "26 mins",
+            duration: "24 mins",
             completed: false,
-            videoUrl: "https://www.youtube-nocookie.com/embed/7utwGRO36h0",
-            content: "Automate HTTP authentication brute-forcing, CSRF token scraping with BeautifulSoup and Requests, and crafting raw ICMP/TCP packets with Scapy.",
+            videoUrl: "https://www.youtube-nocookie.com/embed/LV-lFjPQR20",
+            content: "Step-by-step implementation of a fast multi-threaded port scanner using Python socket connections and threading.",
           },
           {
-            id: "py-exploit-reading",
-            title: "Writing Modular Exploits & CLI Tools with Argparse",
-            type: "reading",
+            id: "py-hacking-video",
+            title: "The Best Way to Learn Python (For Ethical Hacking)",
+            type: "video",
             duration: "18 mins",
             completed: false,
-            content: `Structure your security tools using Python's \`argparse\` module with custom headers, multi-target support, and automated error logging for penetration testing engagements.`,
+            videoUrl: "https://www.youtube-nocookie.com/embed/Fxh9X3-hO4Y",
+            content: "Discover practical Python libraries for penetration testing: Requests for web scraping, Scapy for packet crafting, and Cryptography for hashing.",
           },
           {
             id: "py-quiz",
@@ -386,8 +376,8 @@ Packet filtering firewalls (iptables, nftables, UFW) evaluate incoming/outgoing 
                 answer: 0,
               },
               {
-                q: "What Scapy function is used to send custom Layer 3 packets and receive responses?",
-                options: ["sr() or sr1()", "send_all()", "socket.emit()", "packet.dispatch()"],
+                q: "What method is called on a socket object to establish a TCP connection to an IP and port?",
+                options: ["connect()", "bind()", "listen()", "send()"],
                 answer: 0,
               },
             ],
@@ -404,25 +394,25 @@ Packet filtering firewalls (iptables, nftables, UFW) evaluate incoming/outgoing 
     xp: 1600,
     modules: [
       {
-        title: "Module 1: OWASP Core Framework & Broken Auth",
+        title: "Module 1: OWASP Core Framework & Injection",
         lessons: [
           {
             id: "owasp-overview-video",
-            title: "OWASP Top 10 Overview & Vulnerability Taxonomy",
+            title: "7 Security Risks You Should Never Take as a Developer",
             type: "video",
             duration: "15 mins",
             completed: false,
-            videoUrl: "https://www.youtube-nocookie.com/embed/rTXN37mXyqg",
+            videoUrl: "https://www.youtube-nocookie.com/embed/4YOpILi9Oxs",
             content: "Comprehensive overview of the OWASP Top 10 vulnerabilities: Broken Access Control, Cryptographic Failures, Injection, Insecure Design, Security Misconfiguration, and SSRF.",
           },
           {
             id: "owasp-auth-video",
-            title: "Broken Authentication, Session Hijacking & Credential Stuffing",
+            title: "Hacking Websites with SQL Injection & Broken Auth",
             type: "video",
             duration: "18 mins",
             completed: false,
-            videoUrl: "https://www.youtube-nocookie.com/embed/4cWBQSwfqhI",
-            content: "Analyze session fixation, weak password reset tokens, JWT signature stripping ('none' alg), and how to enforce robust multi-factor authentication.",
+            videoUrl: "https://www.youtube-nocookie.com/embed/_jKylhJtPmI",
+            content: "Analyze session fixation, weak password reset tokens, SQL injection bypasses, and how to enforce robust authentication defenses.",
           },
         ],
       },
@@ -430,21 +420,22 @@ Packet filtering firewalls (iptables, nftables, UFW) evaluate incoming/outgoing 
         title: "Module 2: Access Control, IDOR & SSRF",
         lessons: [
           {
+            id: "owasp-idor-video",
+            title: "IDOR Explained: Insecure Direct Object References",
+            type: "video",
+            duration: "16 mins",
+            completed: false,
+            videoUrl: "https://www.youtube-nocookie.com/embed/iWbWgjrj_g4",
+            content: "Understand horizontal and vertical access control vulnerabilities where attackers manipulate IDs in requests to access other users' private accounts.",
+          },
+          {
             id: "owasp-ssrf-video",
-            title: "Insecure Direct Object References (IDOR) & SSRF Attacks",
+            title: "Server-Side Request Forgery (SSRF) Explained & Demonstrated",
             type: "video",
             duration: "20 mins",
             completed: false,
-            videoUrl: "https://www.youtube-nocookie.com/embed/wE1zO1Q0vps",
-            content: "Examine horizontal/vertical privilege escalation through IDOR and how Server-Side Request Forgery (SSRF) exploits internal cloud metadata services (169.254.169.254).",
-          },
-          {
-            id: "owasp-reading",
-            title: "Security Misconfigurations & Sensitive Data Exposure",
-            type: "reading",
-            duration: "15 mins",
-            completed: false,
-            content: `Common security misconfigurations include default credentials, unnecessary debug pages, open S3 buckets, and verbose stack traces exposing API keys.`,
+            videoUrl: "https://www.youtube-nocookie.com/embed/Zyt7lUO3mY8",
+            content: "Learn how SSRF forces vulnerable backend servers to make unauthorized HTTP requests to internal cloud metadata endpoints (169.254.169.254) and intranet services.",
           },
           {
             id: "owasp-quiz",
@@ -481,21 +472,21 @@ Packet filtering firewalls (iptables, nftables, UFW) evaluate incoming/outgoing 
         lessons: [
           {
             id: "pentest-methodology-video",
-            title: "Penetration Testing Methodologies & Ethical Hacking Workflow",
+            title: "Ethical Hacking Full Course: Penetration Testing Methodologies",
             type: "video",
             duration: "22 mins",
             completed: false,
-            videoUrl: "https://www.youtube-nocookie.com/embed/WnNCNU4W9bI",
+            videoUrl: "https://www.youtube-nocookie.com/embed/3FNYvj2U0HM",
             content: "Explore the end-to-end penetration testing lifecycle: Scope definition, passive/active reconnaissance, vulnerability assessment, exploitation, post-exploitation, and professional remediation reporting.",
           },
           {
             id: "metasploit-video",
-            title: "Vulnerability Scanning & Metasploit Framework Exploitation",
+            title: "Metasploit Hacking Demo & Exploitation Framework",
             type: "video",
             duration: "25 mins",
             completed: false,
-            videoUrl: "https://www.youtube-nocookie.com/embed/3FNYvj2U0HM",
-            content: "Master msfconsole, searching exploits, configuring payloads (staged vs stageless Meterpreter), handling multi/handler listeners, and bypassing firewall defenses.",
+            videoUrl: "https://www.youtube-nocookie.com/embed/bBut8D7usKA",
+            content: "Master msfconsole, searching exploits, configuring payloads (Meterpreter), handling multi/handler listeners, and pivoting through network perimeters.",
           },
         ],
       },
@@ -504,12 +495,12 @@ Packet filtering firewalls (iptables, nftables, UFW) evaluate incoming/outgoing 
         lessons: [
           {
             id: "privesc-pivoting-video",
-            title: "Post-Exploitation, Linux Privilege Escalation & Pivoting",
+            title: "Linux Privilege Escalation & CTF Machine Exploitation",
             type: "video",
             duration: "28 mins",
             completed: false,
-            videoUrl: "https://www.youtube-nocookie.com/embed/9OC4fFk4p5s",
-            content: "Learn how to escalate privileges from low-privilege user to root via sudo vulnerabilities, cronjobs, and capabilities, followed by SSH tunneling/Chisel pivoting into internal network subnets.",
+            videoUrl: "https://www.youtube-nocookie.com/embed/Qg3qOjylZpw",
+            content: "Learn how to escalate privileges from low-privilege user to root via sudo vulnerabilities, cronjobs, and capabilities, followed by network pivoting.",
           },
           {
             id: "pentest-reporting-reading",
@@ -561,20 +552,20 @@ Packet filtering firewalls (iptables, nftables, UFW) evaluate incoming/outgoing 
         lessons: [
           {
             id: "ai-threat-video",
-            title: "Vulnerabilities of LLM Systems & OWASP Top 10 for LLMs",
+            title: "Generative AI's Greatest Flaw: Prompt Injection Explained",
             type: "video",
             duration: "14 mins",
             completed: false,
-            videoUrl: "https://www.youtube-nocookie.com/embed/v2gD8BHOaXg",
+            videoUrl: "https://www.youtube-nocookie.com/embed/rAEqP9VEhe8",
             content: "Understand security challenges in Large Language Model (LLM) applications: Prompt Injection (LLM01), Insecure Output Handling (LLM02), Training Data Poisoning (LLM03), and Model Theft.",
           },
           {
             id: "prompt-injection-demo-video",
-            title: "Direct & Indirect Prompt Injection Attacks with Live Demos",
+            title: "How to Jailbreak AI Models & Prompt Injection Vectors",
             type: "video",
             duration: "18 mins",
             completed: false,
-            videoUrl: "https://www.youtube-nocookie.com/embed/bB3dGqK5j3U",
+            videoUrl: "https://www.youtube-nocookie.com/embed/fw16D23TjJI",
             content: "Analyze direct jailbreaks ('Ignore previous instructions and do X') and indirect prompt injections (hidden payloads embedded in external web pages, emails, or PDFs ingested by AI agents).",
           },
         ],
@@ -584,12 +575,12 @@ Packet filtering firewalls (iptables, nftables, UFW) evaluate incoming/outgoing 
         lessons: [
           {
             id: "ai-defense-video",
-            title: "Hardening AI Systems with Guardrails & Defensive Output Validation",
+            title: "What is Retrieval-Augmented Generation (RAG) & Security",
             type: "video",
             duration: "20 mins",
             completed: false,
             videoUrl: "https://www.youtube-nocookie.com/embed/T-D1OfcDW1M",
-            content: "Implement defense-in-depth for generative AI: NeMo Guardrails, structured schema enforcement, dual-LLM evaluator patterns, and sanitizing outputs before SQL or shell execution.",
+            content: "Implement defense-in-depth for generative AI: NeMo Guardrails, structured schema enforcement, dual-LLM evaluator patterns, and sanitizing RAG context before query execution.",
           },
           {
             id: "ai-poisoning-reading",
@@ -926,7 +917,7 @@ export default function CourseDetailPage() {
             {activeLesson.type === "video" && (
               <div className="mb-6 rounded-2xl overflow-hidden bg-black border border-border aspect-video shadow-2xl relative">
                 <iframe
-                  src={getYouTubeEmbedUrl(activeLesson.videoUrl || activeLesson.content) || "https://www.youtube-nocookie.com/embed/2_a10h63d50"}
+                  src={getYouTubeEmbedUrl(activeLesson.videoUrl || activeLesson.content) || "https://www.youtube-nocookie.com/embed/7GBlCinu9yg"}
                   title={activeLesson.title}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
