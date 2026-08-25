@@ -27,6 +27,7 @@ import {
   X,
 } from "lucide-react";
 import Avatar from "../ui/Avatar";
+import ThemeToggle from "../ui/ThemeToggle";
 import { api } from "@/lib/api";
 import { signOutFirebase } from "@/lib/firebase";
 import { useAuthStore, UserProfile } from "@/lib/authStore";
@@ -262,7 +263,10 @@ export default function TopNav({ onMenuClick }: TopNavProps) {
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-2 sm:gap-4 ml-3 sm:ml-6 shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-3 ml-3 sm:ml-6 shrink-0">
+        {/* Theme Toggle */}
+        <ThemeToggle />
+
         {/* Notifications Dropdown Container */}
         <div className="relative" ref={notifRef}>
           <button

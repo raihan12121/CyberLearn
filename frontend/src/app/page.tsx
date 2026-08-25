@@ -23,6 +23,7 @@ import {
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 
 const fadeUp = {
   initial: { opacity: 0, y: 30 },
@@ -107,7 +108,9 @@ export default function LandingPage() {
             ))}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <ThemeToggle />
+
             <div className="hidden sm:flex items-center gap-3">
               <Link href="/login">
                 <Button variant="ghost" size="sm">Log In</Button>

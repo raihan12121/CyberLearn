@@ -74,7 +74,7 @@ export default function SkillRadarChart() {
                   key={idx}
                   points={gridPoints}
                   fill="none"
-                  stroke="#334155"
+                  stroke="var(--border-hover)"
                   strokeWidth="1"
                   strokeDasharray={idx < 4 ? "3,3" : "none"}
                 />
@@ -93,7 +93,7 @@ export default function SkillRadarChart() {
                   y1={center}
                   x2={x2}
                   y2={y2}
-                  stroke="#334155"
+                  stroke="var(--border-hover)"
                   strokeWidth="1"
                 />
               );
@@ -120,7 +120,7 @@ export default function SkillRadarChart() {
                   cy={cy}
                   r="4"
                   fill="#38bdf8"
-                  stroke="#0f172a"
+                  stroke="var(--surface)"
                   strokeWidth="1.5"
                 />
               );

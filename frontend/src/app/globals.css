@@ -4,7 +4,10 @@
    CyberLearn Design System
    ======================== */
 
-:root {
+/* Dark Mode (Default) */
+:root,
+.dark,
+[data-theme="dark"] {
   /* Background Layers */
   --background: #0D0E11;
   --surface: #16181D;
@@ -62,6 +65,11 @@
   --terminal-bg: #111317;
   --terminal-text: #10B981;
   
+  /* Glass & Scrollbar */
+  --glass-bg: rgba(22, 24, 29, 0.8);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.1);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.2);
+
   /* Transition */
   --transition-fast: 150ms ease-out;
   --transition: 200ms ease-out;
@@ -70,6 +78,64 @@
   /* Sidebar */
   --sidebar-width: 240px;
   --sidebar-collapsed: 72px;
+}
+
+/* Light Mode */
+.light,
+[data-theme="light"] {
+  /* Background Layers */
+  --background: #F8FAFC;
+  --surface: #FFFFFF;
+  --surface-elevated: #F1F5F9;
+  --surface-bright: #E2E8F0;
+  
+  /* Foreground / Text */
+  --foreground: #0F172A;
+  --foreground-secondary: #475569;
+  --foreground-muted: #94A3B8;
+  
+  /* Primary - Emerald Green (High Contrast for Light Mode) */
+  --primary: #059669;
+  --primary-hover: #047857;
+  --primary-dim: #065F46;
+  --primary-light: #10B981;
+  --primary-glow: rgba(5, 150, 105, 0.2);
+  
+  /* Secondary - Amber Gold */
+  --secondary: #D97706;
+  --secondary-hover: #B45309;
+  --secondary-light: #F59E0B;
+  
+  /* Accent - Rose/Coral */
+  --accent: #E11D48;
+  --accent-hover: #BE123C;
+  --accent-light: #F43F5E;
+  
+  /* Status */
+  --success: #059669;
+  --warning: #D97706;
+  --error: #DC2626;
+  --info: #0D9488;
+  
+  /* Border */
+  --border: rgba(15, 23, 42, 0.09);
+  --border-hover: rgba(15, 23, 42, 0.18);
+  --border-focus: rgba(5, 150, 105, 0.5);
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.08);
+  --shadow-glow: 0 0 20px rgba(5, 150, 105, 0.12);
+  
+  /* Terminal (Dark Slate for authentic terminal feel) */
+  --terminal-bg: #0F172A;
+  --terminal-text: #10B981;
+  
+  /* Glass & Scrollbar */
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --scrollbar-thumb: rgba(15, 23, 42, 0.15);
+  --scrollbar-thumb-hover: rgba(15, 23, 42, 0.28);
 }
 
 @theme inline {
@@ -109,7 +175,7 @@
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
 *::-webkit-scrollbar {
@@ -122,12 +188,12 @@
 }
 
 *::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--scrollbar-thumb);
   border-radius: 3px;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--scrollbar-thumb-hover);
 }
 
 html {
@@ -142,11 +208,12 @@ body {
   font-family: var(--font-inter), 'Inter', system-ui, -apple-system, sans-serif;
   line-height: 1.5;
   min-height: 100vh;
+  transition: background-color var(--transition), color var(--transition);
 }
 
 ::selection {
   background: rgba(16, 185, 129, 0.3);
-  color: #fff;
+  color: inherit;
 }
 
 /* ========================
@@ -163,21 +230,21 @@ body {
    ======================== */
 
 .glass {
-  background: rgba(22, 24, 29, 0.8);
+  background: var(--glass-bg);
   backdrop-filter: blur(12px);
   border: 1px solid var(--border);
 }
 
 .glow-primary {
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.2), 0 0 40px rgba(16, 185, 129, 0.1);
+  box-shadow: 0 0 20px var(--primary-glow), 0 0 40px rgba(16, 185, 129, 0.08);
 }
 
 .glow-secondary {
-  box-shadow: 0 0 20px rgba(245, 158, 11, 0.2), 0 0 40px rgba(245, 158, 11, 0.1);
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.2), 0 0 40px rgba(245, 158, 11, 0.08);
 }
 
 .glow-accent {
-  box-shadow: 0 0 20px rgba(244, 63, 94, 0.2), 0 0 40px rgba(244, 63, 94, 0.1);
+  box-shadow: 0 0 20px rgba(244, 63, 94, 0.2), 0 0 40px rgba(244, 63, 94, 0.08);
 }
 
 .gradient-primary {

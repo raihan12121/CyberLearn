@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider, themeInitScript } from "@/lib/theme";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -36,9 +37,21 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${inter.variable} ${jetbrainsMono.variable} h-full`}
     >
-      <body className="min-h-full flex flex-col antialiased">{children}</body>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: themeInitScript,
+          }}
+        />
+      </head>
+      <body className="min-h-full flex flex-col antialiased">
+        <ThemeProvider defaultTheme="dark">
+          {children}
+        </ThemeProvider>
+      </body>
     </html>
   );
 }

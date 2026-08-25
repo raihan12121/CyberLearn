@@ -6,19 +6,25 @@ import {
   User,
   Shield,
   Bell,
-  Lock,
   Trash2,
   Check,
   Smartphone,
-  Eye,
-  EyeOff,
+  Palette,
+  Sun,
+  Moon,
+  Monitor,
+  Sparkles,
 } from "lucide-react";
 import { Card, Badge, Button, Avatar } from "@/components/ui";
 import { api } from "@/lib/api";
+import { useTheme, ThemeMode } from "@/lib/theme";
 
 export default function SettingsPage() {
   // Tabs
   const [activeTab, setActiveTab] = useState("profile");
+
+  // Theme state from hook
+  const { theme, resolvedTheme, setTheme } = useTheme();
 
   // Profile Form state
   const [fullName, setFullName] = useState("");
@@ -79,13 +85,59 @@ export default function SettingsPage() {
       });
   };
 
+  const themeOptions: {
+    id: ThemeMode;
+    name: string;
+    description: string;
+    icon: React.ComponentType<{ className?: string }>;
+    accentColor: string;
+    previewBg: string;
+    previewSurface: string;
+    previewBorder: string;
+    previewText: string;
+  }[] = [
+    {
+      id: "dark",
+      name: "Cyber Dark",
+      description: "Deep obsidian backdrop with glowing emerald neon accents, optimized for night sessions & CTF hacking.",
+      icon: Moon,
+      accentColor: "text-emerald-400",
+      previewBg: "bg-[#0D0E11]",
+      previewSurface: "bg-[#16181D]",
+      previewBorder: "border-white/10",
+      previewText: "text-white",
+    },
+    {
+      id: "light",
+      name: "Cyber Light",
+      description: "Crisp slate aesthetic with high-contrast emerald & amber highlights, engineered for daylight readability.",
+      icon: Sun,
+      accentColor: "text-amber-500",
+      previewBg: "bg-[#F8FAFC]",
+      previewSurface: "bg-white",
+      previewBorder: "border-slate-200",
+      previewText: "text-slate-900",
+    },
+    {
+      id: "system",
+      name: "System Sync",
+      description: "Automatically matches your operating system preference and seamlessly switches between day and night.",
+      icon: Monitor,
+      accentColor: "text-primary",
+      previewBg: "bg-gradient-to-r from-[#0D0E11] to-[#F8FAFC]",
+      previewSurface: "bg-surface",
+      previewBorder: "border-border",
+      previewText: "text-foreground",
+    },
+  ];
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl font-bold text-foreground font-sans">Settings</h1>
         <p className="text-foreground-secondary text-sm mt-1">
-          Manage your account preferences, security credentials, and email notifications.
+          Manage your account preferences, appearance, security credentials, and email notifications.
         </p>
       </motion.div>
 
@@ -95,6 +147,7 @@ export default function SettingsPage() {
         <div className="lg:col-span-3 flex lg:flex-col gap-1 overflow-x-auto pb-2 lg:pb-0 scrollbar-none">
           {[
             { id: "profile", label: "My Profile", icon: User },
+            { id: "appearance", label: "Appearance & Theme", icon: Palette },
             { id: "security", label: "Security & MFA", icon: Shield },
             { id: "notifications", label: "Notifications", icon: Bell },
           ].map((item) => {
@@ -119,7 +172,7 @@ export default function SettingsPage() {
 
         {/* Configurations Forms Content (9 cols) */}
         <div className="lg:col-span-9">
-          {/* PROFILE TABS */}
+          {/* PROFILE TAB */}
           {activeTab === "profile" && (
             <Card padding="lg" className="space-y-6">
               <div className="border-b border-border pb-4">
@@ -179,6 +232,109 @@ export default function SettingsPage() {
                   <Button type="submit">Save Settings</Button>
                 </div>
               </form>
+            </Card>
+          )}
+
+          {/* APPEARANCE & THEME TAB */}
+          {activeTab === "appearance" && (
+            <Card padding="lg" className="space-y-6">
+              <div className="border-b border-border pb-4 flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                    <Palette className="w-5 h-5 text-primary" />
+                    Theme &amp; Visual Preferences
+                  </h3>
+                  <p className="text-xs text-foreground-secondary mt-0.5">
+                    Customize your CyberLearn interface mode. Changes apply immediately.
+                  </p>
+                </div>
+                <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-elevated border border-border text-xs font-semibold text-foreground-secondary">
+                  <Sparkles className="w-3.5 h-3.5 text-primary" />
+                  <span>Active: <strong className="text-foreground capitalize">{theme} ({resolvedTheme})</strong></span>
+                </div>
+              </div>
+
+              {/* Theme Options Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {themeOptions.map((opt) => {
+                  const Icon = opt.icon;
+                  const isSelected = theme === opt.id;
+
+                  return (
+                    <div
+                      key={opt.id}
+                      onClick={() => setTheme(opt.id)}
+                      className={`
+                        relative group rounded-2xl border-2 p-4 cursor-pointer transition-all duration-200 flex flex-col justify-between
+                        ${
+                          isSelected
+                            ? "border-primary bg-primary/5 shadow-lg shadow-primary/5"
+                            : "border-border hover:border-border-hover bg-surface-elevated/40 hover:bg-surface-elevated"
+                        }
+                      `}
+                    >
+                      {/* Selection Badge */}
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-8 h-8 rounded-xl bg-surface-elevated border border-border flex items-center justify-center ${opt.accentColor}`}>
+                            <Icon className="w-4 h-4" />
+                          </div>
+                          <span className="text-sm font-bold text-foreground">{opt.name}</span>
+                        </div>
+                        <div
+                          className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${
+                            isSelected
+                              ? "bg-primary border-primary text-white"
+                              : "border-border bg-surface"
+                          }`}
+                        >
+                          {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                        </div>
+                      </div>
+
+                      {/* Visual UI Mini-Mockup Preview */}
+                      <div className={`w-full h-24 rounded-xl ${opt.previewBg} p-2.5 border ${opt.previewBorder} shadow-inner my-2 flex flex-col justify-between overflow-hidden relative`}>
+                        {/* Mock header bar */}
+                        <div className={`h-4 rounded-md ${opt.previewSurface} border ${opt.previewBorder} flex items-center justify-between px-2`}>
+                          <div className="flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-400/80" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400/80" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/80" />
+                          </div>
+                          <div className="w-10 h-1.5 rounded bg-primary/40" />
+                        </div>
+
+                        {/* Mock content blocks */}
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <div className={`h-10 rounded-md ${opt.previewSurface} border ${opt.previewBorder} p-1.5 flex flex-col justify-between`}>
+                            <div className="w-8 h-1.5 rounded bg-primary/60" />
+                            <div className="w-12 h-1 rounded bg-foreground-muted/40" />
+                          </div>
+                          <div className={`h-10 rounded-md ${opt.previewSurface} border ${opt.previewBorder} p-1.5 flex flex-col justify-between`}>
+                            <div className="w-6 h-1.5 rounded bg-secondary/60" />
+                            <div className="w-10 h-1 rounded bg-foreground-muted/40" />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Description */}
+                      <p className="text-[11px] text-foreground-secondary mt-2 leading-relaxed">
+                        {opt.description}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Status information note */}
+              <div className="p-4 rounded-xl bg-surface-elevated border border-border flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2.5 text-foreground-secondary">
+                  <Monitor className="w-4 h-4 text-primary shrink-0" />
+                  <span>
+                    Your preference is saved locally and synced across all browser tabs automatically.
+                  </span>
+                </div>
+              </div>
             </Card>
           )}
 
