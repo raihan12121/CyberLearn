@@ -20,7 +20,10 @@ const faqs = [
   { q: "Are lab sandboxes safe to run?", a: "Absolutely. All labs run inside isolated Docker containers on our secure cloud server. They cannot interact with your local device or network." },
 ];
 
+import { useRouter } from "next/navigation";
+
 export default function PricingPage() {
+  const router = useRouter();
   const { user, fetchUser } = useAuthStore();
   const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annually">("monthly");
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
@@ -29,20 +32,22 @@ export default function PricingPage() {
   const currentTier = (user?.subscription_tier || (user?.role === "pro_member" ? "pro" : user?.role === "premium_member" ? "premium" : "free")).toLowerCase();
 
   const handleStartCheckout = async (planName: string) => {
-    setCheckoutLoading(planName);
-    setActivePlanMessage(null);
-    try {
-      const res = await api.createCheckoutSession(planName, billingPeriod);
-      await fetchUser(true);
-      setCheckoutLoading(null);
-      setActivePlanMessage(res.message || `Activated ${planName} plan!`);
-    } catch (err: any) {
+    if (planName === "Free") {
+      setCheckoutLoading(planName);
       try {
+        await api.cancelSubscription();
         await fetchUser(true);
-      } catch {}
-      setCheckoutLoading(null);
-      setActivePlanMessage(`Activated ${planName} plan successfully.`);
+        setActivePlanMessage("Reverted to Free starter plan.");
+      } catch (err) {
+        console.warn(err);
+      } finally {
+        setCheckoutLoading(null);
+      }
+      return;
     }
+
+    // Direct route to full dedicated checkout page
+    router.push(`/checkout?plan=${planName.toLowerCase()}&cycle=${billingPeriod}`);
   };
 
   const plans = [

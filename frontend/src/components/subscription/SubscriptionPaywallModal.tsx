@@ -42,30 +42,9 @@ export default function SubscriptionPaywallModal({
 
   if (!isOpen) return null;
 
-  const handleQuickCheckout = async (planName: string) => {
-    setLoadingPlan(planName);
-    setFeedback(null);
-    try {
-      const res = await api.createCheckoutSession(planName, billingPeriod);
-      await fetchUser(true);
-      setFeedback(res.message || `Activated ${planName} plan!`);
-      setTimeout(() => {
-        onClose();
-        window.location.reload();
-      }, 900);
-    } catch (err: any) {
-      // In local dev mode, simulate successful activation
-      try {
-        await fetchUser(true);
-      } catch {}
-      setFeedback(`Activated ${planName} subscription successfully!`);
-      setTimeout(() => {
-        onClose();
-        window.location.reload();
-      }, 900);
-    } finally {
-      setLoadingPlan(null);
-    }
+  const handleQuickCheckout = (planName: string) => {
+    onClose();
+    router.push(`/checkout?plan=${planName.toLowerCase()}&cycle=${billingPeriod}`);
   };
 
   return (

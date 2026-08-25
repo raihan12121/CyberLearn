@@ -50,6 +50,7 @@ class User(Base):
     ai_sessions = relationship("AiSession", back_populates="user", cascade="all, delete-orphan")
     exam_submissions = relationship("ExamSubmission", back_populates="user", cascade="all, delete-orphan")
     post_votes = relationship("PostVote", back_populates="user", cascade="all, delete-orphan")
+    invoices = relationship("Invoice", back_populates="user", cascade="all, delete-orphan")
 
 
 class Course(Base):
@@ -326,4 +327,30 @@ class PostVote(Base):
 
     user = relationship("User", back_populates="post_votes")
     post = relationship("Post", back_populates="votes")
+
+
+class Invoice(Base):
+    __tablename__ = "invoices"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    invoice_number = Column(String(50), unique=True, nullable=False, index=True)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    plan_tier = Column(String(50), nullable=False, index=True) # pro, premium
+    billing_cycle = Column(String(20), default="monthly") # monthly, annually
+    currency = Column(String(10), default="USD")
+    subtotal = Column(Numeric(10, 2), default=0.00)
+    discount_amount = Column(Numeric(10, 2), default=0.00)
+    tax_amount = Column(Numeric(10, 2), default=0.00)
+    total_paid = Column(Numeric(10, 2), default=0.00)
+    payment_method = Column(String(50), default="credit_card") # credit_card, paypal, google_pay, crypto
+    card_brand = Column(String(50), nullable=True) # visa, mastercard, amex, discover
+    card_last4 = Column(String(10), nullable=True)
+    cardholder_name = Column(String(255), nullable=True)
+    billing_country = Column(String(100), nullable=True)
+    billing_zip = Column(String(20), nullable=True)
+    promo_code = Column(String(50), nullable=True)
+    status = Column(String(20), default="paid", index=True) # paid, refunded, pending
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+    user = relationship("User", back_populates="invoices")
 

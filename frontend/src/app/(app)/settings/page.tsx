@@ -47,10 +47,12 @@ export default function SettingsPage() {
   const [labAlerts, setLabAlerts] = useState(true);
   const [marketing, setMarketing] = useState(false);
 
-  // Subscription state
+  // Subscription & Invoices state
   const { user, fetchUser } = useAuthStore();
   const [subLoading, setSubLoading] = useState(false);
   const [subMessage, setSubMessage] = useState<string | null>(null);
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
 
   // Load profile on mount
   useEffect(() => {
@@ -63,6 +65,12 @@ export default function SettingsPage() {
         }
       })
       .catch((err) => console.error("Error fetching profile settings:", err));
+
+    api.getInvoices()
+      .then((invList) => {
+        if (Array.isArray(invList)) setInvoices(invList);
+      })
+      .catch(() => {});
   }, []);
 
   const handleCancelSub = async () => {
@@ -604,6 +612,74 @@ export default function SettingsPage() {
                 </div>
               </div>
 
+              {/* Billing Invoices & Receipts History */}
+              <div className="space-y-3 pt-4 border-t border-border/60">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-bold text-foreground">Billing Invoices &amp; Receipts</h4>
+                    <p className="text-xs text-foreground-secondary">View and download your digital payment receipts.</p>
+                  </div>
+                  <Link href="/pricing">
+                    <Button variant="outline" size="sm">
+                      Change Plan
+                    </Button>
+                  </Link>
+                </div>
+
+                {invoices.length > 0 ? (
+                  <div className="rounded-xl border border-border overflow-hidden">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-surface-elevated/60 text-foreground-muted border-b border-border">
+                        <tr>
+                          <th className="p-3 font-semibold">Invoice #</th>
+                          <th className="p-3 font-semibold">Date</th>
+                          <th className="p-3 font-semibold">Plan</th>
+                          <th className="p-3 font-semibold">Amount</th>
+                          <th className="p-3 font-semibold">Status</th>
+                          <th className="p-3 font-semibold text-right">Receipt</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border/40">
+                        {invoices.map((inv) => (
+                          <tr key={inv.id} className="hover:bg-surface-elevated/30 transition-colors">
+                            <td className="p-3 font-mono font-bold text-foreground">{inv.invoice_number}</td>
+                            <td className="p-3 text-foreground-secondary">
+                              {new Date(inv.created_at).toLocaleDateString()}
+                            </td>
+                            <td className="p-3 font-semibold capitalize text-foreground">
+                              {inv.plan_tier} ({inv.billing_cycle})
+                            </td>
+                            <td className="p-3 font-mono text-primary font-bold">
+                              ${Number(inv.total_paid).toFixed(2)} USD
+                            </td>
+                            <td className="p-3">
+                              <Badge variant="success" size="sm" className="capitalize text-[10px]">
+                                {inv.status}
+                              </Badge>
+                            </td>
+                            <td className="p-3 text-right">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setSelectedInvoice(inv)}
+                                className="text-xs text-primary hover:underline font-semibold"
+                              >
+                                View
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="p-6 rounded-xl border border-dashed border-border text-center space-y-1">
+                    <p className="text-xs text-foreground-secondary font-medium">No past invoice receipts found.</p>
+                    <p className="text-[11px] text-foreground-muted">When you subscribe or upgrade your account, your digital receipts will appear here.</p>
+                  </div>
+                )}
+              </div>
+
               {/* Cancellation Action */}
               {isUserSubscribed(user) && user?.role !== "admin" && user?.role !== "instructor" && (
                 <div className="pt-4 border-t border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -623,6 +699,75 @@ export default function SettingsPage() {
                 </div>
               )}
             </Card>
+          )}
+
+          {/* RECEIPT MODAL */}
+          {selectedInvoice && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+              <div className="relative w-full max-w-lg bg-surface border border-border rounded-2xl p-6 space-y-4 shadow-2xl">
+                <div className="flex items-center justify-between border-b border-border pb-3">
+                  <div>
+                    <p className="text-[10px] font-mono text-foreground-muted uppercase">Digital Receipt</p>
+                    <h3 className="text-base font-bold text-foreground">{selectedInvoice.invoice_number}</h3>
+                  </div>
+                  <button
+                    onClick={() => setSelectedInvoice(null)}
+                    className="text-foreground-muted hover:text-foreground p-1 text-sm font-bold"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <span className="text-foreground-muted block">Tier</span>
+                    <span className="font-bold text-foreground uppercase">{selectedInvoice.plan_tier} Plan</span>
+                  </div>
+                  <div>
+                    <span className="text-foreground-muted block">Billing Period</span>
+                    <span className="font-bold text-foreground capitalize">{selectedInvoice.billing_cycle}</span>
+                  </div>
+                  <div>
+                    <span className="text-foreground-muted block">Payment Method</span>
+                    <span className="font-bold text-foreground font-mono uppercase">
+                      {selectedInvoice.card_brand || "CARD"} •••• {selectedInvoice.card_last4 || "4242"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-foreground-muted block">Date</span>
+                    <span className="font-bold text-foreground">
+                      {new Date(selectedInvoice.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-surface-elevated rounded-xl border border-border space-y-1.5 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-foreground-secondary">Subtotal</span>
+                    <span>${Number(selectedInvoice.subtotal).toFixed(2)}</span>
+                  </div>
+                  {Number(selectedInvoice.discount_amount) > 0 && (
+                    <div className="flex justify-between text-emerald-400 font-semibold">
+                      <span>Discount ({selectedInvoice.promo_code || "Promo"})</span>
+                      <span>-${Number(selectedInvoice.discount_amount).toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between pt-1.5 border-t border-border font-bold text-sm text-foreground">
+                    <span>Total Amount</span>
+                    <span className="text-primary">${Number(selectedInvoice.total_paid).toFixed(2)} USD</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <Button variant="outline" size="sm" onClick={() => window.print()}>
+                    Print Receipt
+                  </Button>
+                  <Button variant="primary" size="sm" onClick={() => setSelectedInvoice(null)}>
+                    Close
+                  </Button>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </div>

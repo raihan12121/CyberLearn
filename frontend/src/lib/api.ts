@@ -204,6 +204,28 @@ export const api = {
     method: "POST",
     body: JSON.stringify({ plan_name: planName, billing_period: billingPeriod }),
   }),
+  validatePromoCode: (promoCode: string, planName: string = "Pro", billingPeriod: string = "monthly") => apiFetch("/billing/validate-promo", {
+    method: "POST",
+    body: JSON.stringify({ promo_code: promoCode, plan_name: planName, billing_period: billingPeriod }),
+  }),
+  processPayment: (payload: {
+    plan_name: string;
+    billing_period: string;
+    payment_method: string;
+    card_number?: string;
+    card_exp_month?: number;
+    card_exp_year?: number;
+    card_cvc?: string;
+    cardholder_name?: string;
+    billing_country?: string;
+    billing_zip?: string;
+    promo_code?: string;
+  }) => apiFetch("/billing/process-payment", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }),
+  getInvoices: () => apiFetch("/billing/invoices"),
+  getInvoice: (invoiceId: string) => apiFetch(`/billing/invoices/${invoiceId}`),
   getSubscriptionStatus: () => apiFetch("/billing/status"),
   cancelSubscription: () => apiFetch("/billing/cancel", {
     method: "POST",

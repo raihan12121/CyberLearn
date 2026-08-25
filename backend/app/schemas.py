@@ -353,3 +353,58 @@ class ExamSubmissionResponse(BaseModel):
     certificate_token: Optional[str] = None
     submitted_at: datetime
     breakdown: Optional[List[dict]] = None
+
+
+# Billing & Payment Schemas
+class ProcessPaymentRequest(BaseModel):
+    plan_name: str # "Pro" or "Premium"
+    billing_period: str = "monthly" # "monthly" or "annually"
+    payment_method: str = "credit_card" # "credit_card", "paypal", "google_pay", "crypto"
+    card_number: Optional[str] = None
+    card_exp_month: Optional[int] = None
+    card_exp_year: Optional[int] = None
+    card_cvc: Optional[str] = None
+    cardholder_name: Optional[str] = None
+    billing_country: Optional[str] = "United States"
+    billing_zip: Optional[str] = None
+    promo_code: Optional[str] = None
+
+
+class PromoValidationRequest(BaseModel):
+    promo_code: str
+    plan_name: str = "Pro"
+    billing_period: str = "monthly"
+
+
+class PromoValidationResponse(BaseModel):
+    valid: bool
+    promo_code: str
+    discount_pct: float
+    discount_amount: float
+    original_price: float
+    final_price: float
+    message: str
+
+
+class InvoiceResponse(BaseModel):
+    id: str
+    invoice_number: str
+    user_id: str
+    plan_tier: str
+    billing_cycle: str
+    currency: str = "USD"
+    subtotal: float
+    discount_amount: float
+    tax_amount: float
+    total_paid: float
+    payment_method: str
+    card_brand: Optional[str] = None
+    card_last4: Optional[str] = None
+    cardholder_name: Optional[str] = None
+    billing_country: Optional[str] = None
+    billing_zip: Optional[str] = None
+    promo_code: Optional[str] = None
+    status: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
