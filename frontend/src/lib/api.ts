@@ -24,35 +24,6 @@ export function removeAuthToken() {
   }
 }
 
-// Seamlessly auto-ensure valid authenticated session
-export async function ensureAuthenticated(): Promise<string> {
-  const token = getAuthToken();
-  if (token) {
-    try {
-      await api.getMe();
-      return token;
-    } catch {
-      removeAuthToken();
-    }
-  }
-
-  // Auto-establish demo student session
-  try {
-    const res = await api.login({ email: "student@cyberlearn.io", password: "Password123!" });
-    setAuthToken(res.access_token);
-    return res.access_token;
-  } catch {
-    const reg = await api.register({
-      email: "student@cyberlearn.io",
-      password: "Password123!",
-      full_name: "Demo Student",
-      username: "demostudent",
-    });
-    setAuthToken(reg.access_token);
-    return reg.access_token;
-  }
-}
-
 function getApiBaseUrl(): string {
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
   let url = envUrl && envUrl.trim() ? envUrl.trim() : "http://localhost:8000";
@@ -64,7 +35,7 @@ function getApiBaseUrl(): string {
 
 // Base Fetch Wrapper
 async function apiFetch(endpoint: string, options: RequestInit = {}) {
-  let token = getAuthToken();
+  const token = getAuthToken();
   const baseUrl = getApiBaseUrl();
   const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
   
@@ -74,23 +45,14 @@ async function apiFetch(endpoint: string, options: RequestInit = {}) {
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  let response = await fetch(`${baseUrl}${cleanEndpoint}`, {
+  const response = await fetch(`${baseUrl}${cleanEndpoint}`, {
     ...options,
     headers,
   });
 
-  // If unauthorized on an authenticated request and not a login/register call, try auto-recovery
+  // If unauthorized on an authenticated request and not a login/register call, clear bad token
   if (response.status === 401 && !cleanEndpoint.startsWith("/auth/")) {
-    try {
-      const newToken = await ensureAuthenticated();
-      if (newToken && newToken !== token) {
-        headers.set("Authorization", `Bearer ${newToken}`);
-        response = await fetch(`${baseUrl}${cleanEndpoint}`, {
-          ...options,
-          headers,
-        });
-      }
-    } catch {}
+    removeAuthToken();
   }
 
   if (!response.ok) {

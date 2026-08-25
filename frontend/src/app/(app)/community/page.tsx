@@ -26,7 +26,7 @@ import {
   LogIn,
 } from "lucide-react";
 import { Card, Badge, Button, Avatar } from "@/components/ui";
-import { api, ensureAuthenticated, getAuthToken } from "@/lib/api";
+import { api, getAuthToken } from "@/lib/api";
 import { useAuthStore } from "@/lib/authStore";
 
 const categories = ["All", "Questions", "Writeups", "General", "Security News", "Help Wanted"];
@@ -144,7 +144,6 @@ export default function CommunityPage() {
   const handleUpvote = async (postId: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     try {
-      await ensureAuthenticated();
       const updated = await api.upvotePost(postId);
       setPosts((prev) =>
         prev.map((p) => (p.id === postId ? { ...p, upvotes: updated.upvotes, has_upvoted: updated.has_upvoted } : p))
@@ -159,7 +158,6 @@ export default function CommunityPage() {
 
   const handleToggleSolved = async (postId: string) => {
     try {
-      await ensureAuthenticated();
       const updated = await api.togglePostSolved(postId);
       setPosts((prev) =>
         prev.map((p) => (p.id === postId ? { ...p, is_solved: updated.is_solved } : p))
@@ -175,7 +173,6 @@ export default function CommunityPage() {
   const handleDeletePost = async (postId: string) => {
     if (!confirm("Are you sure you want to delete this discussion post?")) return;
     try {
-      await ensureAuthenticated();
       await api.deletePost(postId);
       setPosts((prev) => prev.filter((p) => p.id !== postId));
       setSelectedPost(null);
@@ -192,11 +189,6 @@ export default function CommunityPage() {
     setIsSubmittingPost(true);
 
     try {
-      // 1. Ensure authenticated session exists
-      await ensureAuthenticated();
-      await fetchUser(true).catch(() => {});
-
-      // 2. Submit post
       const created = await api.createPost({
         title: newPostTitle.trim(),
         content: newPostContent.trim(),
@@ -226,9 +218,6 @@ export default function CommunityPage() {
     setIsSubmittingComment(true);
 
     try {
-      await ensureAuthenticated();
-      await fetchUser(true).catch(() => {});
-
       const commentRes = await api.addComment(selectedPost.id, newComment.trim());
       if (selectedPostDetails) {
         setSelectedPostDetails({
@@ -245,17 +234,6 @@ export default function CommunityPage() {
       setCommentError(err.message || "Failed to post answer. Please ensure you are signed in.");
     } finally {
       setIsSubmittingComment(false);
-    }
-  };
-
-  const handleQuickDemoLogin = async () => {
-    try {
-      await ensureAuthenticated();
-      await fetchUser(true);
-      setPostError(null);
-      setCommentError(null);
-    } catch (err: any) {
-      alert("Failed to auto-sign in: " + err.message);
     }
   };
 
@@ -554,29 +532,14 @@ export default function CommunityPage() {
               <div className="px-6 pt-4 flex items-center justify-between text-xs bg-surface-elevated/40 pb-2 border-b border-border/50">
                 <div className="flex items-center gap-2 text-foreground-secondary">
                   <User className="w-3.5 h-3.5 text-primary" />
-                  <span>Posting as: <strong className="text-foreground">{user?.full_name || "Demo Student"}</strong> (@{user?.username || "student"})</span>
+                  <span>Posting as: <strong className="text-foreground">{user?.full_name || "Learner"}</strong> (@{user?.username || "student"})</span>
                 </div>
-                {!user && (
-                  <button
-                    type="button"
-                    onClick={handleQuickDemoLogin}
-                    className="text-[11px] text-primary hover:underline font-semibold flex items-center gap-1 cursor-pointer"
-                  >
-                    <Zap className="w-3 h-3" />
-                    <span>Auto-Sign In</span>
-                  </button>
-                )}
               </div>
 
               {postError && (
-                <div className="mx-6 mt-4 p-3 rounded-xl bg-error/15 border border-error/30 text-error text-xs flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 shrink-0" />
-                    <span>{postError}</span>
-                  </div>
-                  <Button size="sm" variant="outline" onClick={handleQuickDemoLogin} className="text-xs shrink-0 py-1 h-7">
-                    <Zap className="w-3 h-3 mr-1" /> Re-authenticate
-                  </Button>
+                <div className="mx-6 mt-4 p-3 rounded-xl bg-error/15 border border-error/30 text-error text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{postError}</span>
                 </div>
               )}
 
@@ -762,11 +725,9 @@ export default function CommunityPage() {
                   </div>
 
                   {commentError && (
-                    <div className="p-3 rounded-xl bg-error/15 border border-error/30 text-error text-xs flex items-center justify-between gap-2">
+                    <div className="p-3 rounded-xl bg-error/15 border border-error/30 text-error text-xs flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
                       <span>{commentError}</span>
-                      <Button size="sm" variant="outline" onClick={handleQuickDemoLogin} className="text-xs shrink-0 py-1 h-7">
-                        <Zap className="w-3 h-3 mr-1" /> Re-authenticate
-                      </Button>
                     </div>
                   )}
 

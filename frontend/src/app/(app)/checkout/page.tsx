@@ -227,28 +227,10 @@ function CheckoutContent() {
 
   // Helper to ensure authentication before payment
   const ensureAuthenticated = async () => {
-    let token = getAuthToken();
+    const token = getAuthToken();
     if (!token) {
-      setProcessingStep("Authenticating student session...");
-      try {
-        let authRes;
-        try {
-          authRes = await api.login({ email: "student@cyberlearn.io", password: "Password123!" });
-        } catch {
-          try {
-            await api.register({ email: "student@cyberlearn.io", password: "Password123!", full_name: "CyberLearn Student" });
-            authRes = await api.login({ email: "student@cyberlearn.io", password: "Password123!" });
-          } catch {
-            authRes = await api.login({ email: "alex@cyberlearn.io", password: "Password123!" });
-          }
-        }
-        if (authRes?.access_token) {
-          setAuthToken(authRes.access_token);
-          await fetchUser(true);
-        }
-      } catch (authErr) {
-        console.warn("Could not auto-login student:", authErr);
-      }
+      router.push(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+      throw new Error("Please sign in to complete your checkout.");
     }
   };
 
@@ -257,8 +239,12 @@ function CheckoutContent() {
     setErrorMessage(null);
     setIsProcessing(true);
 
-    // Auto-authenticate if guest/unauthenticated
-    await ensureAuthenticated();
+    try {
+      await ensureAuthenticated();
+    } catch (err: any) {
+      setIsProcessing(false);
+      return;
+    }
 
     const activeCard = cardNumOverride || cardNumber;
     const activeExp = expOverride || expiryDate;
