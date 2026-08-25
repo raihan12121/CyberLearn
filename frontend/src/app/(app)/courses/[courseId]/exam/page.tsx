@@ -17,6 +17,7 @@ import {
   ExternalLink,
   ChevronRight,
   BookOpen,
+  Fingerprint,
 } from "lucide-react";
 import { api } from "@/lib/api";
 
@@ -263,6 +264,25 @@ export default function CourseExamPage() {
               </div>
             </div>
           </div>
+
+          {/* ID Verification Warning if passed without verified ID */}
+          {result.passed && !result.certificate_token && (
+            <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-left max-w-md mx-auto space-y-2">
+              <div className="flex items-center gap-2 text-amber-400 font-bold text-xs">
+                <Fingerprint className="h-4 w-4" />
+                <span>Government ID Verification Required</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                You passed the exam! Official certificates require verified government ID. Please complete ID verification at /verify-nid to unlock and claim your credential.
+              </p>
+              <Link
+                href="/verify-nid"
+                className="inline-flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-primary text-primary-foreground font-bold text-xs hover:opacity-90 transition-all mt-1"
+              >
+                Verify ID to Unlock Certificate →
+              </Link>
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex flex-wrap items-center justify-center gap-4 pt-2">

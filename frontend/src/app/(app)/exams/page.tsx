@@ -22,6 +22,7 @@ import {
   Terminal,
   Shield,
   Key,
+  Fingerprint,
 } from "lucide-react";
 import { Card, Badge, Button, ProgressBar } from "@/components/ui";
 import { api } from "@/lib/api";
@@ -514,6 +515,31 @@ export default function ExamsPage() {
                     </div>
                   </div>
 
+                  {/* ID Verification Warning if passed without verified ID */}
+                  {examResult.passed && !examResult.certificate_token && (
+                    <div className="p-4 rounded-2xl bg-warning/10 border border-warning/30 text-left max-w-md mx-auto space-y-2">
+                      <div className="flex items-center gap-2 text-warning font-bold text-xs">
+                        <Fingerprint className="w-4 h-4" />
+                        <span>Government ID Verification Required to Claim Credential</span>
+                      </div>
+                      <p className="text-xs text-foreground-secondary leading-relaxed">
+                        You have successfully passed the exam! Official certification diplomas are locked until your National ID is verified.
+                      </p>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        fullWidth
+                        onClick={() => {
+                          setActiveExam(null);
+                          router.push("/verify-nid");
+                        }}
+                        className="font-bold mt-2 shadow-md"
+                      >
+                        Verify National ID to Unlock Certificate →
+                      </Button>
+                    </div>
+                  )}
+
                   {/* Actions */}
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
                     {examResult.passed ? (
@@ -522,12 +548,12 @@ export default function ExamsPage() {
                         size="lg"
                         onClick={() => {
                           setActiveExam(null);
-                          router.push("/certificates");
+                          router.push(examResult.certificate_token ? "/certificates" : "/verify-nid");
                         }}
                         className="font-bold shadow-lg w-full sm:w-auto"
                       >
                         <Award className="w-4 h-4 mr-1.5" />
-                        View My Certificates →
+                        {examResult.certificate_token ? "View My Certificates →" : "Complete ID Verification →"}
                       </Button>
                     ) : (
                       <Button

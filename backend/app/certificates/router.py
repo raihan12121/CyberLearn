@@ -23,7 +23,9 @@ def get_user_certificates(
     seed_database_if_empty(db)
     seed_default_exams_if_empty(db)
 
-    # 1. Fetch all user certificates from database
+    is_verified = (current_user.verification_status == "verified")
+
+    # 1. Fetch all officially issued user certificates from database
     user_certs = db.query(models.Certificate).filter(
         models.Certificate.user_id == current_user.id
     ).order_by(models.Certificate.issued_at.desc()).all()
@@ -65,7 +67,7 @@ def get_user_certificates(
             "status": "issued"
         })
 
-    # 2. Check for completed courses that have not had a certificate generated yet
+    # 2. Check for completed courses
     all_courses = db.query(models.Course).options(
         joinedload(models.Course.lessons)
     ).filter(models.Course.is_published == True).all()
@@ -88,33 +90,50 @@ def get_user_certificates(
         is_completed = total_lessons > 0 and completed_lessons == total_lessons
 
         if is_completed:
-            course_code = "".join([w[0] for w in course.title.split() if w.isalpha()]).upper()[:6]
-            verification_token = f"CERT-{course_code}-{uuid.uuid4().hex[:8].upper()}"
-            current_user.xp += 1000
+            if is_verified:
+                # Issue official certificate for verified learner
+                course_code = "".join([w[0] for w in course.title.split() if w.isalpha()]).upper()[:6]
+                verification_token = f"CERT-{course_code}-{uuid.uuid4().hex[:8].upper()}"
+                current_user.xp += 1000
 
-            new_cert = models.Certificate(
-                user_id=current_user.id,
-                course_id=course.id,
-                certificate_type="course_completion",
-                score_pct=100.0,
-                verification_token=verification_token,
-                issued_at=datetime.now(timezone.utc)
-            )
-            db.add(new_cert)
-            has_new_certs = True
-            issued_cert_keys.add(f"course:{course.id}")
+                new_cert = models.Certificate(
+                    user_id=current_user.id,
+                    course_id=course.id,
+                    certificate_type="course_completion",
+                    score_pct=100.0,
+                    verification_token=verification_token,
+                    issued_at=datetime.now(timezone.utc)
+                )
+                db.add(new_cert)
+                has_new_certs = True
+                issued_cert_keys.add(f"course:{course.id}")
 
-            certificates_res.insert(0, {
-                "id": verification_token,
-                "courseTitle": course.title,
-                "category": course.category or "Security",
-                "certificateType": "course_completion",
-                "scorePct": 100.0,
-                "issueDate": datetime.now(timezone.utc).strftime("%B %d, %Y"),
-                "credentialUrl": f"/verify/{verification_token}",
-                "xpEarned": 1000,
-                "status": "issued"
-            })
+                certificates_res.insert(0, {
+                    "id": verification_token,
+                    "courseTitle": course.title,
+                    "category": course.category or "Security",
+                    "certificateType": "course_completion",
+                    "scorePct": 100.0,
+                    "issueDate": datetime.now(timezone.utc).strftime("%B %d, %Y"),
+                    "credentialUrl": f"/verify/{verification_token}",
+                    "xpEarned": 1000,
+                    "status": "issued"
+                })
+            else:
+                # Requires ID verification
+                certificates_res.insert(0, {
+                    "id": f"PENDING-NID-{course.id}",
+                    "courseTitle": course.title,
+                    "category": course.category or "Security",
+                    "certificateType": "course_completion",
+                    "scorePct": 100.0,
+                    "issueDate": "ID Verification Required",
+                    "credentialUrl": "/verify-nid",
+                    "xpEarned": 1000,
+                    "status": "verification_required",
+                    "message": "Course Completed! Verify your National ID at /verify-nid to claim this certificate."
+                })
+                issued_cert_keys.add(f"course:{course.id}")
         else:
             # Locked / In Progress Course
             certificates_res.append({
@@ -130,7 +149,32 @@ def get_user_certificates(
                 "progressPct": round((completed_lessons / total_lessons * 100) if total_lessons > 0 else 0, 1)
             })
 
-    # 3. Add available certification tracks
+    # 3. Check for passed exams requiring ID verification
+    passed_subs = db.query(models.ExamSubmission).filter(
+        models.ExamSubmission.user_id == current_user.id,
+        models.ExamSubmission.passed == True
+    ).all()
+
+    for sub in passed_subs:
+        if f"exam:{sub.exam_id}" not in issued_cert_keys:
+            exam = db.query(models.Exam).filter(models.Exam.id == sub.exam_id).first()
+            exam_title = exam.title if exam else "Certification Exam"
+            if not is_verified:
+                certificates_res.insert(0, {
+                    "id": f"PENDING-NID-EXAM-{sub.exam_id}",
+                    "courseTitle": exam_title,
+                    "category": "Certification Exam",
+                    "certificateType": "exam_certified",
+                    "scorePct": float(sub.score_pct or 100.0),
+                    "issueDate": "ID Verification Required",
+                    "credentialUrl": "/verify-nid",
+                    "xpEarned": 800,
+                    "status": "verification_required",
+                    "message": "Exam Passed! Complete ID verification at /verify-nid to unlock your official credential."
+                })
+                issued_cert_keys.add(f"exam:{sub.exam_id}")
+
+    # 4. Add available certification tracks
     all_exams = db.query(models.Exam).filter(models.Exam.is_published == True).all()
     for exam in all_exams:
         if f"exam:{exam.id}" not in issued_cert_keys:

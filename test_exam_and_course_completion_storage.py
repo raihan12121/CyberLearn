@@ -35,15 +35,16 @@ def run_tests():
     headers = {"Authorization": f"Bearer {token}"}
     print("[1] Test User Authenticated.")
 
-    # 2. Grant all-access subscription to test course completion
+    # 2. Grant all-access subscription and verify ID to test course completion
     db = SessionLocal()
     user = db.query(models.User).filter(models.User.email == email).first()
     user.subscription_tier = "pro"
     user.subscription_status = "active"
+    user.verification_status = "verified"
     db.commit()
     user_id = user.id
     db.close()
-    print("[2] Pro Subscription Granted.")
+    print("[2] Pro Subscription & Verified ID Granted.")
 
     # 3. Test Course Progress Storage
     course_id = "web-security-fundamentals"

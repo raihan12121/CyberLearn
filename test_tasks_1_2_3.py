@@ -103,13 +103,20 @@ def run_tests():
         assert "exam-ceh-associate" in exam_ids, f"CEH exam not found in {exam_ids}"
         print(f"  -> SUCCESS: Verified all 5 certification tracks are available ({len(all_exams)} exams).")
 
+        # Verify ID before exam submission
+        client.post("/users/me/verify-nid", json={
+            "nid_number": "98127391823",
+            "nid_front_image": "data:image/png;base64,iVBORw0KGgo=",
+            "nid_back_image": "data:image/png;base64,iVBORw0KGgo="
+        }, headers=headers)
+
         # TEST 8: Take and Submit CCNA Security Exam
         print("\n[TEST 8] Take and submit CCNA Security Exam with passing answers...")
         exam_detail_res = client.get("/exams/exam-ccna-security", headers=headers)
         assert exam_detail_res.status_code == 200, f"Expected 200, got {exam_detail_res.status_code}"
         ccna_exam = exam_detail_res.json()
         questions = ccna_exam["questions"]
-        assert len(questions) > 0, "No questions in CCNA exam"
+        assert len(questions) >= 20, f"Expected >= 20 questions in CCNA exam, got {len(questions)}"
 
         # Submit correct answers (option '0' is seeded as correct)
         answers = [{"question_id": q["id"], "selected_answer": "0"} for q in questions]
