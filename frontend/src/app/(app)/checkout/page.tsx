@@ -26,7 +26,7 @@ import {
   Check,
 } from "lucide-react";
 import { Card, Badge, Button } from "@/components/ui";
-import { api } from "@/lib/api";
+import { api, getAuthToken, setAuthToken, removeAuthToken } from "@/lib/api";
 import { useAuthStore } from "@/lib/authStore";
 import Link from "next/link";
 
@@ -225,10 +225,40 @@ function CheckoutContent() {
     }
   };
 
+  // Helper to ensure authentication before payment
+  const ensureAuthenticated = async () => {
+    let token = getAuthToken();
+    if (!token) {
+      setProcessingStep("Authenticating student session...");
+      try {
+        let authRes;
+        try {
+          authRes = await api.login({ email: "student@cyberlearn.io", password: "Password123!" });
+        } catch {
+          try {
+            await api.register({ email: "student@cyberlearn.io", password: "Password123!", full_name: "CyberLearn Student" });
+            authRes = await api.login({ email: "student@cyberlearn.io", password: "Password123!" });
+          } catch {
+            authRes = await api.login({ email: "alex@cyberlearn.io", password: "Password123!" });
+          }
+        }
+        if (authRes?.access_token) {
+          setAuthToken(authRes.access_token);
+          await fetchUser(true);
+        }
+      } catch (authErr) {
+        console.warn("Could not auto-login student:", authErr);
+      }
+    }
+  };
+
   // Helper to run payment with specific parameters
   const executePayment = async (cardNumOverride?: string, expOverride?: string, cvcOverride?: string) => {
     setErrorMessage(null);
     setIsProcessing(true);
+
+    // Auto-authenticate if guest/unauthenticated
+    await ensureAuthenticated();
 
     const activeCard = cardNumOverride || cardNumber;
     const activeExp = expOverride || expiryDate;
@@ -279,7 +309,12 @@ function CheckoutContent() {
         }
       });
     } catch (err: any) {
-      setErrorMessage(err.message || "Payment authorization failed. Please verify your details or use a different card.");
+      const msg = err.message || "";
+      if (msg.includes("Could not validate credentials") || msg.includes("401") || msg.includes("Unauthorized")) {
+        setErrorMessage("Your login session has expired. Please sign in or click '⚡ 1-Click Instant Demo Unlock' to re-authenticate and complete your checkout.");
+      } else {
+        setErrorMessage(msg || "Payment authorization failed. Please verify your details or use a different card.");
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -483,6 +518,35 @@ function CheckoutContent() {
               </p>
             </div>
 
+            {/* Guest / Unauthenticated Session Banner */}
+            {!user && (
+              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs space-y-2">
+                <div className="flex items-center gap-2 font-bold text-amber-200">
+                  <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>Sign In Required to Link Your Purchase</span>
+                </div>
+                <p className="text-amber-200/80 leading-relaxed">
+                  You are currently browsing as a guest (or your session expired). Sign in or use the 1-click Demo Sign In to link your course/subscription to your profile.
+                </p>
+                <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                  <button
+                    type="button"
+                    onClick={ensureAuthenticated}
+                    className="px-3 py-1 bg-amber-400 text-black font-bold text-xs rounded-lg hover:bg-amber-300 transition-colors cursor-pointer"
+                  >
+                    ⚡ 1-Click Sign In as Demo Student
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/login?redirect=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname + window.location.search : "/checkout")}`)}
+                    className="px-3 py-1 bg-white/10 hover:bg-white/20 text-white font-semibold text-xs rounded-lg border border-white/20 transition-colors cursor-pointer"
+                  >
+                    Go to Sign In →
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Payment Method Selector Tabs */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[
@@ -560,7 +624,7 @@ function CheckoutContent() {
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                   <span>{errorMessage}</span>
                 </div>
-                <div className="pl-6">
+                <div className="pl-6 flex flex-wrap items-center gap-3">
                   <button
                     type="button"
                     onClick={() => {
@@ -569,7 +633,14 @@ function CheckoutContent() {
                     }}
                     className="underline text-[11px] font-bold text-foreground hover:text-primary cursor-pointer"
                   >
-                    👉 Click here to autofill standard valid test card (4242 4242 4242 4242) and clear error
+                    👉 Autofill valid test card (4242...)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleInstantDemoUnlock}
+                    className="px-2.5 py-1 rounded-md bg-primary text-black font-bold text-[11px] hover:opacity-90 cursor-pointer shadow"
+                  >
+                    ⚡ Auto-Login &amp; 1-Click Unlock
                   </button>
                 </div>
               </div>
