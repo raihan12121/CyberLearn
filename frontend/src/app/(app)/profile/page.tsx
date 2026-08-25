@@ -14,6 +14,8 @@ import {
   Calendar,
   ShieldCheck,
   TrendingUp,
+  Globe,
+  User,
 } from "lucide-react";
 import { Card, Badge, Button, ProgressBar, Avatar } from "@/components/ui";
 import { api } from "@/lib/api";
@@ -117,7 +119,13 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <Button
+            onClick={() => router.push("/portfolio/me")}
+            icon={<Globe className="w-4 h-4" />}
+          >
+            View Cyber Portfolio
+          </Button>
           <Button
             variant="outline"
             onClick={() => router.push("/settings")}
