@@ -146,6 +146,24 @@ class PostCreate(BaseModel):
     title: str
     content: str
     category: Optional[str] = "General"
+    tags: Optional[str] = None
+
+class CommentCreate(BaseModel):
+    content: str
+
+class CommentResponse(BaseModel):
+    id: str
+    post_id: str
+    user_id: str
+    author_name: Optional[str] = None
+    author_username: Optional[str] = None
+    author_avatar: Optional[str] = None
+    author_role: Optional[str] = None
+    content: str
+    is_solution: bool = False
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
 
 class PostResponse(BaseModel):
     id: str
@@ -155,12 +173,18 @@ class PostResponse(BaseModel):
     author_avatar: Optional[str] = None
     title: str
     content: str
-    category: Optional[str]
-    upvotes: int
+    category: Optional[str] = None
+    tags: Optional[str] = None
+    is_solved: bool = False
+    upvotes: int = 0
+    comment_count: int = 0
     has_upvoted: Optional[bool] = False
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class PostDetailResponse(PostResponse):
+    comments: List[CommentResponse] = []
 
 class ProgressUpdate(BaseModel):
     course_id: str

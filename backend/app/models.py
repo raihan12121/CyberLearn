@@ -50,6 +50,7 @@ class User(Base):
     ai_sessions = relationship("AiSession", back_populates="user", cascade="all, delete-orphan")
     exam_submissions = relationship("ExamSubmission", back_populates="user", cascade="all, delete-orphan")
     post_votes = relationship("PostVote", back_populates="user", cascade="all, delete-orphan")
+    comments = relationship("Comment", back_populates="user", cascade="all, delete-orphan")
     invoices = relationship("Invoice", back_populates="user", cascade="all, delete-orphan")
     course_purchases = relationship("CoursePurchase", back_populates="user", cascade="all, delete-orphan")
 
@@ -232,7 +233,7 @@ class Exam(Base):
     __tablename__ = "exams"
 
     id = Column(String(36), primary_key=True, default=generate_uuid)
-    course_id = Column(String(36), ForeignKey("courses.id"), nullable=False, index=True)
+    course_id = Column(String(36), ForeignKey("courses.id"), nullable=True, index=True)
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     duration_minutes = Column(Integer, default=30)
@@ -309,11 +310,28 @@ class Post(Base):
     title = Column(String(255), nullable=False)
     content = Column(Text, nullable=False)
     category = Column(String(50), nullable=True, index=True)
+    tags = Column(String(255), nullable=True) # comma-separated tags e.g. "sql-injection,web,ctf"
+    is_solved = Column(Boolean, default=False, index=True)
     upvotes = Column(Integer, default=0, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
 
     user = relationship("User", back_populates="posts")
     votes = relationship("PostVote", back_populates="post", cascade="all, delete-orphan")
+    comments = relationship("Comment", back_populates="post", cascade="all, delete-orphan")
+
+
+class Comment(Base):
+    __tablename__ = "comments"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    post_id = Column(String(36), ForeignKey("posts.id"), nullable=False, index=True)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    content = Column(Text, nullable=False)
+    is_solution = Column(Boolean, default=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+    post = relationship("Post", back_populates="comments")
+    user = relationship("User", back_populates="comments")
 
 
 class PostVote(Base):

@@ -146,14 +146,32 @@ export const api = {
     }),
 
 
-  // Community Feed
-  getPosts: () => apiFetch("/posts"),
-  createPost: (data: Record<string, unknown>) => apiFetch("/posts", {
+  // Community Feed & Problem Sharing
+  getPosts: (params?: { category?: string; search?: string; is_solved?: boolean }) => {
+    const q = new URLSearchParams();
+    if (params?.category && params.category !== "All") q.append("category", params.category);
+    if (params?.search) q.append("search", params.search);
+    if (params?.is_solved !== undefined) q.append("is_solved", String(params.is_solved));
+    const qs = q.toString();
+    return apiFetch(`/posts${qs ? `?${qs}` : ""}`);
+  },
+  getPostDetail: (postId: string) => apiFetch(`/posts/${postId}`),
+  createPost: (data: { title: string; content: string; category?: string; tags?: string }) => apiFetch("/posts", {
     method: "POST",
     body: JSON.stringify(data),
   }),
+  addComment: (postId: string, content: string) => apiFetch(`/posts/${postId}/comments`, {
+    method: "POST",
+    body: JSON.stringify({ content }),
+  }),
   upvotePost: (postId: string) => apiFetch(`/posts/${postId}/upvote`, {
     method: "POST",
+  }),
+  togglePostSolved: (postId: string) => apiFetch(`/posts/${postId}/toggle-solved`, {
+    method: "POST",
+  }),
+  deletePost: (postId: string) => apiFetch(`/posts/${postId}`, {
+    method: "DELETE",
   }),
 
   // Admin

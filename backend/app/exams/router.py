@@ -218,9 +218,10 @@ def seed_default_exams_if_empty(db: Session):
     # 4. CompTIA Security+ (SY0-701) Comprehensive Exam
     exam4 = db.query(models.Exam).filter(models.Exam.id == "exam-comptia-secplus").first()
     if not exam4:
+        owasp_course = db.query(models.Course).filter(models.Course.id == "owasp-top-10").first()
         exam4 = models.Exam(
             id="exam-comptia-secplus",
-            course_id=None,
+            course_id=owasp_course.id if owasp_course else "owasp-top-10",
             title="CompTIA Security+ (SY0-701) Certification Exam",
             description="Industry benchmark certification covering threat vectors, PKI asymmetric cryptography, risk management, and zero-trust security architectures.",
             duration_minutes=35,
@@ -280,9 +281,10 @@ def seed_default_exams_if_empty(db: Session):
     # 5. Certified Ethical Hacker (CEH) Associate Exam
     exam5 = db.query(models.Exam).filter(models.Exam.id == "exam-ceh-associate").first()
     if not exam5:
+        py_course = db.query(models.Course).filter(models.Course.id == "python-for-security").first()
         exam5 = models.Exam(
             id="exam-ceh-associate",
-            course_id=None,
+            course_id=py_course.id if py_course else "python-for-security",
             title="Certified Ethical Hacker (CEH) Associate Exam",
             description="Practical offensive security qualification covering Nmap active port scanning, Metasploit exploitation, and Linux privilege escalation.",
             duration_minutes=30,

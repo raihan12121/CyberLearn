@@ -93,6 +93,14 @@ def run_auto_migrations(engine):
                 if "course_id" not in existing_inv_cols:
                     conn.execute(text("ALTER TABLE invoices ADD COLUMN course_id VARCHAR(36)"))
 
+                # Check posts table columns in SQLite
+                res_posts = conn.execute(text("PRAGMA table_info(posts)")).fetchall()
+                existing_post_cols = {row[1] for row in res_posts}
+                if "tags" not in existing_post_cols:
+                    conn.execute(text("ALTER TABLE posts ADD COLUMN tags VARCHAR(255)"))
+                if "is_solved" not in existing_post_cols:
+                    conn.execute(text("ALTER TABLE posts ADD COLUMN is_solved BOOLEAN DEFAULT 0"))
+
                 conn.commit()
 
             elif dialect == "postgresql":
