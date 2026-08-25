@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Shield, AlertTriangle } from "lucide-react";
 import { Card, Button } from "@/components/ui";
 import { api, setAuthToken } from "@/lib/api";
+import { useAuthStore } from "@/lib/authStore";
 
 function OAuthCallbackContent() {
   const searchParams = useSearchParams();
@@ -24,6 +25,9 @@ function OAuthCallbackContent() {
       .then(async (data) => {
         setAuthToken(data.access_token);
         const user = await api.getMe().catch(() => null);
+        if (user) {
+          useAuthStore.getState().setUser(user);
+        }
         if (user?.role === "admin") {
           router.push("/admin");
         } else {

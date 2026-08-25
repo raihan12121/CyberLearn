@@ -9,6 +9,7 @@ import { Button, Input } from "@/components/ui";
 import { useRouter } from "next/navigation";
 import { api, setAuthToken } from "@/lib/api";
 import { signInWithGoogleFirebase, signUpWithEmailFirebase } from "@/lib/firebase";
+import { useAuthStore } from "@/lib/authStore";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -41,6 +42,10 @@ export default function SignupPage() {
       // 3. Log in user and receive JWT access token
       const data = await api.login({ email, password });
       setAuthToken(data.access_token);
+      const user = await api.getMe().catch(() => null);
+      if (user) {
+        useAuthStore.getState().setUser(user);
+      }
       router.push("/dashboard");
     } catch (err: any) {
       setLoading(false);
@@ -58,6 +63,10 @@ export default function SignupPage() {
       if (result && result.email) {
         const data = await api.socialLogin("google", result.email, result.fullName, result.token);
         setAuthToken(data.access_token);
+        const user = await api.getMe().catch(() => null);
+        if (user) {
+          useAuthStore.getState().setUser(user);
+        }
         router.push("/dashboard");
         return;
       }

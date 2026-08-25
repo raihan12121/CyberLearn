@@ -79,10 +79,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   setUser: (user: UserProfile | null) => {
-    set({ user, lastFetched: Date.now() });
+    set({ user, lastFetched: Date.now(), loading: false, error: null });
   },
 
   clearUser: () => {
-    set({ user: null, lastFetched: null, error: null });
+    set({ user: null, lastFetched: null, error: null, loading: false });
   },
 }));
+
+// Cross-tab and programmatic token synchronization
+if (typeof window !== "undefined") {
+  window.addEventListener("auth_token_changed", () => {
+    useAuthStore.getState().fetchUser(true).catch(() => {});
+  });
+  window.addEventListener("storage", (e) => {
+    if (e.key === "token") {
+      useAuthStore.getState().fetchUser(true).catch(() => {});
+    }
+  });
+}

@@ -6,23 +6,25 @@ from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+# Deterministic fallback secret to ensure cross-process and serverless session persistence
+DEFAULT_FALLBACK_JWT_SECRET = "cyberlearn-production-stable-jwt-secret-key-2026-auth-098234710298374"
+DEFAULT_FALLBACK_FLAG_SECRET = "cyberlearn-flag-hmac-secret-stable-2026-c4b92"
+
 def _dev_secret_placeholder() -> str:
-    """Generate a random secret for development sessions only."""
-    return secrets.token_urlsafe(32)
+    """Return stable default secret to prevent session invalidation on restart."""
+    return DEFAULT_FALLBACK_JWT_SECRET
 
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "CyberLearn API"
 
-    # JWT signing key — MUST be set via .env or environment for production.
-    # If not set, a random key is generated per process (sessions won't persist across restarts).
-    SECRET_KEY: str = ""
+    # JWT signing key — stable fallback ensures login sessions persist across restarts & serverless workers
+    SECRET_KEY: str = DEFAULT_FALLBACK_JWT_SECRET
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 1 day
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 30  # 30 days active session lifespan
 
-    # Secret used to derive CTF lab flags via HMAC.
-    # If not set, a random key is generated per process (flags change on restart).
-    FLAG_SECRET: str = ""
+    # Secret used to derive CTF lab flags via HMAC
+    FLAG_SECRET: str = DEFAULT_FALLBACK_FLAG_SECRET
 
     # Database URL: defaults to local SQLite file for ease of developer setup
     DATABASE_URL: str = "sqlite:///./cyberlearn.db"

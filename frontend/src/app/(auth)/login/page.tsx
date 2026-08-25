@@ -8,6 +8,7 @@ import { Shield, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { Button, Input } from "@/components/ui";
 import { api, setAuthToken } from "@/lib/api";
 import { signInWithGoogleFirebase, signInWithEmailFirebase } from "@/lib/firebase";
+import { useAuthStore } from "@/lib/authStore";
 
 function LoginForm() {
   const router = useRouter();
@@ -35,6 +36,9 @@ function LoginForm() {
       const data = await api.login({ email, password });
       setAuthToken(data.access_token);
       const user = await api.getMe().catch(() => null);
+      if (user) {
+        useAuthStore.getState().setUser(user);
+      }
       if (redirectTarget) {
         router.push(redirectTarget);
       } else if (user?.role === "admin") {
@@ -59,6 +63,9 @@ function LoginForm() {
         const data = await api.socialLogin("google", result.email, result.fullName, result.token);
         setAuthToken(data.access_token);
         const user = await api.getMe().catch(() => null);
+        if (user) {
+          useAuthStore.getState().setUser(user);
+        }
         if (redirectTarget) {
           router.push(redirectTarget);
         } else if (user?.role === "admin") {

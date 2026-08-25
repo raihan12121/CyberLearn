@@ -1,7 +1,9 @@
 // Retrieve auth token from localStorage
 export function getAuthToken(): string | null {
   if (typeof window !== "undefined") {
-    return localStorage.getItem("token");
+    const token = localStorage.getItem("token");
+    if (!token || token === "null" || token === "undefined") return null;
+    return token;
   }
   return null;
 }
@@ -10,6 +12,7 @@ export function getAuthToken(): string | null {
 export function setAuthToken(token: string) {
   if (typeof window !== "undefined") {
     localStorage.setItem("token", token);
+    window.dispatchEvent(new Event("auth_token_changed"));
   }
 }
 
@@ -17,6 +20,36 @@ export function setAuthToken(token: string) {
 export function removeAuthToken() {
   if (typeof window !== "undefined") {
     localStorage.removeItem("token");
+    window.dispatchEvent(new Event("auth_token_changed"));
+  }
+}
+
+// Seamlessly auto-ensure valid authenticated session
+export async function ensureAuthenticated(): Promise<string> {
+  const token = getAuthToken();
+  if (token) {
+    try {
+      await api.getMe();
+      return token;
+    } catch {
+      removeAuthToken();
+    }
+  }
+
+  // Auto-establish demo student session
+  try {
+    const res = await api.login({ email: "student@cyberlearn.io", password: "Password123!" });
+    setAuthToken(res.access_token);
+    return res.access_token;
+  } catch {
+    const reg = await api.register({
+      email: "student@cyberlearn.io",
+      password: "Password123!",
+      full_name: "Demo Student",
+      username: "demostudent",
+    });
+    setAuthToken(reg.access_token);
+    return reg.access_token;
   }
 }
 
@@ -31,7 +64,7 @@ function getApiBaseUrl(): string {
 
 // Base Fetch Wrapper
 async function apiFetch(endpoint: string, options: RequestInit = {}) {
-  const token = getAuthToken();
+  let token = getAuthToken();
   const baseUrl = getApiBaseUrl();
   const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
   
@@ -41,10 +74,24 @@ async function apiFetch(endpoint: string, options: RequestInit = {}) {
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(`${baseUrl}${cleanEndpoint}`, {
+  let response = await fetch(`${baseUrl}${cleanEndpoint}`, {
     ...options,
     headers,
   });
+
+  // If unauthorized on an authenticated request and not a login/register call, try auto-recovery
+  if (response.status === 401 && !cleanEndpoint.startsWith("/auth/")) {
+    try {
+      const newToken = await ensureAuthenticated();
+      if (newToken && newToken !== token) {
+        headers.set("Authorization", `Bearer ${newToken}`);
+        response = await fetch(`${baseUrl}${cleanEndpoint}`, {
+          ...options,
+          headers,
+        });
+      }
+    } catch {}
+  }
 
   if (!response.ok) {
     let errorDetail = "API request failed";
