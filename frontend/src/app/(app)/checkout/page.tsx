@@ -225,22 +225,25 @@ function CheckoutContent() {
     }
   };
 
-  // Process Final Payment
-  const handleSubmitPayment = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Helper to run payment with specific parameters
+  const executePayment = async (cardNumOverride?: string, expOverride?: string, cvcOverride?: string) => {
     setErrorMessage(null);
     setIsProcessing(true);
 
-    const [expMonthStr, expYearStr] = expiryDate.split("/");
+    const activeCard = cardNumOverride || cardNumber;
+    const activeExp = expOverride || expiryDate;
+    const activeCvc = cvcOverride || cvc;
+
+    const [expMonthStr, expYearStr] = activeExp.split("/");
     const expMonth = parseInt(expMonthStr, 10) || 12;
-    const expYear = 2000 + (parseInt(expYearStr, 10) || 28);
+    const expYear = 2000 + (parseInt(expYearStr, 10) || 29);
 
     try {
       setProcessingStep("Verifying 256-bit TLS connection & authorization tokens...");
-      await new Promise((r) => setTimeout(r, 600));
+      await new Promise((r) => setTimeout(r, 500));
 
       setProcessingStep("Conducting 3D Secure bank authorization handshake...");
-      await new Promise((r) => setTimeout(r, 600));
+      await new Promise((r) => setTimeout(r, 500));
 
       setProcessingStep("Minting entitlements & generating digital invoice receipt...");
       const res = await api.processPayment({
@@ -250,10 +253,10 @@ function CheckoutContent() {
         course_id: purchaseType === "course_lifetime" ? (targetCourse?.id || courseIdQuery) : undefined,
         billing_period: durationMonths === 12 ? "annually" : `${durationMonths}-months`,
         payment_method: paymentMethod,
-        card_number: paymentMethod === "credit_card" ? cardNumber.replace(/\s+/g, "") : undefined,
+        card_number: paymentMethod === "credit_card" ? activeCard.replace(/\s+/g, "") : undefined,
         card_exp_month: paymentMethod === "credit_card" ? expMonth : undefined,
         card_exp_year: paymentMethod === "credit_card" ? expYear : undefined,
-        card_cvc: paymentMethod === "credit_card" ? cvc : undefined,
+        card_cvc: paymentMethod === "credit_card" ? activeCvc : undefined,
         cardholder_name: cardholderName,
         billing_country: billingCountry,
         billing_zip: billingZip,
@@ -270,8 +273,8 @@ function CheckoutContent() {
           billing_cycle: purchaseType === "course_lifetime" ? "lifetime" : `${durationMonths}-months`,
           total_paid: finalPrice,
           discount_amount: discountAmount,
-          card_last4: cardNumber.slice(-4) || "4242",
-          card_brand: detectBrand(cardNumber).toLowerCase(),
+          card_last4: activeCard.slice(-4) || "4242",
+          card_brand: detectBrand(activeCard).toLowerCase(),
           created_at: new Date().toISOString(),
         }
       });
@@ -280,6 +283,20 @@ function CheckoutContent() {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  // Process Final Payment
+  const handleSubmitPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await executePayment();
+  };
+
+  const handleInstantDemoUnlock = async () => {
+    setPaymentMethod("credit_card");
+    setCardNumber("4242 4242 4242 4242");
+    setExpiryDate("12/29");
+    setCvc("789");
+    await executePayment("4242 4242 4242 4242", "12/29", "789");
   };
 
   // SUCCESS CONFIRMATION / DIGITAL INVOICE RECEIPT
@@ -495,34 +512,66 @@ function CheckoutContent() {
             </div>
 
             {/* Test Card Quick Shortcuts */}
-            {paymentMethod === "credit_card" && (
-              <div className="p-3 bg-surface-elevated/60 border border-border/80 rounded-xl space-y-1.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-foreground-muted">
-                  Developer Testing Sandbox Presets
+            <div className="p-3.5 bg-surface-elevated/70 border border-primary/30 rounded-xl space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-primary flex items-center gap-1">
+                  <Zap className="w-3 h-3 text-primary" />
+                  Testing &amp; Evaluation Sandbox
                 </span>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => autofillTestCard("success")}
-                    className="px-2.5 py-1 text-[11px] font-mono rounded bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 transition-colors cursor-pointer"
-                  >
-                    💳 Autofill Valid Card (4242...)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => autofillTestCard("decline")}
-                    className="px-2.5 py-1 text-[11px] font-mono rounded bg-error/10 hover:bg-error/20 text-error border border-error/30 transition-colors cursor-pointer"
-                  >
-                    ⚠️ Test Declined Card (0002)
-                  </button>
-                </div>
+                <span className="text-[10px] text-foreground-muted">Instant Authorization</span>
               </div>
-            )}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleInstantDemoUnlock}
+                  disabled={isProcessing}
+                  className="px-3 py-1.5 text-xs font-bold rounded-lg bg-primary text-black hover:opacity-90 shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <Zap className="w-3.5 h-3.5 fill-black" />
+                  ⚡ 1-Click Instant Demo Unlock
+                </button>
+                {paymentMethod === "credit_card" && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => autofillTestCard("success")}
+                      className="px-2.5 py-1.5 text-[11px] font-mono rounded bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 transition-colors cursor-pointer"
+                    >
+                      💳 Fill Valid Card (4242...)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => autofillTestCard("decline")}
+                      className="px-2.5 py-1.5 text-[11px] font-mono rounded bg-error/10 hover:bg-error/20 text-error border border-error/30 transition-colors cursor-pointer"
+                    >
+                      ⚠️ Test Declined Card (0002)
+                    </button>
+                  </>
+                )}
+              </div>
+              <p className="text-[11px] text-foreground-secondary leading-snug">
+                For manual input, use test card <code className="text-primary font-mono font-bold">4242 4242 4242 4242</code>, expiry <code className="text-primary font-mono font-bold">12/29</code>, CVC <code className="text-primary font-mono font-bold">789</code>.
+              </p>
+            </div>
 
             {errorMessage && (
-              <div className="p-3.5 rounded-xl bg-error/10 border border-error/30 text-error text-xs font-medium flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>{errorMessage}</span>
+              <div className="p-3.5 rounded-xl bg-error/10 border border-error/30 text-error text-xs font-medium space-y-2">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{errorMessage}</span>
+                </div>
+                <div className="pl-6">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      autofillTestCard("success");
+                      setErrorMessage(null);
+                    }}
+                    className="underline text-[11px] font-bold text-foreground hover:text-primary cursor-pointer"
+                  >
+                    👉 Click here to autofill standard valid test card (4242 4242 4242 4242) and clear error
+                  </button>
+                </div>
               </div>
             )}
 

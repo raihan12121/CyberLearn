@@ -189,22 +189,22 @@ def process_payment(
     if request.payment_method == "credit_card":
         if request.card_number:
             card_num = (request.card_number or "").replace(" ", "").replace("-", "")
-            if len(card_num) < 13 or not card_num.isdigit():
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Invalid credit card number. Please enter a valid 13-19 digit card number."
-                )
-                
             # Simulation of realistic test card declines
             if card_num.endswith("0002"):
                 raise HTTPException(
                     status_code=status.HTTP_402_PAYMENT_REQUIRED,
-                    detail="Your card was declined by the issuing bank. Please check your card balance or try a different card."
+                    detail="Your test card ending in 0002 was declined by the bank. Please use the valid test card 4242 4242 4242 4242 or click 'Autofill Valid Card'."
                 )
             elif card_num.endswith("0003"):
                 raise HTTPException(
                     status_code=status.HTTP_402_PAYMENT_REQUIRED,
-                    detail="Payment failed: Insufficient funds in the designated account."
+                    detail="Payment failed: Insufficient funds. Please try using standard test card 4242 4242 4242 4242."
+                )
+                
+            if len(card_num) < 4 or not card_num.isdigit():
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid card number format. Please enter a valid test card number (e.g. 4242 4242 4242 4242) or click 'Autofill Valid Card'."
                 )
                 
             now_dt = datetime.now()
@@ -212,7 +212,7 @@ def process_payment(
                 if request.card_exp_year < now_dt.year or (request.card_exp_year == now_dt.year and request.card_exp_month < now_dt.month):
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="The card expiration date has already passed."
+                        detail="The card expiration date has already passed. Please use a future date like 12/28 or 12/29."
                     )
                     
             card_brand = detect_card_brand(card_num)
