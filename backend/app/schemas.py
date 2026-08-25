@@ -32,12 +32,25 @@ class UserResponse(UserBase):
     nid_number: Optional[str] = None
     verification_notes: Optional[str] = None
     verified_at: Optional[datetime] = None
+    subscription_tier: Optional[str] = "free"
+    subscription_status: Optional[str] = "inactive"
+    subscription_expires_at: Optional[datetime] = None
+    is_subscribed: Optional[bool] = False
     xp: int
     streak_days: int
     avatar_url: Optional[str] = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class SubscriptionStatusResponse(BaseModel):
+    tier: str
+    status: str
+    is_subscribed: bool
+    expires_at: Optional[datetime] = None
+    can_access_courses: bool
+    can_access_labs: bool
+    role: str
 
 class VerifyEmailRequest(BaseModel):
     token: str
@@ -72,6 +85,7 @@ class LessonBase(BaseModel):
 class LessonResponse(LessonBase):
     id: str
     course_id: str
+    is_locked: Optional[bool] = False
 
     model_config = ConfigDict(from_attributes=True)
 

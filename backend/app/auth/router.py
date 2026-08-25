@@ -7,7 +7,7 @@ import logging
 from ..database import get_db
 from .. import models, schemas
 from .utils import get_password_hash, verify_password, create_access_token
-from .dependencies import get_current_user
+from .dependencies import get_current_user, has_active_subscription
 from .email import send_verification_email
 
 logger = logging.getLogger(__name__)
@@ -267,5 +267,7 @@ def social_login(provider_in: schemas.SocialLoginRequest, db: Session = Depends(
 
 @router.get("/me", response_model=schemas.UserResponse)
 def get_me(current_user: models.User = Depends(get_current_user)):
-    return current_user
+    res = schemas.UserResponse.model_validate(current_user)
+    res.is_subscribed = has_active_subscription(current_user)
+    return res
 

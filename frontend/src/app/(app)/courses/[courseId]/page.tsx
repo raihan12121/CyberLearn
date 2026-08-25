@@ -20,7 +20,10 @@ import {
 } from "lucide-react";
 import { Card, Badge, Button, ProgressBar } from "@/components/ui";
 import { api } from "@/lib/api";
+import { useAuthStore, isUserSubscribed } from "@/lib/authStore";
+import SubscriptionPaywallModal from "@/components/subscription/SubscriptionPaywallModal";
 import Link from "next/link";
+import { Lock } from "lucide-react";
 
 function getYouTubeEmbedUrl(url?: string): string | null {
   if (!url) return null;
@@ -628,6 +631,9 @@ Packet filtering firewalls (iptables, nftables, UFW) evaluate incoming/outgoing 
 export default function CourseDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const { user } = useAuthStore();
+  const subscribed = isUserSubscribed(user);
+
   const courseId = (params?.courseId as string) || "web-security-fundamentals";
   const course = courseData[courseId] || courseData["web-security-fundamentals"];
 
@@ -637,6 +643,7 @@ export default function CourseDetailPage() {
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [quizScore, setQuizScore] = useState(0);
   const [completedLessonsSet, setCompletedLessonsSet] = useState<Set<string>>(new Set());
+  const [paywallOpen, setPaywallOpen] = useState(false);
 
   // Fetch progress on load
   useEffect(() => {
@@ -846,28 +853,34 @@ export default function CourseDetailPage() {
                 <div className="space-y-1">
                   {mod.lessons.map((lesson) => {
                     const isSelected = activeLesson.id === lesson.id;
-                    const Icon =
+                    const Icon = !subscribed ? Lock :
                       lesson.type === "video" ? Play :
                       lesson.type === "quiz" ? HelpCircle : FileText;
 
                     return (
                       <button
                         key={lesson.id}
-                        onClick={() => handleLessonClick(lesson)}
+                        onClick={() => {
+                          if (!subscribed) {
+                            setPaywallOpen(true);
+                          } else {
+                            handleLessonClick(lesson);
+                          }
+                        }}
                         className={`w-full flex items-center justify-between p-3 rounded-[var(--radius)] text-left transition-all duration-150 cursor-pointer ${
-                          isSelected
+                          isSelected && subscribed
                             ? "bg-primary/10 border border-primary text-primary"
                             : "bg-surface hover:bg-surface-elevated border border-border text-foreground-secondary"
                         }`}
                       >
                         <div className="flex items-center gap-3">
                           <div className={`p-1.5 rounded-lg ${
-                            isSelected ? "bg-primary/20 text-primary" : "bg-surface-elevated text-foreground-muted"
+                            isSelected && subscribed ? "bg-primary/20 text-primary" : "bg-surface-elevated text-foreground-muted"
                           }`}>
                             <Icon className="w-4 h-4" />
                           </div>
                           <div>
-                            <p className={`text-sm font-semibold ${isSelected ? "text-foreground font-bold" : "text-foreground-secondary"}`}>
+                            <p className={`text-sm font-semibold ${isSelected && subscribed ? "text-foreground font-bold" : "text-foreground-secondary"}`}>
                               {lesson.title}
                             </p>
                             <span className="text-[11px] text-foreground-muted flex items-center gap-1">
@@ -876,9 +889,11 @@ export default function CourseDetailPage() {
                             </span>
                           </div>
                         </div>
-                        {completedLessonsSet.has(lesson.id) && (
+                        {!subscribed ? (
+                          <Badge variant="primary" size="sm" className="text-[9px] px-1.5 py-0">PRO</Badge>
+                        ) : completedLessonsSet.has(lesson.id) ? (
                           <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0 ml-2" />
-                        )}
+                        ) : null}
                       </button>
                     );
                   })}
@@ -890,162 +905,234 @@ export default function CourseDetailPage() {
 
         {/* Content Panel (8 cols) */}
         <div className="lg:col-span-8 space-y-6">
-          <Card padding="lg" className="min-h-[550px] flex flex-col">
-            {/* Active Lesson Header */}
-            <div className="border-b border-border pb-4 mb-6 flex items-center justify-between">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
-                  {activeLesson.type === "video" && <Play className="w-3.5 h-3.5 fill-primary" />}
-                  {activeLesson.type === "reading" && <FileText className="w-3.5 h-3.5" />}
-                  {activeLesson.type === "quiz" && <HelpCircle className="w-3.5 h-3.5" />}
-                  {activeLesson.type} Lesson
-                </span>
-                <h2 className="text-xl sm:text-2xl font-bold text-foreground mt-1">
-                  {activeLesson.title}
-                </h2>
-              </div>
-              <Link
-                href="/ai-coach"
-                className="flex items-center gap-1.5 text-xs text-primary hover:text-primary-hover font-semibold transition-colors px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20"
-              >
-                <Bot className="w-4 h-4 text-primary" />
-                Ask AI Coach
-              </Link>
-            </div>
-
-            {/* Embedded YouTube Video Player */}
-            {activeLesson.type === "video" && (
-              <div className="mb-6 rounded-2xl overflow-hidden bg-black border border-border aspect-video shadow-2xl relative">
-                <iframe
-                  src={getYouTubeEmbedUrl(activeLesson.videoUrl || activeLesson.content) || "https://www.youtube-nocookie.com/embed/7GBlCinu9yg"}
-                  title={activeLesson.title}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                  className="w-full h-full border-0"
-                />
-              </div>
-            )}
-
-            {/* Reading / Video Description Content */}
-            <div className="prose prose-invert max-w-none text-foreground-secondary text-sm leading-7 space-y-4 font-normal flex-1">
-              {activeLesson.content && (
-                <div className="whitespace-pre-line bg-surface-elevated/40 p-4 rounded-xl border border-border font-sans text-xs sm:text-sm leading-relaxed">
-                  {activeLesson.content}
+          <Card padding="lg" className="min-h-[550px] flex flex-col justify-between">
+            {!subscribed ? (
+              /* GATED PAYWALL VIEW FOR FREE USERS */
+              <div className="my-auto py-12 px-4 text-center space-y-6 max-w-lg mx-auto">
+                <div className="inline-flex items-center justify-center p-4 rounded-3xl bg-primary/10 border border-primary/30 text-primary shadow-lg">
+                  <Lock className="w-10 h-10 animate-bounce text-primary" />
                 </div>
-              )}
-            </div>
 
-            {/* Quiz Content */}
-            {activeLesson.type === "quiz" && activeLesson.quizQuestions && (
-              <div className="space-y-6 mt-4 flex-1">
-                {activeLesson.quizQuestions.map((q, idx) => (
-                  <div key={idx} className="space-y-3">
-                    <p className="font-semibold text-foreground text-sm">
-                      {idx + 1}. {q.q}
-                    </p>
-                    <div className="grid grid-cols-1 gap-2">
-                      {q.options.map((opt, optIdx) => {
-                        const isSelected = quizAnswers[idx] === optIdx;
-                        const isCorrect = q.answer === optIdx;
-                        let optClass = "border-border hover:bg-surface-elevated/50 text-foreground-secondary";
-                        if (quizSubmitted) {
-                          if (isCorrect) {
-                            optClass = "border-success bg-success/10 text-success font-bold";
-                          } else if (isSelected) {
-                            optClass = "border-error bg-error/10 text-error";
-                          }
-                        } else if (isSelected) {
-                          optClass = "border-primary bg-primary/10 text-primary font-semibold";
-                        }
-
-                        return (
-                          <button
-                            key={optIdx}
-                            disabled={quizSubmitted}
-                            onClick={() => setQuizAnswers({ ...quizAnswers, [idx]: optIdx })}
-                            className={`p-3 rounded-[var(--radius)] text-left text-xs font-medium border transition-all duration-200 flex items-center justify-between cursor-pointer ${optClass}`}
-                          >
-                            <span>{opt}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
+                <div className="space-y-2">
+                  <div className="inline-block">
+                    <Badge variant="primary" size="sm" className="font-mono uppercase text-[10px] tracking-wider">
+                      Pro Subscription Required
+                    </Badge>
                   </div>
-                ))}
+                  <h3 className="text-2xl font-bold text-foreground">Course Content Locked</h3>
+                  <p className="text-xs md:text-sm text-foreground-secondary leading-relaxed">
+                    Full video lectures, interactive reading guides, quizzes, and course completion certificates for <span className="text-foreground font-semibold">"{course.title}"</span> are reserved for CyberLearn Pro and Premium members.
+                  </p>
+                </div>
 
-                {quizSubmitted && quizEvaluation && (
-                  <div className={`p-4 rounded-xl border space-y-3 ${
-                    quizEvaluation.passed ? "bg-success/10 border-success/30 text-success" : "bg-warning/10 border-warning/30 text-warning"
-                  }`}>
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-sm">
-                        {quizEvaluation.passed ? "🎉 Assessment Passed!" : "⚠️ Assessment Failed"} ({quizEvaluation.score_pct}%)
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left py-2">
+                  <div className="p-3 rounded-xl bg-surface-elevated/80 border border-border flex items-start gap-2.5">
+                    <CheckCircle className="w-4 h-4 text-accent shrink-0 mt-0.5" />
+                    <span className="text-xs text-foreground-secondary font-medium">All course video modules &amp; notes</span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-surface-elevated/80 border border-border flex items-start gap-2.5">
+                    <CheckCircle className="w-4 h-4 text-accent shrink-0 mt-0.5" />
+                    <span className="text-xs text-foreground-secondary font-medium">Unlimited Docker CTF sandbox labs</span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-surface-elevated/80 border border-border flex items-start gap-2.5">
+                    <CheckCircle className="w-4 h-4 text-accent shrink-0 mt-0.5" />
+                    <span className="text-xs text-foreground-secondary font-medium">Full AI Cyber Coach tutoring</span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-surface-elevated/80 border border-border flex items-start gap-2.5">
+                    <CheckCircle className="w-4 h-4 text-accent shrink-0 mt-0.5" />
+                    <span className="text-xs text-foreground-secondary font-medium">Verified course certificates</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                  <Button
+                    variant="primary"
+                    size="md"
+                    onClick={() => setPaywallOpen(true)}
+                    className="w-full sm:w-auto font-bold shadow-lg"
+                  >
+                    <Zap className="w-4 h-4 mr-1.5" />
+                    <span>Unlock Course with Pro ($12/mo)</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="md"
+                    onClick={() => router.push("/pricing")}
+                    className="w-full sm:w-auto"
+                  >
+                    View All Plans
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              /* SUBSCRIBED FULL CONTENT VIEW */
+              <>
+                <div>
+                  {/* Active Lesson Header */}
+                  <div className="border-b border-border pb-4 mb-6 flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                        {activeLesson.type === "video" && <Play className="w-3.5 h-3.5 fill-primary" />}
+                        {activeLesson.type === "reading" && <FileText className="w-3.5 h-3.5" />}
+                        {activeLesson.type === "quiz" && <HelpCircle className="w-3.5 h-3.5" />}
+                        {activeLesson.type} Lesson
                       </span>
-                      {quizEvaluation.xp_awarded > 0 && (
-                        <span className="text-xs font-mono font-bold bg-success/20 px-2.5 py-1 rounded-full">
-                          +{quizEvaluation.xp_awarded} XP Awarded
-                        </span>
-                      )}
+                      <h2 className="text-xl sm:text-2xl font-bold text-foreground mt-1">
+                        {activeLesson.title}
+                      </h2>
                     </div>
-                    <p className="text-xs leading-relaxed text-foreground-secondary">
-                      {quizEvaluation.passed
-                        ? "Great work! You demonstrated mastery of this module."
-                        : "Score at least 80% to pass the assessment and earn lesson completion XP."}
-                    </p>
-                  </div>
-                )}
-
-                <div className="pt-4 border-t border-border flex items-center justify-between mt-auto">
-                  {!quizSubmitted ? (
-                    <Button
-                      onClick={handleQuizSubmit}
-                      disabled={Object.keys(quizAnswers).length < activeLesson.quizQuestions.length}
+                    <Link
+                      href="/ai-coach"
+                      className="flex items-center gap-1.5 text-xs text-primary hover:text-primary-hover font-semibold transition-colors px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20"
                     >
-                      Submit Quiz
-                    </Button>
-                  ) : (
-                    <div className="flex items-center gap-4">
-                      <p className="text-sm font-semibold text-foreground">
-                        Your Score:{" "}
-                        <span className={quizScore === activeLesson.quizQuestions.length ? "text-success font-bold" : "text-warning font-bold"}>
-                          {quizScore} / {activeLesson.quizQuestions.length}
-                        </span>
-                      </p>
-                      <Button variant="outline" size="sm" onClick={() => {
-                        setQuizAnswers({});
-                        setQuizSubmitted(false);
-                        setQuizScore(0);
-                        setQuizEvaluation(null);
-                      }}>
-                        Retry Quiz
-                      </Button>
+                      <Bot className="w-4 h-4 text-primary" />
+                      Ask AI Coach
+                    </Link>
+                  </div>
+
+                  {/* Embedded YouTube Video Player */}
+                  {activeLesson.type === "video" && (
+                    <div className="mb-6 rounded-2xl overflow-hidden bg-black border border-border aspect-video shadow-2xl relative">
+                      <iframe
+                        src={getYouTubeEmbedUrl(activeLesson.videoUrl || activeLesson.content) || "https://www.youtube-nocookie.com/embed/7GBlCinu9yg"}
+                        title={activeLesson.title}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                        className="w-full h-full border-0"
+                      />
+                    </div>
+                  )}
+
+                  {/* Reading / Video Description Content */}
+                  <div className="prose prose-invert max-w-none text-foreground-secondary text-sm leading-7 space-y-4 font-normal flex-1">
+                    {activeLesson.content && (
+                      <div className="whitespace-pre-line bg-surface-elevated/40 p-4 rounded-xl border border-border font-sans text-xs sm:text-sm leading-relaxed">
+                        {activeLesson.content}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Quiz Content */}
+                  {activeLesson.type === "quiz" && activeLesson.quizQuestions && (
+                    <div className="space-y-6 mt-4 flex-1">
+                      {activeLesson.quizQuestions.map((q, idx) => (
+                        <div key={idx} className="space-y-3">
+                          <p className="font-semibold text-foreground text-sm">
+                            {idx + 1}. {q.q}
+                          </p>
+                          <div className="grid grid-cols-1 gap-2">
+                            {q.options.map((opt, optIdx) => {
+                              const isSelected = quizAnswers[idx] === optIdx;
+                              const isCorrect = q.answer === optIdx;
+                              let optClass = "border-border hover:bg-surface-elevated/50 text-foreground-secondary";
+                              if (quizSubmitted) {
+                                if (isCorrect) {
+                                  optClass = "border-success bg-success/10 text-success font-bold";
+                                } else if (isSelected) {
+                                  optClass = "border-error bg-error/10 text-error";
+                                }
+                              } else if (isSelected) {
+                                optClass = "border-primary bg-primary/10 text-primary font-semibold";
+                              }
+
+                              return (
+                                <button
+                                  key={optIdx}
+                                  disabled={quizSubmitted}
+                                  onClick={() => setQuizAnswers({ ...quizAnswers, [idx]: optIdx })}
+                                  className={`p-3 rounded-[var(--radius)] text-left text-xs font-medium border transition-all duration-200 flex items-center justify-between cursor-pointer ${optClass}`}
+                                >
+                                  <span>{opt}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+
+                      {quizSubmitted && quizEvaluation && (
+                        <div className={`p-4 rounded-xl border space-y-3 ${
+                          quizEvaluation.passed ? "bg-success/10 border-success/30 text-success" : "bg-warning/10 border-warning/30 text-warning"
+                        }`}>
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-sm">
+                              {quizEvaluation.passed ? "🎉 Assessment Passed!" : "⚠️ Assessment Failed"} ({quizEvaluation.score_pct}%)
+                            </span>
+                            {quizEvaluation.xp_awarded > 0 && (
+                              <span className="text-xs font-mono font-bold bg-success/20 px-2.5 py-1 rounded-full">
+                                +{quizEvaluation.xp_awarded} XP Awarded
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs leading-relaxed text-foreground-secondary">
+                            {quizEvaluation.passed
+                              ? "Great work! You demonstrated mastery of this module."
+                              : "Score at least 80% to pass the assessment and earn lesson completion XP."}
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="pt-4 border-t border-border flex items-center justify-between mt-auto">
+                        {!quizSubmitted ? (
+                          <Button
+                            onClick={handleQuizSubmit}
+                            disabled={Object.keys(quizAnswers).length < activeLesson.quizQuestions.length}
+                          >
+                            Submit Quiz
+                          </Button>
+                        ) : (
+                          <div className="flex items-center gap-4">
+                            <p className="text-sm font-semibold text-foreground">
+                              Your Score:{" "}
+                              <span className={quizScore === activeLesson.quizQuestions.length ? "text-success font-bold" : "text-warning font-bold"}>
+                                {quizScore} / {activeLesson.quizQuestions.length}
+                              </span>
+                            </p>
+                            <Button variant="outline" size="sm" onClick={() => {
+                              setQuizAnswers({});
+                              setQuizSubmitted(false);
+                              setQuizScore(0);
+                              setQuizEvaluation(null);
+                            }}>
+                              Retry Quiz
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
-              </div>
-            )}
 
-            {/* Non-quiz Mark Completed Action */}
-            {activeLesson.type !== "quiz" && (
-              <div className="mt-8 pt-4 border-t border-border flex justify-end">
-                {completedLessonsSet.has(activeLesson.id) ? (
-                  <div className="flex items-center gap-2 text-emerald-400 text-sm font-bold">
-                    <CheckCircle className="w-5 h-5 animate-pulse text-emerald-400" />
-                    Lesson Completed
+                {/* Non-quiz Mark Completed Action */}
+                {activeLesson.type !== "quiz" && (
+                  <div className="mt-8 pt-4 border-t border-border flex justify-end">
+                    {completedLessonsSet.has(activeLesson.id) ? (
+                      <div className="flex items-center gap-2 text-emerald-400 text-sm font-bold">
+                        <CheckCircle className="w-5 h-5 animate-pulse text-emerald-400" />
+                        Lesson Completed
+                      </div>
+                    ) : (
+                      <Button
+                        onClick={() => markLessonComplete(activeLesson.id)}
+                        icon={<CheckCircle className="w-4 h-4" />}
+                      >
+                        Mark as Completed
+                      </Button>
+                    )}
                   </div>
-                ) : (
-                  <Button
-                    onClick={() => markLessonComplete(activeLesson.id)}
-                    icon={<CheckCircle className="w-4 h-4" />}
-                  >
-                    Mark as Completed
-                  </Button>
                 )}
-              </div>
+              </>
             )}
           </Card>
         </div>
       </div>
+
+      <SubscriptionPaywallModal
+        isOpen={paywallOpen}
+        onClose={() => setPaywallOpen(false)}
+        title="Unlock Course Modules & Videos"
+        resourceName={course.title}
+      />
     </div>
   );
 }

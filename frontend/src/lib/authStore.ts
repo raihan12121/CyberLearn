@@ -12,6 +12,18 @@ export interface UserProfile {
   avatar_url?: string;
   verification_status?: string;
   is_verified?: boolean;
+  subscription_tier?: string;
+  subscription_status?: string;
+  subscription_expires_at?: string;
+  is_subscribed?: boolean;
+}
+
+export function isUserSubscribed(user: UserProfile | null): boolean {
+  if (!user) return false;
+  if (user.role === "admin" || user.role === "instructor") return true;
+  if (user.role === "pro_member" || user.role === "premium_member") return true;
+  if (user.subscription_status === "active" || user.is_subscribed === true) return true;
+  return false;
 }
 
 interface AuthState {

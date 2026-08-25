@@ -11,9 +11,13 @@ import {
   ChevronRight,
   TrendingUp,
   Award,
+  Lock,
 } from "lucide-react";
 import { Card, Badge, Button, ProgressBar } from "@/components/ui";
 import { api } from "@/lib/api";
+import { useAuthStore, isUserSubscribed } from "@/lib/authStore";
+import SubscriptionBanner from "@/components/subscription/SubscriptionBanner";
+import SubscriptionPaywallModal from "@/components/subscription/SubscriptionPaywallModal";
 
 const categories = ["All", "Web Security", "Linux", "Networking", "Programming", "CTF", "AI Security"];
 
@@ -113,9 +117,14 @@ const difficultyColor: Record<string, "success" | "primary" | "warning" | "dange
 
 export default function CoursesPage() {
   const router = useRouter();
+  const { user } = useAuthStore();
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [courseList, setCourseList] = useState(courses);
+  const [paywallModalOpen, setPaywallModalOpen] = useState(false);
+  const [selectedCourseForPaywall, setSelectedCourseForPaywall] = useState<string | undefined>(undefined);
+
+  const subscribed = isUserSubscribed(user);
 
   useEffect(() => {
     Promise.all([api.getCourses(), api.getProgress()])
@@ -127,9 +136,9 @@ export default function CoursesPage() {
             // Calculate progress based on completed lessons count from database
             const dbLessons = c.lessons || [];
             const totalLessons = dbLessons.length;
-            const courseLessonsProgress = progressData.filter(
+            const courseLessonsProgress = Array.isArray(progressData) ? progressData.filter(
               (p: { course_id: string; status: string }) => p.course_id === c.id && p.status === "completed"
-            );
+            ) : [];
             const completedCount = courseLessonsProgress.length;
             const calculatedProgress = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
 
@@ -159,6 +168,15 @@ export default function CoursesPage() {
     return matchCategory && matchSearch;
   });
 
+  const handleCourseClick = (courseId: string, courseTitle: string) => {
+    if (!subscribed) {
+      setSelectedCourseForPaywall(courseTitle);
+      setPaywallModalOpen(true);
+      return;
+    }
+    router.push(`/courses/${courseId}`);
+  };
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
@@ -181,6 +199,13 @@ export default function CoursesPage() {
           </div>
         </div>
       </motion.div>
+
+      {/* Subscription Banner for Free users */}
+      {!subscribed && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+          <SubscriptionBanner type="courses" />
+        </motion.div>
+      )}
 
       {/* Filters and Search */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
@@ -220,14 +245,22 @@ export default function CoursesPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
           >
-            <Card hover padding="lg" className="h-full flex flex-col justify-between">
+            <Card hover padding="lg" className="h-full flex flex-col justify-between relative">
               <div>
-                {/* Image and difficulty */}
+                {/* Image and difficulty / pro badge */}
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-4xl">{course.image}</span>
-                  <Badge variant={difficultyColor[course.difficulty]} size="sm">
-                    {course.difficulty}
-                  </Badge>
+                  <div className="flex items-center gap-1.5">
+                    {!subscribed && (
+                      <Badge variant="primary" size="sm" className="gap-1 text-[10px] font-bold">
+                        <Lock className="w-3 h-3" />
+                        PRO
+                      </Badge>
+                    )}
+                    <Badge variant={difficultyColor[course.difficulty]} size="sm">
+                      {course.difficulty}
+                    </Badge>
+                  </div>
                 </div>
 
                 {/* Title */}
@@ -259,7 +292,7 @@ export default function CoursesPage() {
                 </div>
 
                 {/* Progress */}
-                {course.progress > 0 && (
+                {subscribed && course.progress > 0 && (
                   <div className="mb-4">
                     <ProgressBar value={course.progress} showLabel size="sm" variant="gradient" />
                   </div>
@@ -268,17 +301,28 @@ export default function CoursesPage() {
                 {/* CTA */}
                 <Button
                   fullWidth
-                  onClick={() => router.push(`/courses/${course.id}`)}
-                  variant={course.progress > 0 ? "primary" : "outline"}
-                  icon={<ChevronRight className="w-4 h-4" />}
+                  onClick={() => handleCourseClick(course.id, course.title)}
+                  variant={!subscribed ? "outline" : course.progress > 0 ? "primary" : "outline"}
+                  icon={!subscribed ? <Lock className="w-4 h-4 text-primary" /> : <ChevronRight className="w-4 h-4" />}
                 >
-                  {course.progress > 0 ? "Continue Course" : "Start Course"}
+                  {!subscribed
+                    ? "Unlock Course (Pro)"
+                    : course.progress > 0
+                    ? "Continue Course"
+                    : "Start Course"}
                 </Button>
               </div>
             </Card>
           </motion.div>
         ))}
       </div>
+
+      <SubscriptionPaywallModal
+        isOpen={paywallModalOpen}
+        onClose={() => setPaywallModalOpen(false)}
+        title="Unlock Full Course Curriculum"
+        resourceName={selectedCourseForPaywall}
+      />
     </div>
   );
 }

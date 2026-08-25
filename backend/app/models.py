@@ -33,6 +33,11 @@ class User(Base):
     verification_notes = Column(Text, nullable=True)
     verified_at = Column(DateTime(timezone=True), nullable=True)
 
+    # Subscription & Access Control fields
+    subscription_tier = Column(String(50), default="free", index=True) # free, pro, premium
+    subscription_status = Column(String(20), default="inactive", index=True) # inactive, active, canceled, expired
+    subscription_expires_at = Column(DateTime(timezone=True), nullable=True)
+
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

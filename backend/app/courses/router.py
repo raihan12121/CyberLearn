@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from ..database import get_db
 from .. import models, schemas
-from ..auth.dependencies import get_current_user
+from ..auth.dependencies import get_current_user, get_optional_user, has_active_subscription, require_subscription
 
 router = APIRouter(
     prefix="/courses",
@@ -327,7 +327,7 @@ def get_user_progress(
 def update_progress(
     progress_in: schemas.ProgressUpdate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
+    current_user: models.User = Depends(require_subscription)
 ):
     # Check if course and lesson exist
     course = db.query(models.Course).filter(models.Course.id == progress_in.course_id).first()
@@ -371,7 +371,11 @@ def update_progress(
     return db_progress
 
 @router.get("/{course_id}", response_model=schemas.CourseResponse)
-def get_course(course_id: str, db: Session = Depends(get_db)):
+def get_course(
+    course_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[models.User] = Depends(get_optional_user)
+):
     course = db.query(models.Course).filter(models.Course.id == course_id).first()
     if not course:
         raise HTTPException(
@@ -380,6 +384,18 @@ def get_course(course_id: str, db: Session = Depends(get_db)):
         )
     res = schemas.CourseResponse.model_validate(course)
     res.xp = COURSE_XP_MAP.get(course.id, 1200)
+
+    # Subscription check: redact video URLs and reading/quiz content if unpaid
+    is_subscribed = has_active_subscription(current_user)
+    if not is_subscribed:
+        for lesson in res.lessons:
+            lesson.is_locked = True
+            lesson.video_url = None
+            lesson.content = "Subscription Required: Please upgrade to a Pro or Premium plan to access this lesson material and assessment."
+    else:
+        for lesson in res.lessons:
+            lesson.is_locked = False
+
     return res
 
 import json
@@ -389,7 +405,7 @@ def submit_quiz_assessment(
     lesson_id: str,
     submission: schemas.QuizSubmissionRequest,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
+    current_user: models.User = Depends(require_subscription)
 ):
     lesson = db.query(models.Lesson).filter(models.Lesson.id == lesson_id).first()
     if not lesson:

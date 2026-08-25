@@ -58,7 +58,10 @@ def run_auto_migrations(engine):
                     ("nid_back_image", "TEXT"),
                     ("verification_status", "VARCHAR(20) DEFAULT 'unverified'"),
                     ("verification_notes", "TEXT"),
-                    ("verified_at", "DATETIME")
+                    ("verified_at", "DATETIME"),
+                    ("subscription_tier", "VARCHAR(50) DEFAULT 'free'"),
+                    ("subscription_status", "VARCHAR(20) DEFAULT 'inactive'"),
+                    ("subscription_expires_at", "DATETIME")
                 ]
                 for col_name, col_type in new_user_cols:
                     if col_name not in existing_user_cols:
@@ -91,7 +94,10 @@ def run_auto_migrations(engine):
                     ("nid_back_image", "TEXT"),
                     ("verification_status", "VARCHAR(20) DEFAULT 'unverified'"),
                     ("verification_notes", "TEXT"),
-                    ("verified_at", "TIMESTAMPTZ")
+                    ("verified_at", "TIMESTAMPTZ"),
+                    ("subscription_tier", "VARCHAR(50) DEFAULT 'free'"),
+                    ("subscription_status", "VARCHAR(20) DEFAULT 'inactive'"),
+                    ("subscription_expires_at", "TIMESTAMPTZ")
                 ]
                 for col_name, col_type in new_user_cols:
                     if col_name not in existing_user_cols:

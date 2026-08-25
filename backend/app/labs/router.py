@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 from typing import List
 from ..database import get_db
 from .. import models, schemas
-from ..auth.dependencies import get_current_user
+from ..auth.dependencies import get_current_user, require_subscription
 from ..config import settings
 from .terminal import terminal_manager
 
@@ -199,7 +199,7 @@ def get_labs(db: Session = Depends(get_db)):
 def start_lab_session(
     request: schemas.LabStartRequest,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
+    current_user: models.User = Depends(require_subscription)
 ):
     # Check if lab exists
     lab = db.query(models.Lab).filter(models.Lab.id == request.lab_id).first()
@@ -238,7 +238,7 @@ def start_lab_session(
 def reset_lab_session(
     session_id: str,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
+    current_user: models.User = Depends(require_subscription)
 ):
     session = db.query(models.LabSession).filter(
         models.LabSession.id == session_id,
@@ -265,7 +265,7 @@ def submit_flag(
     session_id: str,
     flag_submission: str,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
+    current_user: models.User = Depends(require_subscription)
 ):
     session = db.query(models.LabSession).filter(
         models.LabSession.id == session_id,
@@ -345,7 +345,7 @@ class ProxyForwardRequest(BaseModel):
 @router.post("/proxy/forward")
 def proxy_forward_request(
     req: ProxyForwardRequest,
-    current_user: models.User = Depends(get_current_user)
+    current_user: models.User = Depends(require_subscription)
 ):
     """
     Execute HTTP request inspection server-side for the Web Proxy Inspector tool.
@@ -407,7 +407,7 @@ def unlock_socratic_hint(
     lab_id: str,
     req: HintUnlockRequest,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
+    current_user: models.User = Depends(require_subscription)
 ):
     """
     Unlock a progressive Socratic hint and persist XP deduction to user account.

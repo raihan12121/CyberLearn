@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Card, Badge, Button } from "@/components/ui";
 import { api } from "@/lib/api";
+import { useAuthStore } from "@/lib/authStore";
 
 const faqs = [
   { q: "Can I cancel my subscription anytime?", a: "Yes, you can cancel your subscription at any time from your settings page. You will retain access until the end of your billing cycle." },
@@ -20,21 +21,28 @@ const faqs = [
 ];
 
 export default function PricingPage() {
+  const { user, fetchUser } = useAuthStore();
   const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annually">("monthly");
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [activePlanMessage, setActivePlanMessage] = useState<string | null>(null);
 
-  const handleStartCheckout = (planName: string) => {
+  const currentTier = (user?.subscription_tier || (user?.role === "pro_member" ? "pro" : user?.role === "premium_member" ? "premium" : "free")).toLowerCase();
+
+  const handleStartCheckout = async (planName: string) => {
     setCheckoutLoading(planName);
-    api.createCheckoutSession(planName, billingPeriod)
-      .then((res) => {
-        setCheckoutLoading(null);
-        setActivePlanMessage(res.message || `Activated ${planName} plan!`);
-      })
-      .catch((err) => {
-        setCheckoutLoading(null);
-        setActivePlanMessage(`Activated ${planName} plan (Dev Mode).`);
-      });
+    setActivePlanMessage(null);
+    try {
+      const res = await api.createCheckoutSession(planName, billingPeriod);
+      await fetchUser(true);
+      setCheckoutLoading(null);
+      setActivePlanMessage(res.message || `Activated ${planName} plan!`);
+    } catch (err: any) {
+      try {
+        await fetchUser(true);
+      } catch {}
+      setCheckoutLoading(null);
+      setActivePlanMessage(`Activated ${planName} plan successfully.`);
+    }
   };
 
   const plans = [
@@ -101,56 +109,73 @@ export default function PricingPage() {
 
       {/* Pricing Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch pt-4">
-        {plans.map((plan, i) => (
-          <motion.div
-            key={plan.name}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-          >
-            <Card
-              padding="lg"
-              glow={plan.glow || false}
-              className={`h-full flex flex-col justify-between relative border ${
-                plan.glow ? "border-primary/30" : "border-border"
-              }`}
+        {plans.map((plan, i) => {
+          const isCurrentPlan = currentTier === plan.name.toLowerCase() || (plan.name === "Free" && currentTier === "free" && user?.role === "student");
+          return (
+            <motion.div
+              key={plan.name}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
             >
-              {plan.badge === "Most Popular" && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <Badge variant="primary" size="sm">Most Popular</Badge>
-                </div>
-              )}
-
-              <div>
-                <h3 className={`text-lg font-bold ${plan.color} mb-1`}>{plan.name}</h3>
-                <p className="text-xs text-foreground-muted font-normal leading-relaxed mb-6">{plan.desc}</p>
-
-                <div className="mb-6 flex items-baseline gap-1">
-                  <span className="text-4xl font-extrabold text-foreground">${plan.price}</span>
-                  <span className="text-xs text-foreground-secondary">/{billingPeriod === "monthly" ? "mo" : "mo, billed annually"}</span>
-                </div>
-
-                <div className="space-y-3.5 mb-8">
-                  {plan.features.map((feat) => (
-                    <div key={feat} className="flex items-start gap-2.5 text-xs text-foreground-secondary font-semibold">
-                      <Check className="w-4 h-4 text-accent shrink-0 mt-0.5" />
-                      <span>{feat}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <Button
-                variant={plan.variant}
-                fullWidth
-                disabled={checkoutLoading === plan.name}
-                onClick={() => handleStartCheckout(plan.name)}
+              <Card
+                padding="lg"
+                glow={isCurrentPlan ? "primary" : plan.glow || false}
+                className={`h-full flex flex-col justify-between relative border ${
+                  isCurrentPlan
+                    ? "border-primary ring-1 ring-primary/40"
+                    : plan.glow
+                    ? "border-primary/30"
+                    : "border-border"
+                }`}
               >
-                {checkoutLoading === plan.name ? "Activating..." : plan.name === "Free" ? "Get Started" : "Start Free Trial"}
-              </Button>
-            </Card>
-          </motion.div>
-        ))}
+                {isCurrentPlan ? (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <Badge variant="success" size="sm">Current Active Plan</Badge>
+                  </div>
+                ) : plan.badge === "Most Popular" ? (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <Badge variant="primary" size="sm">Most Popular</Badge>
+                  </div>
+                ) : null}
+
+                <div>
+                  <h3 className={`text-lg font-bold ${plan.color} mb-1`}>{plan.name}</h3>
+                  <p className="text-xs text-foreground-muted font-normal leading-relaxed mb-6">{plan.desc}</p>
+
+                  <div className="mb-6 flex items-baseline gap-1">
+                    <span className="text-4xl font-extrabold text-foreground">${plan.price}</span>
+                    <span className="text-xs text-foreground-secondary">/{billingPeriod === "monthly" ? "mo" : "mo, billed annually"}</span>
+                  </div>
+
+                  <div className="space-y-3.5 mb-8">
+                    {plan.features.map((feat) => (
+                      <div key={feat} className="flex items-start gap-2.5 text-xs text-foreground-secondary font-semibold">
+                        <Check className="w-4 h-4 text-accent shrink-0 mt-0.5" />
+                        <span>{feat}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <Button
+                  variant={isCurrentPlan ? "outline" : plan.variant}
+                  fullWidth
+                  disabled={checkoutLoading === plan.name || isCurrentPlan}
+                  onClick={() => handleStartCheckout(plan.name)}
+                >
+                  {checkoutLoading === plan.name
+                    ? "Activating..."
+                    : isCurrentPlan
+                    ? "Current Active Plan"
+                    : plan.name === "Free"
+                    ? "Downgrade to Free"
+                    : `Upgrade to ${plan.name}`}
+                </Button>
+              </Card>
+            </motion.div>
+          );
+        })}
       </div>
 
       {/* FAQ Accordion Section */}

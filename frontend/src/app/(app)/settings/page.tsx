@@ -14,10 +14,16 @@ import {
   Moon,
   Monitor,
   Sparkles,
+  CreditCard,
+  Zap,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 import { Card, Badge, Button, Avatar } from "@/components/ui";
 import { api } from "@/lib/api";
+import { useAuthStore, isUserSubscribed } from "@/lib/authStore";
 import { useTheme, ThemeMode } from "@/lib/theme";
+import Link from "next/link";
 
 export default function SettingsPage() {
   // Tabs
@@ -41,6 +47,11 @@ export default function SettingsPage() {
   const [labAlerts, setLabAlerts] = useState(true);
   const [marketing, setMarketing] = useState(false);
 
+  // Subscription state
+  const { user, fetchUser } = useAuthStore();
+  const [subLoading, setSubLoading] = useState(false);
+  const [subMessage, setSubMessage] = useState<string | null>(null);
+
   // Load profile on mount
   useEffect(() => {
     api.getMe()
@@ -53,6 +64,23 @@ export default function SettingsPage() {
       })
       .catch((err) => console.error("Error fetching profile settings:", err));
   }, []);
+
+  const handleCancelSub = async () => {
+    if (!confirm("Are you sure you want to cancel your subscription? Courses and sandbox labs will be locked.")) {
+      return;
+    }
+    setSubLoading(true);
+    setSubMessage(null);
+    try {
+      const res = await api.cancelSubscription();
+      await fetchUser(true);
+      setSubMessage(res.message || "Subscription canceled.");
+    } catch (err: any) {
+      setSubMessage("Error canceling subscription: " + err.message);
+    } finally {
+      setSubLoading(false);
+    }
+  };
 
   // Profile Saving
   const handleSaveProfile = (e: React.FormEvent) => {
@@ -147,6 +175,7 @@ export default function SettingsPage() {
         <div className="lg:col-span-3 flex lg:flex-col gap-1 overflow-x-auto pb-2 lg:pb-0 scrollbar-none">
           {[
             { id: "profile", label: "My Profile", icon: User },
+            { id: "subscription", label: "Subscription & Billing", icon: CreditCard },
             { id: "appearance", label: "Appearance & Theme", icon: Palette },
             { id: "security", label: "Security & MFA", icon: Shield },
             { id: "notifications", label: "Notifications", icon: Bell },
@@ -511,6 +540,88 @@ export default function SettingsPage() {
                   Save Preferences
                 </Button>
               </div>
+            </Card>
+          )}
+
+          {/* SUBSCRIPTION & BILLING TAB */}
+          {activeTab === "subscription" && (
+            <Card padding="lg" className="space-y-6">
+              <div className="border-b border-border pb-4 flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-bold text-foreground">Subscription &amp; Entitlements</h3>
+                  <p className="text-xs text-foreground-secondary">Manage your membership plan and access to courses &amp; sandbox labs.</p>
+                </div>
+                <Badge
+                  variant={isUserSubscribed(user) ? "success" : "warning"}
+                  size="sm"
+                  className="font-mono uppercase text-[10px]"
+                >
+                  {isUserSubscribed(user) ? "Active Subscription" : "Free Plan"}
+                </Badge>
+              </div>
+
+              {subMessage && (
+                <div className="p-3.5 bg-primary/10 border border-primary/30 rounded-xl text-primary text-xs font-mono font-bold">
+                  {subMessage}
+                </div>
+              )}
+
+              {/* Current Tier Overview Box */}
+              <div className="p-5 rounded-2xl bg-surface-elevated border border-border space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <span className="text-[10px] font-bold text-foreground-muted uppercase tracking-wider">Current Membership</span>
+                    <h4 className="text-xl font-extrabold text-foreground capitalize flex items-center gap-2">
+                      <CreditCard className="w-5 h-5 text-primary" />
+                      CyberLearn {user?.subscription_tier || (user?.role === "pro_member" ? "Pro" : user?.role === "premium_member" ? "Premium" : "Free")}
+                    </h4>
+                  </div>
+                  <Link href="/pricing">
+                    <Button variant="primary" size="sm" className="font-bold">
+                      <Zap className="w-3.5 h-3.5 mr-1" />
+                      <span>{isUserSubscribed(user) ? "Change Plan" : "Upgrade to Pro"}</span>
+                    </Button>
+                  </Link>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-border/60">
+                  <div className="flex items-center gap-2 text-xs text-foreground-secondary">
+                    <CheckCircle2 className={`w-4 h-4 ${isUserSubscribed(user) ? "text-success" : "text-foreground-muted"}`} />
+                    <span>Interactive Course Videos &amp; Quizzes: <strong>{isUserSubscribed(user) ? "Unlocked" : "Locked"}</strong></span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-foreground-secondary">
+                    <CheckCircle2 className={`w-4 h-4 ${isUserSubscribed(user) ? "text-success" : "text-foreground-muted"}`} />
+                    <span>Docker CTF Sandbox Labs: <strong>{isUserSubscribed(user) ? "Unlocked" : "Locked"}</strong></span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-foreground-secondary">
+                    <CheckCircle2 className={`w-4 h-4 ${isUserSubscribed(user) ? "text-success" : "text-foreground-muted"}`} />
+                    <span>AI Cyber Coach &amp; Hint Unlocks: <strong>{isUserSubscribed(user) ? "Full Access" : "Basic"}</strong></span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-foreground-secondary">
+                    <CheckCircle2 className={`w-4 h-4 ${isUserSubscribed(user) ? "text-success" : "text-foreground-muted"}`} />
+                    <span>Verified Course Credentials: <strong>{isUserSubscribed(user) ? "Included" : "Locked"}</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cancellation Action */}
+              {isUserSubscribed(user) && user?.role !== "admin" && user?.role !== "instructor" && (
+                <div className="pt-4 border-t border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-bold text-error">Cancel Subscription</p>
+                    <p className="text-[11px] text-foreground-muted">Revert account back to Free tier and lock course content &amp; sandbox labs.</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={subLoading}
+                    onClick={handleCancelSub}
+                    className="text-error border-error/30 hover:bg-error/10 hover:border-error"
+                  >
+                    {subLoading ? "Canceling..." : "Cancel Subscription"}
+                  </Button>
+                </div>
+              )}
             </Card>
           )}
         </div>

@@ -204,6 +204,10 @@ export const api = {
     method: "POST",
     body: JSON.stringify({ plan_name: planName, billing_period: billingPeriod }),
   }),
+  getSubscriptionStatus: () => apiFetch("/billing/status"),
+  cancelSubscription: () => apiFetch("/billing/cancel", {
+    method: "POST",
+  }),
 
   // Human & NID Verification
   submitNidVerification: (data: { nid_number: string; nid_front_image?: string; nid_back_image?: string }) => apiFetch("/users/me/verify-nid", {

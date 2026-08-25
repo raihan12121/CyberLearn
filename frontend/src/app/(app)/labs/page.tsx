@@ -11,9 +11,13 @@ import {
   ChevronRight,
   Filter,
   Flame,
+  Lock,
 } from "lucide-react";
 import { Card, Badge, Button } from "@/components/ui";
 import { api } from "@/lib/api";
+import { useAuthStore, isUserSubscribed } from "@/lib/authStore";
+import SubscriptionBanner from "@/components/subscription/SubscriptionBanner";
+import SubscriptionPaywallModal from "@/components/subscription/SubscriptionPaywallModal";
 
 const categories = ["All", "Linux basics", "Web Security", "Networking", "Privilege Escalation", "AI Security"];
 
@@ -149,9 +153,14 @@ const difficultyColor: Record<string, "success" | "primary" | "warning" | "dange
 
 export default function LabsCatalogPage() {
   const router = useRouter();
+  const { user } = useAuthStore();
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [labList, setLabList] = useState(labs);
+  const [paywallModalOpen, setPaywallModalOpen] = useState(false);
+  const [selectedLabForPaywall, setSelectedLabForPaywall] = useState<string | undefined>(undefined);
+
+  const subscribed = isUserSubscribed(user);
 
   useEffect(() => {
     api.getLabs()
@@ -181,6 +190,15 @@ export default function LabsCatalogPage() {
     return matchCategory && matchSearch;
   });
 
+  const handleLaunchLab = (labId: string, labTitle: string) => {
+    if (!subscribed) {
+      setSelectedLabForPaywall(labTitle);
+      setPaywallModalOpen(true);
+      return;
+    }
+    router.push(`/labs/${labId}`);
+  };
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
@@ -196,11 +214,20 @@ export default function LabsCatalogPage() {
             <Terminal className="w-5 h-5 text-accent" />
             <div>
               <p className="text-xs text-foreground-secondary">Docker Containers Running</p>
-              <p className="text-sm font-semibold text-foreground">0 active</p>
+              <p className="text-sm font-semibold text-foreground">
+                {subscribed ? "Sandbox Ready" : "Subscription Required"}
+              </p>
             </div>
           </Card>
         </div>
       </motion.div>
+
+      {/* Subscription Banner for Free users */}
+      {!subscribed && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+          <SubscriptionBanner type="labs" />
+        </motion.div>
+      )}
 
       {/* Filters and Search */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
@@ -240,13 +267,21 @@ export default function LabsCatalogPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
           >
-            <Card hover padding="lg" className="h-full flex flex-col justify-between group">
+            <Card hover padding="lg" className="h-full flex flex-col justify-between group relative">
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <Badge variant="primary" size="sm">{lab.category}</Badge>
-                  <Badge variant={difficultyColor[lab.difficulty]} size="sm">
-                    {lab.difficulty}
-                  </Badge>
+                  <div className="flex items-center gap-1.5">
+                    {!subscribed && (
+                      <Badge variant="primary" size="sm" className="gap-1 text-[10px] font-bold">
+                        <Lock className="w-3 h-3" />
+                        PRO
+                      </Badge>
+                    )}
+                    <Badge variant={difficultyColor[lab.difficulty]} size="sm">
+                      {lab.difficulty}
+                    </Badge>
+                  </div>
                 </div>
 
                 <h3 className="text-lg font-bold text-foreground mb-2 leading-snug group-hover:text-primary transition-colors">
@@ -271,18 +306,25 @@ export default function LabsCatalogPage() {
 
                 <Button
                   fullWidth
-                  onClick={() => router.push(`/labs/${lab.id}`)}
-                  variant="outline"
-                  className="group-hover:bg-primary group-hover:text-white transition-all duration-200"
-                  icon={<Terminal className="w-4 h-4" />}
+                  onClick={() => handleLaunchLab(lab.id, lab.title)}
+                  variant={!subscribed ? "outline" : "primary"}
+                  className={subscribed ? "group-hover:bg-primary group-hover:text-white transition-all duration-200" : ""}
+                  icon={!subscribed ? <Lock className="w-4 h-4 text-primary" /> : <Terminal className="w-4 h-4" />}
                 >
-                  Launch Lab
+                  {!subscribed ? "Unlock Lab (Pro)" : "Launch Lab"}
                 </Button>
               </div>
             </Card>
           </motion.div>
         ))}
       </div>
+
+      <SubscriptionPaywallModal
+        isOpen={paywallModalOpen}
+        onClose={() => setPaywallModalOpen(false)}
+        title="Unlock Cloud Sandbox Labs"
+        resourceName={selectedLabForPaywall}
+      />
     </div>
   );
 }
