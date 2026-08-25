@@ -44,6 +44,7 @@ def register_user(
         role="student",
         is_verified=False,
         verification_token=token,
+        is_onboarded=True,
         xp=0,
         streak_days=0
     )

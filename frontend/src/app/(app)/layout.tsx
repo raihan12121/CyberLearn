@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Sidebar, TopNav } from "@/components/layout";
 import { OnboardingModal } from "@/components/OnboardingModal";
-import { getAuthToken, removeAuthToken } from "@/lib/api";
+import { api, getAuthToken, removeAuthToken } from "@/lib/api";
 import { useAuthStore } from "@/lib/authStore";
 import { Shield } from "lucide-react";
 
@@ -28,29 +28,48 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      // If user profile is already in memory, set authenticated immediately for seamless navigation
+      if (user) {
+        setIsAuthenticated(true);
+        setIsCheckingAuth(false);
+      }
+
       try {
-        const currentUser = await fetchUser(true);
-        if (!currentUser) {
+        const currentUser = await fetchUser(false);
+        if (currentUser) {
+          setIsAuthenticated(true);
+        } else if (!user) {
+          // Double check with direct getMe call
+          const freshUser = await api.getMe().catch(() => null);
+          if (freshUser) {
+            useAuthStore.getState().setUser(freshUser);
+            setIsAuthenticated(true);
+          } else {
+            removeAuthToken();
+            setIsAuthenticated(false);
+            const redirectUrl = pathname ? `/login?redirect=${encodeURIComponent(pathname)}` : "/login";
+            router.replace(redirectUrl);
+          }
+        }
+      } catch (err: any) {
+        // Only wipe token if server definitively rejected with 401 Unauthorized
+        const msg = String(err?.message || "").toLowerCase();
+        if (msg.includes("401") || msg.includes("unauthorized") || msg.includes("invalid token")) {
           removeAuthToken();
           setIsAuthenticated(false);
-          setIsCheckingAuth(false);
           const redirectUrl = pathname ? `/login?redirect=${encodeURIComponent(pathname)}` : "/login";
           router.replace(redirectUrl);
-          return;
+        } else {
+          // Transient network issue: preserve session and allow page rendering
+          setIsAuthenticated(true);
         }
-        setIsAuthenticated(true);
-      } catch {
-        removeAuthToken();
-        setIsAuthenticated(false);
-        const redirectUrl = pathname ? `/login?redirect=${encodeURIComponent(pathname)}` : "/login";
-        router.replace(redirectUrl);
       } finally {
         setIsCheckingAuth(false);
       }
     };
 
     checkAuth();
-  }, [pathname, router, fetchUser]);
+  }, [pathname, router, fetchUser, user]);
 
   if (isCheckingAuth || !isAuthenticated) {
     return (

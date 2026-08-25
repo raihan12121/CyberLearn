@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
@@ -17,8 +17,19 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Auto-fill saved email on mount
+  useEffect(() => {
+    try {
+      const savedEmail = localStorage.getItem("remember_email");
+      if (savedEmail) {
+        setEmail(savedEmail);
+      }
+    } catch {}
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,6 +38,12 @@ function LoginForm() {
     setLoading(true);
 
     try {
+      if (rememberMe) {
+        try { localStorage.setItem("remember_email", email); } catch {}
+      } else {
+        try { localStorage.removeItem("remember_email"); } catch {}
+      }
+
       // Authenticate with Firebase Auth
       await signInWithEmailFirebase(email, password).catch(() => {
         // Continue to backend auth
@@ -164,10 +181,13 @@ function LoginForm() {
           )}
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form id="cyberlearn-login-form" method="post" action="#" onSubmit={handleSubmit} autoComplete="on" className="space-y-4">
             <Input
-              label="Email"
+              id="email"
+              name="email"
+              label="Email Address"
               type="email"
+              autoComplete="username email"
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -177,8 +197,11 @@ function LoginForm() {
 
             <div className="space-y-1.5">
               <Input
+                id="password"
+                name="password"
                 label="Password"
                 type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -206,7 +229,9 @@ function LoginForm() {
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
-                  className="w-4 h-4 rounded bg-surface-elevated border-border text-primary focus:ring-primary accent-primary"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 rounded bg-surface-elevated border-border text-primary focus:ring-primary accent-primary cursor-pointer"
                 />
                 <span className="text-sm text-foreground-secondary">Remember me</span>
               </label>

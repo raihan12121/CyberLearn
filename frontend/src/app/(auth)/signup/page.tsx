@@ -159,10 +159,13 @@ export default function SignupPage() {
           </div>
 
           {/* Form */}
-          <form className="space-y-4" onSubmit={handleSubmit}>
+          <form id="cyberlearn-signup-form" method="post" action="#" className="space-y-4" onSubmit={handleSubmit} autoComplete="on">
             <Input
+              id="name"
+              name="name"
               label="Full Name"
               type="text"
+              autoComplete="name"
               required
               placeholder="John Doe"
               value={name}
@@ -170,8 +173,11 @@ export default function SignupPage() {
               icon={<User className="w-4 h-4" />}
             />
             <Input
-              label="Email"
+              id="email"
+              name="email"
+              label="Email Address"
               type="email"
+              autoComplete="username email"
               required
               placeholder="you@example.com"
               value={email}
@@ -179,8 +185,11 @@ export default function SignupPage() {
               icon={<Mail className="w-4 h-4" />}
             />
             <Input
+              id="password"
+              name="password"
               label="Password"
               type={showPassword ? "text" : "password"}
+              autoComplete="new-password"
               required
               placeholder="Create a password"
               value={password}

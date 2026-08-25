@@ -22,6 +22,7 @@ import {
   Flame,
   Binary,
   Code2,
+  X,
 } from "lucide-react";
 import { Button, Card, Badge } from "@/components/ui";
 import { api } from "@/lib/api";
@@ -196,6 +197,18 @@ export function OnboardingModal() {
     }
   };
 
+  const handleSkip = async () => {
+    try {
+      const updatedUser = await api.updateProfile({ is_onboarded: true });
+      setUser(updatedUser);
+      await fetchUser(true);
+    } catch {
+      if (user) {
+        setUser({ ...user, is_onboarded: true });
+      }
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl">
       <motion.div
@@ -234,6 +247,16 @@ export function OnboardingModal() {
               </h2>
             </div>
           </div>
+
+          <button
+            type="button"
+            onClick={handleSkip}
+            className="px-3 py-1.5 rounded-xl text-foreground-muted hover:text-foreground hover:bg-surface border border-border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+            title="Skip setup and go to Dashboard"
+          >
+            <span>Skip</span>
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
 
         {/* Modal Body */}

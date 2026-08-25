@@ -70,6 +70,8 @@ def run_auto_migrations(engine):
                 for col_name, col_type in new_user_cols:
                     if col_name not in existing_user_cols:
                         conn.execute(text(f"ALTER TABLE users ADD COLUMN {col_name} {col_type}"))
+                conn.execute(text("UPDATE users SET is_onboarded = 1 WHERE is_onboarded IS NULL OR is_onboarded = 0"))
+                conn.commit()
 
                 # Check certificates table columns in SQLite
                 res_cert = conn.execute(text("PRAGMA table_info(certificates)")).fetchall()
@@ -123,11 +125,16 @@ def run_auto_migrations(engine):
                     ("verified_at", "TIMESTAMPTZ"),
                     ("subscription_tier", "VARCHAR(50) DEFAULT 'free'"),
                     ("subscription_status", "VARCHAR(20) DEFAULT 'inactive'"),
-                    ("subscription_expires_at", "TIMESTAMPTZ")
+                    ("subscription_expires_at", "TIMESTAMPTZ"),
+                    ("is_onboarded", "BOOLEAN DEFAULT TRUE"),
+                    ("bio", "TEXT"),
+                    ("primary_focus", "VARCHAR(100)"),
+                    ("experience_level", "VARCHAR(50)")
                 ]
                 for col_name, col_type in new_user_cols:
                     if col_name not in existing_user_cols:
                         conn.execute(text(f"ALTER TABLE users ADD COLUMN IF NOT EXISTS {col_name} {col_type}"))
+                conn.commit()
 
                 # Check certificates table in PostgreSQL
                 res_cert = conn.execute(text(

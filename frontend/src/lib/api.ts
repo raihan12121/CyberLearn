@@ -1,25 +1,61 @@
-// Retrieve auth token from localStorage
+// Retrieve auth token from localStorage, sessionStorage, or persistent cookie
 export function getAuthToken(): string | null {
   if (typeof window !== "undefined") {
-    const token = localStorage.getItem("token");
-    if (!token || token === "null" || token === "undefined") return null;
-    return token;
+    // 1. Check localStorage
+    try {
+      const local = localStorage.getItem("token");
+      if (local && local !== "null" && local !== "undefined" && local.trim().length > 10) {
+        return local.trim();
+      }
+    } catch {}
+
+    // 2. Check sessionStorage
+    try {
+      const session = sessionStorage.getItem("token");
+      if (session && session !== "null" && session !== "undefined" && session.trim().length > 10) {
+        const cleanSession = session.trim();
+        try { localStorage.setItem("token", cleanSession); } catch {}
+        return cleanSession;
+      }
+    } catch {}
+
+    // 3. Check document.cookie fallback
+    try {
+      const match = document.cookie.match(/(?:^|; )token=([^;]*)/);
+      if (match && match[1]) {
+        const cookieToken = decodeURIComponent(match[1]).trim();
+        if (cookieToken && cookieToken !== "null" && cookieToken !== "undefined" && cookieToken.length > 10) {
+          try { localStorage.setItem("token", cookieToken); } catch {}
+          return cookieToken;
+        }
+      }
+    } catch {}
   }
   return null;
 }
 
-// Save auth token to localStorage
+// Save auth token to localStorage, sessionStorage, and persistent 30-day cookie
 export function setAuthToken(token: string) {
-  if (typeof window !== "undefined") {
-    localStorage.setItem("token", token);
+  if (typeof window !== "undefined" && token) {
+    const clean = token.trim();
+    try { localStorage.setItem("token", clean); } catch {}
+    try { sessionStorage.setItem("token", clean); } catch {}
+    try {
+      const maxAge = 30 * 24 * 60 * 60; // 30 days
+      document.cookie = `token=${encodeURIComponent(clean)}; path=/; max-age=${maxAge}; SameSite=Lax;`;
+    } catch {}
     window.dispatchEvent(new Event("auth_token_changed"));
   }
 }
 
-// Clear auth token
+// Clear auth token across all storages
 export function removeAuthToken() {
   if (typeof window !== "undefined") {
-    localStorage.removeItem("token");
+    try { localStorage.removeItem("token"); } catch {}
+    try { sessionStorage.removeItem("token"); } catch {}
+    try {
+      document.cookie = "token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax;";
+    } catch {}
     window.dispatchEvent(new Event("auth_token_changed"));
   }
 }
