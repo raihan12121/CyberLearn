@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from ..database import get_db
 from .. import models, schemas
-from ..auth.dependencies import get_current_user, get_optional_user, has_active_subscription, require_subscription
+from ..auth.dependencies import get_current_user, get_optional_user, has_active_subscription, require_subscription, has_course_access
 
 router = APIRouter(
     prefix="/courses",
@@ -307,12 +307,28 @@ def seed_database_if_empty(db: Session):
 COURSE_XP_MAP = {c["id"]: c.get("xp", 1200) for c in SEED_COURSES}
 
 @router.get("", response_model=List[schemas.CourseResponse])
-def get_courses(db: Session = Depends(get_db)):
+def get_courses(
+    db: Session = Depends(get_db),
+    current_user: Optional[models.User] = Depends(get_optional_user)
+):
     courses = db.query(models.Course).filter(models.Course.is_published == True).all()
+    
+    purchased_ids = set()
+    if current_user:
+        purchases = db.query(models.CoursePurchase.course_id).filter(models.CoursePurchase.user_id == current_user.id).all()
+        purchased_ids = {p[0] for p in purchases}
+        
+    is_sub = has_active_subscription(current_user)
+    is_staff = current_user is not None and current_user.role in ["admin", "instructor"]
+
     results = []
     for c in courses:
         res = schemas.CourseResponse.model_validate(c)
+        res.price = float(c.price or 49.00)
         res.xp = COURSE_XP_MAP.get(c.id, 1200)
+        res.is_purchased = c.id in purchased_ids
+        res.has_access = is_sub or res.is_purchased or is_staff
+        res.access_type = "lifetime" if res.is_purchased else "subscription" if is_sub else "staff" if is_staff else "none"
         results.append(res)
     return results
 
@@ -327,8 +343,15 @@ def get_user_progress(
 def update_progress(
     progress_in: schemas.ProgressUpdate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(require_subscription)
+    current_user: models.User = Depends(get_current_user)
 ):
+    # Check if user has access to this specific course (via lifetime purchase, active subscription, or staff)
+    if not has_course_access(current_user, progress_in.course_id, db):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Subscription required: Course access required. Please purchase lifetime access to this course ($49) or upgrade to an All-Access subscription at /pricing."
+        )
+
     # Check if course and lesson exist
     course = db.query(models.Course).filter(models.Course.id == progress_in.course_id).first()
     lesson = db.query(models.Lesson).filter(models.Lesson.id == progress_in.lesson_id).first()
@@ -382,21 +405,61 @@ def get_course(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Course with ID '{course_id}' was not found."
         )
-    res = schemas.CourseResponse.model_validate(course)
-    res.xp = COURSE_XP_MAP.get(course.id, 1200)
+        
+    is_purchased = False
+    if current_user:
+        is_purchased = db.query(models.CoursePurchase).filter(
+            models.CoursePurchase.user_id == current_user.id,
+            models.CoursePurchase.course_id == course.id
+        ).first() is not None
 
-    # Subscription check: redact video URLs and reading/quiz content if unpaid
-    is_subscribed = has_active_subscription(current_user)
-    if not is_subscribed:
-        for lesson in res.lessons:
-            lesson.is_locked = True
-            lesson.video_url = None
-            lesson.content = "Subscription Required: Please upgrade to a Pro or Premium plan to access this lesson material and assessment."
-    else:
-        for lesson in res.lessons:
-            lesson.is_locked = False
+    has_access = has_course_access(current_user, course.id, db)
+    is_sub = has_active_subscription(current_user)
+    is_staff = current_user is not None and current_user.role in ["admin", "instructor"]
 
-    return res
+    res_lessons = []
+    for l in sorted(course.lessons, key=lambda x: x.sort_order or 0):
+        if not has_access:
+            res_lessons.append(schemas.LessonResponse(
+                id=l.id,
+                course_id=l.course_id,
+                title=l.title,
+                content_type=l.content_type,
+                duration=l.duration,
+                sort_order=l.sort_order,
+                is_locked=True,
+                video_url=None,
+                content="Subscription Required: Buy lifetime access to this course ($49) or subscribe to an All-Access pass to unlock lesson videos and quizzes."
+            ))
+        else:
+            res_lessons.append(schemas.LessonResponse(
+                id=l.id,
+                course_id=l.course_id,
+                title=l.title,
+                content_type=l.content_type,
+                duration=l.duration,
+                sort_order=l.sort_order,
+                is_locked=False,
+                video_url=l.video_url,
+                content=l.content
+            ))
+
+    return schemas.CourseResponse(
+        id=course.id,
+        title=course.title,
+        description=course.description,
+        difficulty=course.difficulty,
+        category=course.category,
+        estimated_duration=course.estimated_duration,
+        thumbnail_url=course.thumbnail_url,
+        is_published=course.is_published,
+        price=float(course.price or 49.00),
+        xp=COURSE_XP_MAP.get(course.id, 1200),
+        lessons=res_lessons,
+        is_purchased=is_purchased,
+        has_access=has_access,
+        access_type="lifetime" if is_purchased else "subscription" if is_sub else "staff" if is_staff else "none"
+    )
 
 import json
 
@@ -405,13 +468,20 @@ def submit_quiz_assessment(
     lesson_id: str,
     submission: schemas.QuizSubmissionRequest,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(require_subscription)
+    current_user: models.User = Depends(get_current_user)
 ):
     lesson = db.query(models.Lesson).filter(models.Lesson.id == lesson_id).first()
     if not lesson:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Lesson with ID '{lesson_id}' was not found."
+        )
+        
+    # Check if user has access to this lesson's course
+    if not has_course_access(current_user, lesson.course_id, db):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Subscription required: Course access required. Please purchase lifetime access to this course ($49) or upgrade to an All-Access subscription at /pricing."
         )
         
     if lesson.content_type != "quiz":

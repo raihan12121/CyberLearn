@@ -27,17 +27,45 @@ PLAN_BASE_PRICES = {
     "free": {"monthly": 0.00, "annually": 0.00},
 }
 
-def calculate_pricing(plan_name: str, billing_period: str, promo_code: Optional[str] = None):
-    plan_key = plan_name.lower()
-    period_key = billing_period.lower()
-    
-    if plan_key not in PLAN_BASE_PRICES:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid plan name '{plan_name}'."
-        )
+def calculate_pricing(
+    purchase_type: str = "subscription",
+    plan_name: str = "Pro",
+    billing_period: str = "monthly",
+    duration_months: int = 1,
+    course_price: float = 49.00,
+    promo_code: Optional[str] = None
+):
+    if purchase_type == "course_lifetime":
+        subtotal = float(course_price)
+    else:
+        plan_key = (plan_name or "pro").lower()
+        if plan_key not in PLAN_BASE_PRICES:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid plan name '{plan_name}'."
+            )
+            
+        period_key = (billing_period or "monthly").lower()
+        dur = max(1, duration_months or 1)
         
-    subtotal = PLAN_BASE_PRICES[plan_key].get(period_key, PLAN_BASE_PRICES[plan_key]["monthly"])
+        if period_key == "annually" or dur == 12:
+            subtotal = PLAN_BASE_PRICES[plan_key]["annually"]
+        else:
+            monthly_rate = PLAN_BASE_PRICES[plan_key]["monthly"]
+            if dur == 1:
+                subtotal = monthly_rate
+            elif dur == 2:
+                # 2 months bundle discount ($2 off for Pro, $4 off for Premium)
+                subtotal = (monthly_rate * 2) - (2.00 if plan_key == "pro" else 4.00)
+            elif dur == 3:
+                # 3 months bundle discount ($6 off for Pro, $12 off for Premium)
+                subtotal = (monthly_rate * 3) - (6.00 if plan_key == "pro" else 12.00)
+            elif dur == 6:
+                # 6 months bundle discount ($14 off for Pro, $28 off for Premium)
+                subtotal = (monthly_rate * 6) - (14.00 if plan_key == "pro" else 28.00)
+            else:
+                subtotal = monthly_rate * dur
+                
     discount_amount = 0.00
     discount_pct = 0.00
     
@@ -49,7 +77,7 @@ def calculate_pricing(plan_name: str, billing_period: str, promo_code: Optional[
             
     total_paid = max(0.00, round(subtotal - discount_amount, 2))
     return {
-        "subtotal": subtotal,
+        "subtotal": round(subtotal, 2),
         "discount_amount": discount_amount,
         "discount_pct": discount_pct,
         "tax_amount": 0.00,
@@ -70,9 +98,12 @@ def detect_card_brand(card_num: str) -> str:
 
 
 @router.post("/validate-promo", response_model=schemas.PromoValidationResponse)
-def validate_promo_code(request: schemas.PromoValidationRequest):
+def validate_promo_code(
+    request: schemas.PromoValidationRequest,
+    db: Session = Depends(get_db)
+):
     """
-    Validate a discount promotional code against plan and billing period.
+    Validate a discount promotional code against plan, duration, or lifetime course.
     """
     code_upper = request.promo_code.strip().upper()
     if code_upper not in PROMO_CODES:
@@ -81,8 +112,21 @@ def validate_promo_code(request: schemas.PromoValidationRequest):
             detail=f"Invalid or expired promo code '{request.promo_code}'."
         )
         
+    course_price = 49.00
+    if request.purchase_type == "course_lifetime" and request.course_id:
+        course = db.query(models.Course).filter(models.Course.id == request.course_id).first()
+        if course and course.price is not None:
+            course_price = float(course.price)
+            
     promo = PROMO_CODES[code_upper]
-    pricing = calculate_pricing(request.plan_name, request.billing_period, code_upper)
+    pricing = calculate_pricing(
+        purchase_type=request.purchase_type,
+        plan_name=request.plan_name or "Pro",
+        billing_period=request.billing_period or "monthly",
+        duration_months=request.duration_months or 1,
+        course_price=course_price,
+        promo_code=code_upper
+    )
     
     return schemas.PromoValidationResponse(
         valid=True,
@@ -102,16 +146,42 @@ def process_payment(
     current_user: models.User = Depends(get_current_user)
 ):
     """
-    Process realistic payment, validate card or payment token, generate digital invoice, and activate subscription.
+    Process realistic payment for all-access subscriptions or lifetime course purchases.
     """
-    valid_plans = ["Pro", "Premium", "Free"]
-    if request.plan_name not in valid_plans:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid plan '{request.plan_name}'. Must be one of: {', '.join(valid_plans)}"
-        )
-        
-    pricing = calculate_pricing(request.plan_name, request.billing_period, request.promo_code)
+    purchase_type = request.purchase_type or "subscription"
+    
+    target_course = None
+    course_price = 49.00
+    if purchase_type == "course_lifetime":
+        if not request.course_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Course ID is required for lifetime course purchase."
+            )
+        target_course = db.query(models.Course).filter(models.Course.id == request.course_id).first()
+        if not target_course:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Target course with ID '{request.course_id}' was not found."
+            )
+        if target_course.price is not None:
+            course_price = float(target_course.price)
+    else:
+        valid_plans = ["Pro", "Premium", "Free"]
+        if request.plan_name not in valid_plans:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid plan '{request.plan_name}'. Must be one of: {', '.join(valid_plans)}"
+            )
+
+    pricing = calculate_pricing(
+        purchase_type=purchase_type,
+        plan_name=request.plan_name or "Pro",
+        billing_period=request.billing_period or "monthly",
+        duration_months=request.duration_months or 1,
+        course_price=course_price,
+        promo_code=request.promo_code
+    )
     
     card_brand = None
     card_last4 = None
@@ -159,11 +229,71 @@ def process_payment(
             detail=f"Unsupported payment method '{request.payment_method}'."
         )
         
-    # Upgrade user subscription
-    days_to_add = 365 if request.billing_period == "annually" else 30
     now_utc = datetime.now(timezone.utc)
+    invoice_num = f"INV-{now_utc.year}-{random.randint(100000, 999999)}"
+
+    # Handle Course Lifetime Purchase
+    if purchase_type == "course_lifetime" and target_course:
+        # Check if already purchased
+        existing_cp = db.query(models.CoursePurchase).filter(
+            models.CoursePurchase.user_id == current_user.id,
+            models.CoursePurchase.course_id == target_course.id
+        ).first()
+
+        invoice = models.Invoice(
+            invoice_number=invoice_num,
+            user_id=current_user.id,
+            purchase_type="course_lifetime",
+            course_id=target_course.id,
+            plan_tier="lifetime",
+            billing_cycle="lifetime",
+            currency="USD",
+            subtotal=pricing["subtotal"],
+            discount_amount=pricing["discount_amount"],
+            tax_amount=pricing["tax_amount"],
+            total_paid=pricing["total_paid"],
+            payment_method=request.payment_method,
+            card_brand=card_brand,
+            card_last4=card_last4,
+            cardholder_name=request.cardholder_name or current_user.full_name or current_user.email,
+            billing_country=request.billing_country or "United States",
+            billing_zip=request.billing_zip or "10001",
+            promo_code=request.promo_code.upper() if request.promo_code else None,
+            status="paid"
+        )
+        db.add(invoice)
+        db.flush()
+
+        if not existing_cp:
+            course_purchase = models.CoursePurchase(
+                user_id=current_user.id,
+                course_id=target_course.id,
+                purchase_type="lifetime",
+                amount_paid=pricing["total_paid"],
+                invoice_id=invoice.id
+            )
+            db.add(course_purchase)
+
+        db.commit()
+        db.refresh(invoice)
+
+        return {
+            "status": "success",
+            "message": f"Successfully purchased lifetime access to '{target_course.title}'!",
+            "purchase_type": "course_lifetime",
+            "course_id": target_course.id,
+            "course_title": target_course.title,
+            "invoice": schemas.InvoiceResponse.model_validate(invoice),
+            "is_purchased": True,
+            "has_access": True,
+            "access_type": "lifetime"
+        }
+
+    # Handle All-Access Subscription Purchase
+    duration_months = request.duration_months or (12 if request.billing_period == "annually" else 1)
+    days_to_add = 365 if (request.billing_period == "annually" or duration_months == 12) else (duration_months * 30)
     
-    plan_tier_val = request.plan_name.lower()
+    plan_tier_val = (request.plan_name or "pro").lower()
     current_user.subscription_tier = plan_tier_val
     current_user.subscription_status = "active"
     current_user.subscription_expires_at = now_utc + timedelta(days=days_to_add)
@@ -171,13 +301,14 @@ def process_payment(
     if current_user.role not in ["admin", "instructor"]:
         current_user.role = f"{plan_tier_val}_member"
         
-    # Create Invoice Record
-    invoice_num = f"INV-{now_utc.year}-{random.randint(100000, 999999)}"
+    billing_cycle_label = f"{duration_months}-months" if duration_months > 1 and request.billing_period != "annually" else (request.billing_period or "monthly")
+    
     invoice = models.Invoice(
         invoice_number=invoice_num,
         user_id=current_user.id,
+        purchase_type="subscription",
         plan_tier=plan_tier_val,
-        billing_cycle=request.billing_period,
+        billing_cycle=billing_cycle_label,
         currency="USD",
         subtotal=pricing["subtotal"],
         discount_amount=pricing["discount_amount"],
@@ -201,7 +332,8 @@ def process_payment(
     is_sub = has_active_subscription(current_user)
     return {
         "status": "success",
-        "message": f"Payment successfully authorized! CyberLearn {request.plan_name} plan is now active.",
+        "message": f"Payment successfully authorized! CyberLearn {request.plan_name} plan is now active for {duration_months} month(s).",
+        "purchase_type": "subscription",
         "invoice": schemas.InvoiceResponse.model_validate(invoice),
         "user_role": current_user.role,
         "subscription_tier": current_user.subscription_tier,
@@ -262,6 +394,36 @@ def get_invoice_detail(
     return invoice
 
 
+@router.get("/my-courses", response_model=List[schemas.CoursePurchaseResponse])
+def get_my_purchased_courses(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """
+    Get list of individual courses owned permanently via lifetime purchases.
+    """
+    purchases = (
+        db.query(models.CoursePurchase)
+        .filter(models.CoursePurchase.user_id == current_user.id)
+        .order_by(models.CoursePurchase.created_at.desc())
+        .all()
+    )
+    results = []
+    for p in purchases:
+        c_title = p.course.title if p.course else "Cyber Security Course"
+        results.append(schemas.CoursePurchaseResponse(
+            id=p.id,
+            user_id=p.user_id,
+            course_id=p.course_id,
+            course_title=c_title,
+            purchase_type=p.purchase_type,
+            amount_paid=float(p.amount_paid or 0.0),
+            invoice_id=p.invoice_id,
+            created_at=p.created_at
+        ))
+    return results
+
+
 @router.get("/status", response_model=schemas.SubscriptionStatusResponse)
 def get_subscription_status(
     current_user: models.User = Depends(get_current_user)
@@ -304,5 +466,3 @@ def cancel_subscription(
         "subscription_status": "canceled",
         "user_role": current_user.role
     }
-
-

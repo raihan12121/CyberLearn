@@ -102,3 +102,22 @@ def require_subscription(
     return current_user
 
 
+def has_course_access(user: Optional[models.User], course_id: str, db: Session) -> bool:
+    """
+    Checks if a user has access to a specific course either via:
+    1. Staff role (admin, instructor)
+    2. Active All-Access Pro/Premium subscription
+    3. Individual lifetime course purchase (CoursePurchase)
+    """
+    if not user:
+        return False
+    if has_active_subscription(user):
+        return True
+        
+    purchase = db.query(models.CoursePurchase).filter(
+        models.CoursePurchase.user_id == user.id,
+        models.CoursePurchase.course_id == course_id
+    ).first()
+    return purchase is not None
+
+

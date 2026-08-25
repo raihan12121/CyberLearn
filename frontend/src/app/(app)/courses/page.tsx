@@ -115,12 +115,29 @@ const difficultyColor: Record<string, "success" | "primary" | "warning" | "dange
   Expert: "danger",
 };
 
+export interface CourseItem {
+  id: string;
+  title: string;
+  category: string;
+  difficulty: string;
+  duration: string;
+  lessons: number;
+  progress: number;
+  desc: string;
+  image: string;
+  xp: number;
+  price?: number;
+  is_purchased?: boolean;
+  has_access?: boolean;
+  access_type?: string;
+}
+
 export default function CoursesPage() {
   const router = useRouter();
   const { user } = useAuthStore();
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
-  const [courseList, setCourseList] = useState(courses);
+  const [courseList, setCourseList] = useState<CourseItem[]>(courses);
   const [paywallModalOpen, setPaywallModalOpen] = useState(false);
   const [selectedCourseForPaywall, setSelectedCourseForPaywall] = useState<string | undefined>(undefined);
 
@@ -247,16 +264,21 @@ export default function CoursesPage() {
           >
             <Card hover padding="lg" className="h-full flex flex-col justify-between relative">
               <div>
-                {/* Image and difficulty / pro badge */}
+                {/* Image and difficulty / pro / lifetime badge */}
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-4xl">{course.image}</span>
                   <div className="flex items-center gap-1.5">
-                    {!subscribed && (
+                    {course.is_purchased ? (
+                      <Badge variant="success" size="sm" className="gap-1 text-[10px] font-bold">
+                        <Award className="w-3 h-3 text-accent" />
+                        LIFETIME
+                      </Badge>
+                    ) : !subscribed && !course.has_access ? (
                       <Badge variant="primary" size="sm" className="gap-1 text-[10px] font-bold">
                         <Lock className="w-3 h-3" />
-                        PRO
+                        $49 / PRO
                       </Badge>
-                    )}
+                    ) : null}
                     <Badge variant={difficultyColor[course.difficulty]} size="sm">
                       {course.difficulty}
                     </Badge>
@@ -292,7 +314,7 @@ export default function CoursesPage() {
                 </div>
 
                 {/* Progress */}
-                {subscribed && course.progress > 0 && (
+                {(subscribed || course.has_access) && course.progress > 0 && (
                   <div className="mb-4">
                     <ProgressBar value={course.progress} showLabel size="sm" variant="gradient" />
                   </div>
@@ -301,15 +323,15 @@ export default function CoursesPage() {
                 {/* CTA */}
                 <Button
                   fullWidth
-                  onClick={() => handleCourseClick(course.id, course.title)}
-                  variant={!subscribed ? "outline" : course.progress > 0 ? "primary" : "outline"}
-                  icon={!subscribed ? <Lock className="w-4 h-4 text-primary" /> : <ChevronRight className="w-4 h-4" />}
+                  onClick={() => router.push(`/courses/${course.id}`)}
+                  variant={(!subscribed && !course.has_access) ? "outline" : course.progress > 0 ? "primary" : "outline"}
+                  icon={(!subscribed && !course.has_access) ? <Lock className="w-4 h-4 text-primary" /> : <ChevronRight className="w-4 h-4" />}
                 >
-                  {!subscribed
-                    ? "Unlock Course (Pro)"
-                    : course.progress > 0
-                    ? "Continue Course"
-                    : "Start Course"}
+                  {course.is_purchased
+                    ? (course.progress > 0 ? "Continue Lifetime Course" : "Start Course")
+                    : (subscribed || course.has_access)
+                    ? (course.progress > 0 ? "Continue Course" : "Start Course")
+                    : "Unlock Course ($49 / Pro)"}
                 </Button>
               </div>
             </Card>

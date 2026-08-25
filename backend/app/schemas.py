@@ -101,8 +101,12 @@ class CourseBase(BaseModel):
 
 class CourseResponse(CourseBase):
     id: str
+    price: Optional[float] = 49.00
     xp: Optional[int] = 1200
     lessons: List[LessonResponse] = []
+    is_purchased: Optional[bool] = False
+    has_access: Optional[bool] = False
+    access_type: Optional[str] = "none"
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -357,8 +361,11 @@ class ExamSubmissionResponse(BaseModel):
 
 # Billing & Payment Schemas
 class ProcessPaymentRequest(BaseModel):
-    plan_name: str # "Pro" or "Premium"
-    billing_period: str = "monthly" # "monthly" or "annually"
+    purchase_type: str = "subscription" # "subscription" or "course_lifetime"
+    plan_name: Optional[str] = "Pro" # "Pro" or "Premium"
+    billing_period: Optional[str] = "monthly" # "monthly", "annually", or duration
+    duration_months: Optional[int] = 1 # 1, 2, 3, 6, 12
+    course_id: Optional[str] = None
     payment_method: str = "credit_card" # "credit_card", "paypal", "google_pay", "crypto"
     card_number: Optional[str] = None
     card_exp_month: Optional[int] = None
@@ -372,8 +379,11 @@ class ProcessPaymentRequest(BaseModel):
 
 class PromoValidationRequest(BaseModel):
     promo_code: str
-    plan_name: str = "Pro"
-    billing_period: str = "monthly"
+    purchase_type: str = "subscription" # "subscription" or "course_lifetime"
+    plan_name: Optional[str] = "Pro"
+    billing_period: Optional[str] = "monthly"
+    duration_months: Optional[int] = 1
+    course_id: Optional[str] = None
 
 
 class PromoValidationResponse(BaseModel):
@@ -390,8 +400,10 @@ class InvoiceResponse(BaseModel):
     id: str
     invoice_number: str
     user_id: str
-    plan_tier: str
-    billing_cycle: str
+    purchase_type: Optional[str] = "subscription"
+    course_id: Optional[str] = None
+    plan_tier: Optional[str] = None
+    billing_cycle: Optional[str] = None
     currency: str = "USD"
     subtotal: float
     discount_amount: float
@@ -405,6 +417,19 @@ class InvoiceResponse(BaseModel):
     billing_zip: Optional[str] = None
     promo_code: Optional[str] = None
     status: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CoursePurchaseResponse(BaseModel):
+    id: str
+    user_id: str
+    course_id: str
+    course_title: Optional[str] = None
+    purchase_type: str = "lifetime"
+    amount_paid: float
+    invoice_id: Optional[str] = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

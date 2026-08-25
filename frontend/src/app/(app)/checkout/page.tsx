@@ -15,17 +15,19 @@ import {
   BookOpen,
   Award,
   Sparkles,
-  Download,
   Printer,
   ChevronRight,
   HelpCircle,
   Globe,
   Tag,
   Wallet,
+  Clock,
+  Infinity as InfinityIcon,
+  Check,
 } from "lucide-react";
 import { Card, Badge, Button } from "@/components/ui";
 import { api } from "@/lib/api";
-import { useAuthStore, isUserSubscribed } from "@/lib/authStore";
+import { useAuthStore } from "@/lib/authStore";
 import Link from "next/link";
 
 interface PlanConfig {
@@ -40,8 +42,8 @@ interface PlanConfig {
 const PLANS: Record<string, PlanConfig> = {
   pro: {
     name: "Pro",
-    title: "CyberLearn Pro Member",
-    tagline: "Unlocks full course video syllabus, quizzes, and live Docker sandboxes.",
+    title: "CyberLearn Pro All-Access",
+    tagline: "Unlocks every course video, syllabus, quizzes, and live Docker CTF sandboxes.",
     monthlyPrice: 12.00,
     annualPrice: 120.00,
     features: [
@@ -68,17 +70,33 @@ const PLANS: Record<string, PlanConfig> = {
   },
 };
 
+const DURATION_OPTIONS = [
+  { months: 1, label: "1 Month", proPrice: 12.00, premiumPrice: 24.00, discountNote: "Standard monthly" },
+  { months: 2, label: "2 Months", proPrice: 22.00, premiumPrice: 44.00, discountNote: "Save $2 (Popular)" },
+  { months: 3, label: "3 Months (Quarterly)", proPrice: 30.00, premiumPrice: 60.00, discountNote: "Save $6" },
+  { months: 6, label: "6 Months", proPrice: 58.00, premiumPrice: 116.00, discountNote: "Save $14" },
+  { months: 12, label: "12 Months (Annual)", proPrice: 120.00, premiumPrice: 240.00, discountNote: "Best Value (Save $24)" },
+];
+
 function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, fetchUser } = useAuthStore();
 
-  // Plan Selection
+  // Query Params
+  const typeQuery = searchParams.get("type")?.toLowerCase() || (searchParams.get("courseId") ? "course_lifetime" : "subscription");
   const planQuery = searchParams.get("plan")?.toLowerCase() || "pro";
-  const cycleQuery = searchParams.get("cycle")?.toLowerCase() || "monthly";
+  const courseIdQuery = searchParams.get("courseId") || "";
+  const monthsQuery = parseInt(searchParams.get("months") || "1", 10);
 
+  // Mode Selection
+  const [purchaseType, setPurchaseType] = useState<"subscription" | "course_lifetime">(
+    typeQuery === "course_lifetime" ? "course_lifetime" : "subscription"
+  );
   const [selectedPlanKey, setSelectedPlanKey] = useState<string>(PLANS[planQuery] ? planQuery : "pro");
-  const [billingCycle, setBillingCycle] = useState<"monthly" | "annually">(cycleQuery === "annually" ? "annually" : "monthly");
+  const [durationMonths, setDurationMonths] = useState<number>(monthsQuery || 1);
+  const [targetCourse, setTargetCourse] = useState<any | null>(null);
+  const [loadingCourse, setLoadingCourse] = useState(false);
 
   const plan = PLANS[selectedPlanKey] || PLANS.pro;
 
@@ -106,10 +124,32 @@ function CheckoutContent() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStep, setProcessingStep] = useState<string>("Initializing secure channel...");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successInvoice, setSuccessInvoice] = useState<any | null>(null);
+  const [successResult, setSuccessResult] = useState<any | null>(null);
 
-  // Base and Discount Calculations
-  const basePrice = billingCycle === "monthly" ? plan.monthlyPrice : plan.annualPrice;
+  // Load Course detail if purchasing course lifetime
+  useEffect(() => {
+    if (courseIdQuery) {
+      setLoadingCourse(true);
+      api.getCourse(courseIdQuery)
+        .then((data) => {
+          setTargetCourse(data);
+          setPurchaseType("course_lifetime");
+        })
+        .catch(() => {})
+        .finally(() => setLoadingCourse(false));
+    }
+  }, [courseIdQuery]);
+
+  // Compute Base Price
+  const getBasePrice = () => {
+    if (purchaseType === "course_lifetime") {
+      return targetCourse?.price ? Number(targetCourse.price) : 49.00;
+    }
+    const opt = DURATION_OPTIONS.find((d) => d.months === durationMonths) || DURATION_OPTIONS[0];
+    return selectedPlanKey === "premium" ? opt.premiumPrice : opt.proPrice;
+  };
+
+  const basePrice = getBasePrice();
   const discountAmount = appliedPromo ? Number((basePrice * (appliedPromo.discount_pct / 100)).toFixed(2)) : 0;
   const finalPrice = Math.max(0, Number((basePrice - discountAmount).toFixed(2)));
 
@@ -148,7 +188,13 @@ function CheckoutContent() {
     setPromoError(null);
 
     try {
-      const res = await api.validatePromoCode(code, plan.name, billingCycle);
+      const res = await api.validatePromoCode({
+        promo_code: code,
+        purchase_type: purchaseType,
+        plan_name: plan.name,
+        duration_months: durationMonths,
+        course_id: targetCourse?.id,
+      });
       setAppliedPromo({
         code: res.promo_code,
         discount_pct: res.discount_pct,
@@ -190,16 +236,19 @@ function CheckoutContent() {
     const expYear = 2000 + (parseInt(expYearStr, 10) || 28);
 
     try {
-      setProcessingStep("Verifying 256-bit TLS connection & payment credentials...");
+      setProcessingStep("Verifying 256-bit TLS connection & authorization tokens...");
       await new Promise((r) => setTimeout(r, 600));
 
-      setProcessingStep("Authorizing transaction with card network...");
-      await new Promise((r) => setTimeout(r, 700));
+      setProcessingStep("Conducting 3D Secure bank authorization handshake...");
+      await new Promise((r) => setTimeout(r, 600));
 
-      setProcessingStep("Minting subscription entitlements and unlocking clusters...");
+      setProcessingStep("Minting entitlements & generating digital invoice receipt...");
       const res = await api.processPayment({
+        purchase_type: purchaseType,
         plan_name: plan.name,
-        billing_period: billingCycle,
+        duration_months: durationMonths,
+        course_id: purchaseType === "course_lifetime" ? (targetCourse?.id || courseIdQuery) : undefined,
+        billing_period: durationMonths === 12 ? "annually" : `${durationMonths}-months`,
         payment_method: paymentMethod,
         card_number: paymentMethod === "credit_card" ? cardNumber.replace(/\s+/g, "") : undefined,
         card_exp_month: paymentMethod === "credit_card" ? expMonth : undefined,
@@ -212,15 +261,19 @@ function CheckoutContent() {
       });
 
       await fetchUser(true);
-      setSuccessInvoice(res.invoice || {
-        invoice_number: `INV-2026-${Math.floor(100000 + Math.random() * 900000)}`,
-        plan_tier: plan.name.toLowerCase(),
-        billing_cycle: billingCycle,
-        total_paid: finalPrice,
-        discount_amount: discountAmount,
-        card_last4: cardNumber.slice(-4) || "4242",
-        card_brand: detectBrand(cardNumber).toLowerCase(),
-        created_at: new Date().toISOString(),
+      setSuccessResult({
+        ...res,
+        invoice: res.invoice || {
+          invoice_number: `INV-2026-${Math.floor(100000 + Math.random() * 900000)}`,
+          purchase_type: purchaseType,
+          plan_tier: purchaseType === "course_lifetime" ? "lifetime" : plan.name.toLowerCase(),
+          billing_cycle: purchaseType === "course_lifetime" ? "lifetime" : `${durationMonths}-months`,
+          total_paid: finalPrice,
+          discount_amount: discountAmount,
+          card_last4: cardNumber.slice(-4) || "4242",
+          card_brand: detectBrand(cardNumber).toLowerCase(),
+          created_at: new Date().toISOString(),
+        }
       });
     } catch (err: any) {
       setErrorMessage(err.message || "Payment authorization failed. Please verify your details or use a different card.");
@@ -230,7 +283,10 @@ function CheckoutContent() {
   };
 
   // SUCCESS CONFIRMATION / DIGITAL INVOICE RECEIPT
-  if (successInvoice) {
+  if (successResult) {
+    const inv = successResult.invoice;
+    const isLifetime = purchaseType === "course_lifetime";
+
     return (
       <div className="max-w-3xl mx-auto py-8 space-y-6">
         <motion.div
@@ -241,9 +297,13 @@ function CheckoutContent() {
           <div className="inline-flex items-center justify-center p-4 rounded-full bg-success/15 border border-success/30 text-success shadow-xl">
             <CheckCircle2 className="w-12 h-12 text-success animate-bounce" />
           </div>
-          <h1 className="text-3xl font-extrabold text-foreground">Payment Successful!</h1>
+          <h1 className="text-3xl font-extrabold text-foreground">
+            {isLifetime ? "Course Lifetime Access Unlocked!" : "All-Access Subscription Activated!"}
+          </h1>
           <p className="text-sm text-foreground-secondary max-w-md mx-auto">
-            Your membership is officially active. All premium course modules, video lectures, and Docker CTF sandboxes are unlocked.
+            {isLifetime
+              ? `You now own lifetime access to '${targetCourse?.title || successResult.course_title || "your course"}'. All video lessons, quizzes, and certificates are permanently unlocked.`
+              : `Your ${plan.name} membership is active for ${durationMonths} month(s). All security courses and Docker CTF sandbox labs are ready.`}
           </p>
         </motion.div>
 
@@ -252,10 +312,12 @@ function CheckoutContent() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-border/70 gap-2">
             <div>
               <p className="text-[11px] font-mono uppercase text-foreground-muted">Official Transaction Receipt</p>
-              <h3 className="text-lg font-bold text-foreground">{successInvoice.invoice_number}</h3>
+              <h3 className="text-lg font-bold text-foreground">{inv.invoice_number}</h3>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="success" size="md">Paid &amp; Active</Badge>
+              <Badge variant="success" size="md">
+                {isLifetime ? "Lifetime Owned" : "Active Subscription"}
+              </Badge>
               <Button variant="outline" size="sm" onClick={() => window.print()} icon={<Printer className="w-3.5 h-3.5" />}>
                 Print Receipt
               </Button>
@@ -264,23 +326,27 @@ function CheckoutContent() {
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
             <div>
-              <span className="text-foreground-muted block">Subscription Tier</span>
-              <span className="font-bold text-foreground uppercase">{successInvoice.plan_tier} Plan</span>
+              <span className="text-foreground-muted block">Purchase Type</span>
+              <span className="font-bold text-foreground capitalize">
+                {isLifetime ? "Course Lifetime" : `${plan.name} Plan`}
+              </span>
             </div>
             <div>
-              <span className="text-foreground-muted block">Billing Cycle</span>
-              <span className="font-bold text-foreground capitalize">{successInvoice.billing_cycle}</span>
+              <span className="text-foreground-muted block">Access Duration</span>
+              <span className="font-bold text-foreground">
+                {isLifetime ? "Permanent Lifetime" : `${durationMonths} Month(s)`}
+              </span>
             </div>
             <div>
               <span className="text-foreground-muted block">Payment Method</span>
               <span className="font-bold text-foreground uppercase font-mono">
-                {successInvoice.card_brand || "CARD"} •••• {successInvoice.card_last4 || "4242"}
+                {inv.card_brand || "CARD"} •••• {inv.card_last4 || "4242"}
               </span>
             </div>
             <div>
               <span className="text-foreground-muted block">Date</span>
               <span className="font-bold text-foreground">
-                {new Date(successInvoice.created_at || Date.now()).toLocaleDateString()}
+                {new Date(inv.created_at || Date.now()).toLocaleDateString()}
               </span>
             </div>
           </div>
@@ -288,7 +354,11 @@ function CheckoutContent() {
           {/* Itemized breakdown table */}
           <div className="rounded-xl border border-border bg-surface p-4 space-y-2 text-xs">
             <div className="flex justify-between py-1 text-foreground-secondary">
-              <span>CyberLearn {plan.name} Membership ({billingCycle})</span>
+              <span>
+                {isLifetime
+                  ? `Lifetime Access: ${targetCourse?.title || successResult.course_title || "Course"}`
+                  : `CyberLearn ${plan.name} (${durationMonths} Month All-Access)`}
+              </span>
               <span>${basePrice.toFixed(2)}</span>
             </div>
             {discountAmount > 0 && (
@@ -309,11 +379,19 @@ function CheckoutContent() {
 
           {/* Next Steps CTA */}
           <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
-            <Link href="/courses" className="w-full sm:flex-1">
-              <Button variant="primary" fullWidth size="lg" icon={<BookOpen className="w-4 h-4" />}>
-                Go to Unlocked Courses
-              </Button>
-            </Link>
+            {isLifetime && targetCourse ? (
+              <Link href={`/courses/${targetCourse.id}`} className="w-full sm:flex-1">
+                <Button variant="primary" fullWidth size="lg" icon={<BookOpen className="w-4 h-4" />}>
+                  Launch Unlocked Course
+                </Button>
+              </Link>
+            ) : (
+              <Link href="/courses" className="w-full sm:flex-1">
+                <Button variant="primary" fullWidth size="lg" icon={<BookOpen className="w-4 h-4" />}>
+                  Explore All Courses
+                </Button>
+              </Link>
+            )}
             <Link href="/labs" className="w-full sm:flex-1">
               <Button variant="outline" fullWidth size="lg" icon={<Terminal className="w-4 h-4" />}>
                 Launch Sandbox Labs
@@ -329,14 +407,53 @@ function CheckoutContent() {
     <div className="max-w-6xl mx-auto space-y-6 py-4">
       {/* Top Breadcrumb */}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={() => router.push("/pricing")} icon={<ArrowLeft className="w-4 h-4" />}>
-          Back to Pricing
+        <Button variant="ghost" size="sm" onClick={() => router.push(targetCourse ? `/courses/${targetCourse.id}` : "/pricing")} icon={<ArrowLeft className="w-4 h-4" />}>
+          {targetCourse ? `Back to ${targetCourse.title}` : "Back to Pricing"}
         </Button>
         <div className="flex items-center gap-2 text-xs font-mono text-foreground-muted">
           <ShieldCheck className="w-4 h-4 text-emerald-400" />
           <span>256-Bit SSL Encrypted Checkout</span>
         </div>
       </div>
+
+      {/* Mode Switcher Banner if coming from a course */}
+      {targetCourse && (
+        <div className="p-3 bg-surface-elevated/70 border border-border rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
+              <BookOpen className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-[10px] uppercase font-bold text-foreground-muted">Selected Item</span>
+              <h3 className="text-sm font-bold text-foreground">{targetCourse.title}</h3>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPurchaseType("course_lifetime")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                purchaseType === "course_lifetime"
+                  ? "bg-primary text-white shadow-sm"
+                  : "bg-surface text-foreground-secondary hover:text-foreground border border-border"
+              }`}
+            >
+              Lifetime Course ($49)
+            </button>
+            <button
+              type="button"
+              onClick={() => setPurchaseType("subscription")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                purchaseType === "subscription"
+                  ? "bg-primary text-white shadow-sm"
+                  : "bg-surface text-foreground-secondary hover:text-foreground border border-border"
+              }`}
+            >
+              All-Access Sub ($12/mo)
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* LEFT COLUMN: Payment Method & Details (7 cols) */}
@@ -387,14 +504,14 @@ function CheckoutContent() {
                   <button
                     type="button"
                     onClick={() => autofillTestCard("success")}
-                    className="px-2.5 py-1 text-[11px] font-mono rounded bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 transition-colors"
+                    className="px-2.5 py-1 text-[11px] font-mono rounded bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 transition-colors cursor-pointer"
                   >
                     💳 Autofill Valid Card (4242...)
                   </button>
                   <button
                     type="button"
                     onClick={() => autofillTestCard("decline")}
-                    className="px-2.5 py-1 text-[11px] font-mono rounded bg-error/10 hover:bg-error/20 text-error border border-error/30 transition-colors"
+                    className="px-2.5 py-1 text-[11px] font-mono rounded bg-error/10 hover:bg-error/20 text-error border border-error/30 transition-colors cursor-pointer"
                   >
                     ⚠️ Test Declined Card (0002)
                   </button>
@@ -522,7 +639,7 @@ function CheckoutContent() {
               {/* Security guarantee line */}
               <div className="pt-2 flex items-center gap-2 text-[11px] text-foreground-muted">
                 <Lock className="w-3.5 h-3.5 text-primary shrink-0" />
-                <span>Your information is encrypted and transmitted securely via PCI-DSS compliant channels.</span>
+                <span>Your transaction is encrypted and processed via PCI-DSS compliant infrastructure.</span>
               </div>
 
               {/* Submit Button */}
@@ -549,71 +666,110 @@ function CheckoutContent() {
         {/* RIGHT COLUMN: Order Summary & Promo Code (5 cols) */}
         <div className="lg:col-span-5 space-y-6">
           <Card padding="lg" glow="primary" className="border-primary/40 space-y-6">
-            <div className="flex items-center justify-between pb-4 border-b border-border">
-              <div>
-                <span className="text-[10px] font-mono uppercase tracking-wider text-primary font-bold">Selected Subscription</span>
-                <h3 className="text-xl font-extrabold text-foreground">{plan.title}</h3>
-              </div>
-              <Badge variant="primary" size="sm">{billingCycle}</Badge>
-            </div>
-
-            {/* Plan switcher */}
-            <div className="space-y-2">
-              <div className="flex gap-2 p-1 bg-surface-elevated rounded-xl border border-border">
-                <button
-                  type="button"
-                  onClick={() => setSelectedPlanKey("pro")}
-                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                    selectedPlanKey === "pro" ? "bg-primary text-white shadow-sm" : "text-foreground-secondary hover:text-foreground"
-                  }`}
-                >
-                  Pro Plan
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedPlanKey("premium")}
-                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                    selectedPlanKey === "premium" ? "bg-primary text-white shadow-sm" : "text-foreground-secondary hover:text-foreground"
-                  }`}
-                >
-                  Premium Plan
-                </button>
-              </div>
-
-              {/* Billing Cycle Switcher */}
-              <div className="flex gap-2 p-1 bg-surface-elevated rounded-xl border border-border">
-                <button
-                  type="button"
-                  onClick={() => setBillingCycle("monthly")}
-                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                    billingCycle === "monthly" ? "bg-surface text-foreground shadow-sm" : "text-foreground-secondary hover:text-foreground"
-                  }`}
-                >
-                  Monthly ($12/mo)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setBillingCycle("annually")}
-                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${
-                    billingCycle === "annually" ? "bg-surface text-foreground shadow-sm" : "text-foreground-secondary hover:text-foreground"
-                  }`}
-                >
-                  <span>Annually</span>
-                  <Badge variant="success" size="sm" className="py-0 px-1 text-[9px]">-15%</Badge>
-                </button>
-              </div>
-            </div>
-
-            {/* Unlocked Features List */}
-            <div className="space-y-2.5">
-              <span className="text-xs font-bold text-foreground">Included with your subscription:</span>
-              {plan.features.map((f) => (
-                <div key={f} className="flex items-start gap-2 text-xs text-foreground-secondary">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                  <span>{f}</span>
+            {purchaseType === "course_lifetime" && targetCourse ? (
+              /* Course Lifetime Summary */
+              <div className="space-y-4">
+                <div className="flex items-center justify-between pb-4 border-b border-border">
+                  <div>
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-accent font-bold">Lifetime Ownership</span>
+                    <h3 className="text-xl font-extrabold text-foreground">{targetCourse.title}</h3>
+                  </div>
+                  <Badge variant="success" size="sm">Lifetime</Badge>
                 </div>
-              ))}
-            </div>
+
+                <div className="space-y-2.5 text-xs text-foreground-secondary">
+                  <div className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-accent shrink-0" />
+                    <span>Permanent access to all video lectures and syllabi</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-accent shrink-0" />
+                    <span>All interactive quizzes and practice exams</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-accent shrink-0" />
+                    <span>Verifiable Course Completion Certificate</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-accent shrink-0" />
+                    <span>Buy once, own forever — no recurring fees</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* All-Access Subscription Summary */
+              <div className="space-y-4">
+                <div className="flex items-center justify-between pb-4 border-b border-border">
+                  <div>
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-primary font-bold">All-Access Pass</span>
+                    <h3 className="text-xl font-extrabold text-foreground">{plan.title}</h3>
+                  </div>
+                  <Badge variant="primary" size="sm">{durationMonths} Mo Pass</Badge>
+                </div>
+
+                {/* Plan Tier Switcher */}
+                <div className="flex gap-2 p-1 bg-surface-elevated rounded-xl border border-border">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPlanKey("pro")}
+                    className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                      selectedPlanKey === "pro" ? "bg-primary text-white shadow-sm" : "text-foreground-secondary hover:text-foreground"
+                    }`}
+                  >
+                    Pro Plan
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPlanKey("premium")}
+                    className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                      selectedPlanKey === "premium" ? "bg-primary text-white shadow-sm" : "text-foreground-secondary hover:text-foreground"
+                    }`}
+                  >
+                    Premium Plan
+                  </button>
+                </div>
+
+                {/* Duration Picker Chips */}
+                <div className="space-y-1.5">
+                  <span className="text-[11px] font-bold text-foreground">Select Access Duration:</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {DURATION_OPTIONS.map((opt) => {
+                      const active = durationMonths === opt.months;
+                      const price = selectedPlanKey === "premium" ? opt.premiumPrice : opt.proPrice;
+                      return (
+                        <button
+                          key={opt.months}
+                          type="button"
+                          onClick={() => setDurationMonths(opt.months)}
+                          className={`p-2.5 rounded-xl border text-left text-xs transition-all cursor-pointer ${
+                            active
+                              ? "border-primary bg-primary/10 text-foreground ring-1 ring-primary/40 shadow-sm"
+                              : "border-border bg-surface-elevated/40 text-foreground-secondary hover:text-foreground"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between font-bold">
+                            <span>{opt.label}</span>
+                            <span className="text-primary font-mono">${price}</span>
+                          </div>
+                          <span className="text-[10px] text-foreground-muted block mt-0.5">{opt.discountNote}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Unlocked Features List */}
+                <div className="space-y-2 pt-2 border-t border-border">
+                  <span className="text-xs font-bold text-foreground">All-Access Includes:</span>
+                  {plan.features.map((f) => (
+                    <div key={f} className="flex items-start gap-2 text-xs text-foreground-secondary">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                      <span>{f}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Promo Code Engine */}
             <div className="space-y-2 pt-2 border-t border-border">
@@ -676,7 +832,7 @@ function CheckoutContent() {
             {/* Price Breakdown */}
             <div className="space-y-2 pt-4 border-t border-border text-xs">
               <div className="flex justify-between text-foreground-secondary">
-                <span>Subtotal ({billingCycle})</span>
+                <span>Subtotal</span>
                 <span>${basePrice.toFixed(2)}</span>
               </div>
               {discountAmount > 0 && (

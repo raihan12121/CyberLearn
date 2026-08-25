@@ -183,6 +183,33 @@ export default function PricingPage() {
         })}
       </div>
 
+      {/* Individual Course Lifetime Purchase Spotlight */}
+      <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}>
+        <Card padding="lg" glow="accent" className="border-accent/40 bg-surface-elevated/60">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="space-y-2 text-center md:text-left">
+              <div className="inline-flex items-center gap-1.5">
+                <Badge variant="primary" size="sm" className="font-mono uppercase text-[10px] font-bold">
+                  Buy Once • Own Forever
+                </Badge>
+              </div>
+              <h3 className="text-xl font-bold text-foreground">Prefer Buying Individual Courses?</h3>
+              <p className="text-xs text-foreground-secondary max-w-xl leading-relaxed">
+                If you only need a specific specialization (e.g. Web Security, Linux, Network Defense, or AI Security), you can buy lifetime access to any individual course for a flat <strong>$49.00 USD</strong> one-time payment. No subscriptions or recurring fees.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => router.push("/courses")}
+              className="font-bold shrink-0 border-accent/40 text-accent hover:bg-accent/10"
+            >
+              Browse Individual Courses →
+            </Button>
+          </div>
+        </Card>
+      </motion.div>
+
       {/* FAQ Accordion Section */}
       <div className="pt-12 border-t border-border">
         <h2 className="text-xl font-bold text-foreground text-center mb-8">Frequently Asked Questions</h2>

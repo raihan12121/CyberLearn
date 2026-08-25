@@ -79,6 +79,20 @@ def run_auto_migrations(engine):
                     if col_name not in existing_cert_cols:
                         conn.execute(text(f"ALTER TABLE certificates ADD COLUMN {col_name} {col_type}"))
 
+                # Check courses table columns in SQLite
+                res_course = conn.execute(text("PRAGMA table_info(courses)")).fetchall()
+                existing_course_cols = {row[1] for row in res_course}
+                if "price" not in existing_course_cols:
+                    conn.execute(text("ALTER TABLE courses ADD COLUMN price NUMERIC(10, 2) DEFAULT 49.00"))
+
+                # Check invoices table columns in SQLite
+                res_inv = conn.execute(text("PRAGMA table_info(invoices)")).fetchall()
+                existing_inv_cols = {row[1] for row in res_inv}
+                if "purchase_type" not in existing_inv_cols:
+                    conn.execute(text("ALTER TABLE invoices ADD COLUMN purchase_type VARCHAR(50) DEFAULT 'subscription'"))
+                if "course_id" not in existing_inv_cols:
+                    conn.execute(text("ALTER TABLE invoices ADD COLUMN course_id VARCHAR(36)"))
+
                 conn.commit()
 
             elif dialect == "postgresql":

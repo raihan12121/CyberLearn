@@ -51,6 +51,7 @@ class User(Base):
     exam_submissions = relationship("ExamSubmission", back_populates="user", cascade="all, delete-orphan")
     post_votes = relationship("PostVote", back_populates="user", cascade="all, delete-orphan")
     invoices = relationship("Invoice", back_populates="user", cascade="all, delete-orphan")
+    course_purchases = relationship("CoursePurchase", back_populates="user", cascade="all, delete-orphan")
 
 
 class Course(Base):
@@ -61,6 +62,7 @@ class Course(Base):
     description = Column(Text, nullable=True)
     difficulty = Column(String(20), nullable=True, index=True) # beginner, intermediate, advanced, expert
     category = Column(String(100), nullable=True, index=True)
+    price = Column(Numeric(10, 2), default=49.00) # One-time lifetime purchase price
     estimated_duration = Column(Integer, nullable=True) # minutes
     thumbnail_url = Column(Text, nullable=True)
     is_published = Column(Boolean, default=False, index=True)
@@ -71,6 +73,7 @@ class Course(Base):
     certificates = relationship("Certificate", back_populates="course")
     batches = relationship("Batch", back_populates="course")
     exams = relationship("Exam", back_populates="course", cascade="all, delete-orphan")
+    purchases = relationship("CoursePurchase", back_populates="course", cascade="all, delete-orphan")
 
 
 class Lesson(Base):
@@ -335,8 +338,10 @@ class Invoice(Base):
     id = Column(String(36), primary_key=True, default=generate_uuid)
     invoice_number = Column(String(50), unique=True, nullable=False, index=True)
     user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
-    plan_tier = Column(String(50), nullable=False, index=True) # pro, premium
-    billing_cycle = Column(String(20), default="monthly") # monthly, annually
+    purchase_type = Column(String(50), default="subscription", index=True) # subscription, course_lifetime
+    course_id = Column(String(36), ForeignKey("courses.id"), nullable=True, index=True)
+    plan_tier = Column(String(50), nullable=True, index=True) # pro, premium, lifetime
+    billing_cycle = Column(String(20), default="monthly") # monthly, annually, 1-month, 2-months, 3-months, 6-months, lifetime
     currency = Column(String(10), default="USD")
     subtotal = Column(Numeric(10, 2), default=0.00)
     discount_amount = Column(Numeric(10, 2), default=0.00)
@@ -353,4 +358,25 @@ class Invoice(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
 
     user = relationship("User", back_populates="invoices")
+    course = relationship("Course")
+
+
+class CoursePurchase(Base):
+    __tablename__ = "course_purchases"
+    __table_args__ = (
+        UniqueConstraint("user_id", "course_id", name="uq_user_course_purchase"),
+        Index("ix_course_purchases_lookup", "user_id", "course_id"),
+    )
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    course_id = Column(String(36), ForeignKey("courses.id"), nullable=False, index=True)
+    purchase_type = Column(String(50), default="lifetime") # lifetime
+    amount_paid = Column(Numeric(10, 2), default=49.00)
+    invoice_id = Column(String(36), nullable=True, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+    user = relationship("User", back_populates="course_purchases")
+    course = relationship("Course", back_populates="purchases")
+
 

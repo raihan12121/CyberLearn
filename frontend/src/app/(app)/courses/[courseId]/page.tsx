@@ -632,7 +632,11 @@ export default function CourseDetailPage() {
   const router = useRouter();
   const params = useParams();
   const { user } = useAuthStore();
-  const subscribed = isUserSubscribed(user);
+  const [backendCourseData, setBackendCourseData] = useState<any | null>(null);
+
+  const isSubscribed = isUserSubscribed(user);
+  const isLifetimePurchased = backendCourseData?.is_purchased || backendCourseData?.access_type === "lifetime";
+  const hasAccess = isSubscribed || isLifetimePurchased || Boolean(backendCourseData?.has_access);
 
   const courseId = (params?.courseId as string) || "web-security-fundamentals";
   const course = courseData[courseId] || courseData["web-security-fundamentals"];
@@ -652,6 +656,9 @@ export default function CourseDetailPage() {
     // Fetch dynamic course data from backend if available
     api.getCourse(courseId)
       .then((data) => {
+        if (data) {
+          setBackendCourseData(data);
+        }
         if (data && data.lessons && data.lessons.length > 0) {
           // If backend has lessons, map them
           const mappedLessons = data.lessons.map((l: { id: string; title: string; content_type?: string; duration?: number; content?: string }) => ({
@@ -853,7 +860,7 @@ export default function CourseDetailPage() {
                 <div className="space-y-1">
                   {mod.lessons.map((lesson) => {
                     const isSelected = activeLesson.id === lesson.id;
-                    const Icon = !subscribed ? Lock :
+                    const Icon = !hasAccess ? Lock :
                       lesson.type === "video" ? Play :
                       lesson.type === "quiz" ? HelpCircle : FileText;
 
@@ -861,26 +868,26 @@ export default function CourseDetailPage() {
                       <button
                         key={lesson.id}
                         onClick={() => {
-                          if (!subscribed) {
+                          if (!hasAccess) {
                             setPaywallOpen(true);
                           } else {
                             handleLessonClick(lesson);
                           }
                         }}
                         className={`w-full flex items-center justify-between p-3 rounded-[var(--radius)] text-left transition-all duration-150 cursor-pointer ${
-                          isSelected && subscribed
+                          isSelected && hasAccess
                             ? "bg-primary/10 border border-primary text-primary"
                             : "bg-surface hover:bg-surface-elevated border border-border text-foreground-secondary"
                         }`}
                       >
                         <div className="flex items-center gap-3">
                           <div className={`p-1.5 rounded-lg ${
-                            isSelected && subscribed ? "bg-primary/20 text-primary" : "bg-surface-elevated text-foreground-muted"
+                            isSelected && hasAccess ? "bg-primary/20 text-primary" : "bg-surface-elevated text-foreground-muted"
                           }`}>
                             <Icon className="w-4 h-4" />
                           </div>
                           <div>
-                            <p className={`text-sm font-semibold ${isSelected && subscribed ? "text-foreground font-bold" : "text-foreground-secondary"}`}>
+                            <p className={`text-sm font-semibold ${isSelected && hasAccess ? "text-foreground font-bold" : "text-foreground-secondary"}`}>
                               {lesson.title}
                             </p>
                             <span className="text-[11px] text-foreground-muted flex items-center gap-1">
@@ -889,8 +896,8 @@ export default function CourseDetailPage() {
                             </span>
                           </div>
                         </div>
-                        {!subscribed ? (
-                          <Badge variant="primary" size="sm" className="text-[9px] px-1.5 py-0">PRO</Badge>
+                        {!hasAccess ? (
+                          <Badge variant="primary" size="sm" className="text-[9px] px-1.5 py-0">LOCKED</Badge>
                         ) : completedLessonsSet.has(lesson.id) ? (
                           <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0 ml-2" />
                         ) : null}
@@ -906,7 +913,7 @@ export default function CourseDetailPage() {
         {/* Content Panel (8 cols) */}
         <div className="lg:col-span-8 space-y-6">
           <Card padding="lg" className="min-h-[550px] flex flex-col justify-between">
-            {!subscribed ? (
+            {!hasAccess ? (
               /* GATED PAYWALL VIEW FOR FREE USERS */
               <div className="my-auto py-12 px-4 text-center space-y-6 max-w-lg mx-auto">
                 <div className="inline-flex items-center justify-center p-4 rounded-3xl bg-primary/10 border border-primary/30 text-primary shadow-lg">
@@ -916,12 +923,12 @@ export default function CourseDetailPage() {
                 <div className="space-y-2">
                   <div className="inline-block">
                     <Badge variant="primary" size="sm" className="font-mono uppercase text-[10px] tracking-wider">
-                      Pro Subscription Required
+                      Access Required
                     </Badge>
                   </div>
                   <h3 className="text-2xl font-bold text-foreground">Course Content Locked</h3>
                   <p className="text-xs md:text-sm text-foreground-secondary leading-relaxed">
-                    Full video lectures, interactive reading guides, quizzes, and course completion certificates for <span className="text-foreground font-semibold">"{course.title}"</span> are reserved for CyberLearn Pro and Premium members.
+                    Full video lectures, interactive reading guides, quizzes, and verifiable completion certificates for <span className="text-foreground font-semibold">"{course.title}"</span> are unlocked via Lifetime Course Access or an All-Access Subscription.
                   </p>
                 </div>
 
@@ -944,23 +951,25 @@ export default function CourseDetailPage() {
                   </div>
                 </div>
 
+                {/* Purchase Options */}
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                   <Button
                     variant="primary"
                     size="md"
-                    onClick={() => setPaywallOpen(true)}
+                    onClick={() => router.push(`/checkout?type=course_lifetime&courseId=${courseId}`)}
+                    className="w-full sm:w-auto font-bold shadow-lg"
+                  >
+                    <Award className="w-4 h-4 mr-1.5" />
+                    <span>Buy Course Lifetime ($49)</span>
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="md"
+                    onClick={() => router.push("/checkout?type=subscription&plan=pro")}
                     className="w-full sm:w-auto font-bold shadow-lg"
                   >
                     <Zap className="w-4 h-4 mr-1.5" />
-                    <span>Unlock Course with Pro ($12/mo)</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="md"
-                    onClick={() => router.push("/pricing")}
-                    className="w-full sm:w-auto"
-                  >
-                    View All Plans
+                    <span>All-Access Pass ($12/mo)</span>
                   </Button>
                 </div>
               </div>

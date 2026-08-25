@@ -204,13 +204,30 @@ export const api = {
     method: "POST",
     body: JSON.stringify({ plan_name: planName, billing_period: billingPeriod }),
   }),
-  validatePromoCode: (promoCode: string, planName: string = "Pro", billingPeriod: string = "monthly") => apiFetch("/billing/validate-promo", {
+  validatePromoCode: (params: {
+    promo_code: string;
+    purchase_type?: string;
+    plan_name?: string;
+    billing_period?: string;
+    duration_months?: number;
+    course_id?: string;
+  }) => apiFetch("/billing/validate-promo", {
     method: "POST",
-    body: JSON.stringify({ promo_code: promoCode, plan_name: planName, billing_period: billingPeriod }),
+    body: JSON.stringify({
+      promo_code: params.promo_code,
+      purchase_type: params.purchase_type || "subscription",
+      plan_name: params.plan_name || "Pro",
+      billing_period: params.billing_period || "monthly",
+      duration_months: params.duration_months || 1,
+      course_id: params.course_id,
+    }),
   }),
   processPayment: (payload: {
-    plan_name: string;
-    billing_period: string;
+    purchase_type?: string;
+    plan_name?: string;
+    billing_period?: string;
+    duration_months?: number;
+    course_id?: string;
     payment_method: string;
     card_number?: string;
     card_exp_month?: number;
@@ -226,6 +243,7 @@ export const api = {
   }),
   getInvoices: () => apiFetch("/billing/invoices"),
   getInvoice: (invoiceId: string) => apiFetch(`/billing/invoices/${invoiceId}`),
+  getMyPurchasedCourses: () => apiFetch("/billing/my-courses"),
   getSubscriptionStatus: () => apiFetch("/billing/status"),
   cancelSubscription: () => apiFetch("/billing/cancel", {
     method: "POST",

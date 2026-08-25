@@ -52,6 +52,7 @@ export default function SettingsPage() {
   const [subLoading, setSubLoading] = useState(false);
   const [subMessage, setSubMessage] = useState<string | null>(null);
   const [invoices, setInvoices] = useState<any[]>([]);
+  const [purchasedCourses, setPurchasedCourses] = useState<any[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
 
   // Load profile on mount
@@ -69,6 +70,12 @@ export default function SettingsPage() {
     api.getInvoices()
       .then((invList) => {
         if (Array.isArray(invList)) setInvoices(invList);
+      })
+      .catch(() => {});
+
+    api.getMyPurchasedCourses()
+      .then((coursesList) => {
+        if (Array.isArray(coursesList)) setPurchasedCourses(coursesList);
       })
       .catch(() => {});
   }, []);
@@ -610,6 +617,47 @@ export default function SettingsPage() {
                     <span>Verified Course Credentials: <strong>{isUserSubscribed(user) ? "Included" : "Locked"}</strong></span>
                   </div>
                 </div>
+              </div>
+
+              {/* Lifetime Owned Courses */}
+              <div className="space-y-3 pt-4 border-t border-border/60">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-bold text-foreground">Lifetime Owned Courses</h4>
+                    <p className="text-xs text-foreground-secondary">Courses you own permanently with lifetime syllabus and video access.</p>
+                  </div>
+                  <Link href="/courses">
+                    <Button variant="outline" size="sm">
+                      Browse Courses
+                    </Button>
+                  </Link>
+                </div>
+
+                {purchasedCourses.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {purchasedCourses.map((c) => (
+                      <div key={c.id} className="p-3.5 rounded-xl bg-surface-elevated border border-accent/30 flex items-center justify-between gap-3">
+                        <div className="space-y-0.5">
+                          <span className="text-[10px] font-bold text-accent uppercase tracking-wider">Lifetime Access</span>
+                          <h5 className="text-xs font-bold text-foreground">{c.course_title}</h5>
+                          <span className="text-[10px] text-foreground-muted block font-mono">
+                            Purchased: {new Date(c.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <Link href={`/courses/${c.course_id}`}>
+                          <Button variant="primary" size="sm" className="font-bold shrink-0 text-xs">
+                            Open Course →
+                          </Button>
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-xl border border-dashed border-border text-center space-y-1">
+                    <p className="text-xs text-foreground-secondary font-medium">No individual lifetime courses owned yet.</p>
+                    <p className="text-[11px] text-foreground-muted">You can buy lifetime access to any specific course on CyberLearn for $49 without a subscription.</p>
+                  </div>
+                )}
               </div>
 
               {/* Billing Invoices & Receipts History */}
