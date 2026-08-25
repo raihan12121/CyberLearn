@@ -15,6 +15,8 @@ import {
   Bot,
   Zap,
   Award,
+  Clock,
+  Sparkles,
 } from "lucide-react";
 import { Card, Badge, Button, ProgressBar } from "@/components/ui";
 import { api } from "@/lib/api";
@@ -52,9 +54,11 @@ const courseData: Record<string, {
       content?: string;
       videoUrl?: string;
       quizQuestions?: {
+        id?: string;
         q: string;
         options: string[];
         answer: number;
+        explanation?: string;
       }[];
     }[];
   }[];
@@ -66,56 +70,59 @@ const courseData: Record<string, {
     xp: 1200,
     modules: [
       {
-        title: "Module 1: Introduction to Web Security",
+        title: "Module 1: Web Architecture & Core Protocols",
         lessons: [
           {
             id: "web-intro",
-            title: "How the Web Works: HTTP and HTML",
+            title: "How the Web Works: HTTP, HTML & Client-Server Architecture",
             type: "video",
-            duration: "10 mins",
+            duration: "12 mins",
             completed: false,
-            videoUrl: "https://www.youtube-nocookie.com/embed/2JYT5f2isg4",
-            content: "Welcome to Web Security Fundamentals! In this lesson, we will explore the underlying architecture of the web, focusing on HTTP protocol, client-server models, headers, and basic HTML structure. Understanding these basics is critical before searching for vulnerabilities.",
+            videoUrl: "https://www.youtube-nocookie.com/embed/2_a10h63d50",
+            content: "Explore the foundational architecture of the web: HTTP request/response lifecycles, headers, methods (GET, POST, PUT, DELETE), status codes, and the client-server interaction model.",
           },
           {
             id: "same-origin-policy",
-            title: "The Same-Origin Policy (SOP)",
+            title: "The Same-Origin Policy (SOP) & CORS",
             type: "reading",
             duration: "15 mins",
             completed: false,
-            content: `The Same-Origin Policy (SOP) is a critical security mechanism that restricts how a document or script loaded from one origin can interact with a resource from another origin. 
-            
-Origin is defined by:
-1. Scheme (e.g. http, https)
-2. Host (domain name)
-3. Port (e.g. 80, 443)
+            content: `The Same-Origin Policy (SOP) is a cornerstone security mechanism in modern web browsers that prevents scripts on one origin from reading data from another origin.
 
-If any of these three elements differ, they are considered different origins. For example, a script on \`https://attacker.com\` cannot access cookies or state on \`https://bank.com\` due to SOP.`,
+An origin is defined strictly by the tuple:
+1. Protocol/Scheme (e.g., https://)
+2. Host/Domain (e.g., cyberlearn.io)
+3. Port (e.g., 443)
+
+Cross-Origin Resource Sharing (CORS) relaxes SOP through explicit server response headers:
+- Access-Control-Allow-Origin
+- Access-Control-Allow-Credentials
+- Access-Control-Allow-Methods`,
           },
           {
-            id: "sop-quiz",
+            id: "web-sec-quiz-1",
             title: "Module 1 Assessment",
             type: "quiz",
             duration: "5 mins",
             completed: false,
             quizQuestions: [
               {
-                q: "Which of the following defines an Origin in the context of the Same-Origin Policy?",
+                q: "Which three components define a web Origin in the Same-Origin Policy?",
                 options: [
-                  "Protocol, Domain Name, and Port",
-                  "Domain Name and Path",
-                  "IP Address and Port",
-                  "Protocol and Domain Name only",
+                  "Protocol, Hostname, and Port",
+                  "Hostname, URL Path, and Query String",
+                  "IP Address, MAC Address, and Session ID",
+                  "Domain Name and User-Agent",
                 ],
                 answer: 0,
               },
               {
-                q: "If SOP prevents cross-origin reads, why can you still embed cross-origin images or scripts?",
+                q: "What header allows a server to explicitly authorize cross-origin AJAX requests?",
                 options: [
-                  "SOP has exceptions that allow cross-origin embedding, but restricts reading the raw data",
-                  "SOP is only active on banking sites",
-                  "SOP is outdated and no longer used by modern browsers",
-                  "It requires user authentication to embed them",
+                  "Access-Control-Allow-Origin",
+                  "X-Frame-Options: DENY",
+                  "Strict-Transport-Security",
+                  "Content-Security-Policy",
                 ],
                 answer: 0,
               },
@@ -124,75 +131,125 @@ If any of these three elements differ, they are considered different origins. Fo
         ],
       },
       {
-        title: "Module 2: Injection Vulnerabilities",
+        title: "Module 2: Client-Side & Server-Side Attacks",
         lessons: [
           {
-            id: "xss-intro",
-            title: "Cross-Site Scripting (XSS) Types",
+            id: "xss-deep-dive",
+            title: "Cross-Site Scripting (XSS) Types & Exploitation",
             type: "video",
-            duration: "12 mins",
+            duration: "18 mins",
             completed: false,
             videoUrl: "https://www.youtube-nocookie.com/embed/EoaDgUgS6QA",
-            content: "Learn the difference between Stored XSS, Reflected XSS, and DOM-based XSS. We will write basic payloads and study their exploitation routes.",
+            content: "Learn how Stored XSS, Reflected XSS, and DOM-based XSS execute malicious JavaScript within victim browsers. We review real payload samples, cookie theft mechanics, and defensive contextual encoding.",
           },
           {
-            id: "sql-injection-intro",
-            title: "SQL Injection (SQLi) Basics",
-            type: "reading",
+            id: "sqli-mechanics",
+            title: "SQL Injection (SQLi) Attacks & Prepared Statements",
+            type: "video",
             duration: "20 mins",
             completed: false,
-            content: `SQL Injection occurs when user input is directly concatenated into a database query. This allows attackers to manipulate SQL queries.
+            videoUrl: "https://www.youtube-nocookie.com/embed/ciNHn38EyRc",
+            content: "Master SQL injection vulnerability mechanics from classic authentication bypass (' OR 1=1 --) to UNION-based extraction and error-based payloads, alongside defensive parameterized queries.",
+          },
+          {
+            id: "csrf-defense",
+            title: "Cross-Site Request Forgery (CSRF) & Defense-in-Depth",
+            type: "reading",
+            duration: "15 mins",
+            completed: false,
+            content: `Cross-Site Request Forgery (CSRF) tricks an authenticated victim's browser into sending unauthorized commands to a vulnerable application.
 
-For example, a query like:
-\`\`\`sql
-SELECT * FROM users WHERE username = '` + "`" + ` + userInput + ` + "`" + `' AND password = '` + "`" + ` + passwordInput + ` + "`" + `';
-\`\`\`
-
-If the attacker inputs:
-\`\`\`text
-admin' OR '1'='1
-\`\`\`
-
-The query becomes:
-\`\`\`sql
-SELECT * FROM users WHERE username = 'admin' OR '1'='1' AND password = '...';
-\`\`\`
-This query will return true, bypassing password verification!`,
+Primary Mitigations:
+1. Anti-CSRF Synchronizer Tokens: Cryptographically random tokens tied to user sessions.
+2. SameSite Cookie Attribute: SameSite=Lax or SameSite=Strict prevents ambient credential transmission on cross-site requests.
+3. Re-authentication for sensitive actions (password change, fund transfer).`,
           },
         ],
       },
     ],
   },
+
   "linux-basics": {
-    title: "Linux Basics",
+    title: "Linux Basics & System Administration",
     category: "Linux",
     difficulty: "Beginner",
     xp: 1500,
     modules: [
       {
-        title: "Module 1: The Command Line Interface",
+        title: "Module 1: Terminal Navigation & File Management",
         lessons: [
           {
-            id: "linux-navigation",
-            title: "Navigation & Listing Commands",
+            id: "linux-nav-video",
+            title: "Linux Command Line Navigation & Essential Commands",
             type: "video",
-            duration: "8 mins",
-            completed: true,
-            videoUrl: "https://www.youtube-nocookie.com/embed/oxuRxtrO2Ag",
-            content: "Learn how to use cd, ls, pwd, and find to navigate file directories in Linux.",
+            duration: "15 mins",
+            completed: false,
+            videoUrl: "https://www.youtube-nocookie.com/embed/sWbUDq4S6XA",
+            content: "Master the Linux command line hierarchy. Learn pwd, cd, ls -la, mkdir, touch, cat, grep, find, and piping commands (|) in standard Bash environments.",
           },
           {
-            id: "file-management",
-            title: "Creating, Reading, and Editing Files",
+            id: "linux-perms-reading",
+            title: "Linux Permissions: Read, Write, Execute (Octal vs Symbolic)",
             type: "reading",
-            duration: "12 mins",
+            duration: "15 mins",
             completed: false,
-            content: "Understand commands like touch, mkdir, cat, nano, echo, and rm.",
+            content: `Linux file permissions are divided into User (Owner), Group, and Others:
+- Read (r) = 4
+- Write (w) = 2
+- Execute (x) = 1
+
+Example: chmod 755 script.sh gives:
+- Owner: rwx (4+2+1 = 7)
+- Group: r-x (4+0+1 = 5)
+- Others: r-x (4+0+1 = 5)`,
+          },
+        ],
+      },
+      {
+        title: "Module 2: Permissions, SUID & Process Control",
+        lessons: [
+          {
+            id: "linux-suid-video",
+            title: "Linux Permissions & SUID Privilege Exploits",
+            type: "video",
+            duration: "18 mins",
+            completed: false,
+            videoUrl: "https://www.youtube-nocookie.com/embed/5okdbhyzN5k",
+            content: "Deep dive into Setuid (SUID), Setgid (SGID), and Sticky Bits. Understand how SUID binaries execute with owner privileges and how attackers leverage misconfigured SUID binaries to escalate privileges.",
+          },
+          {
+            id: "linux-process-video",
+            title: "Process Management, Systemctl & Shell Automation",
+            type: "video",
+            duration: "22 mins",
+            completed: false,
+            videoUrl: "https://www.youtube-nocookie.com/embed/v-F3YLd6oMw",
+            content: "Understand background processes, ps aux, top/htop, kill signals, systemd service management (systemctl start/status), and writing basic Bash automation scripts.",
+          },
+          {
+            id: "linux-quiz",
+            title: "Linux Administration Assessment",
+            type: "quiz",
+            duration: "8 mins",
+            completed: false,
+            quizQuestions: [
+              {
+                q: "What numeric permission gives the owner read, write, and execute, while group and others only receive read and execute?",
+                options: ["755", "644", "777", "700"],
+                answer: 0,
+              },
+              {
+                q: "What special permission bit allows a binary to execute with the privileges of the file owner rather than the running user?",
+                options: ["SUID (Set User ID)", "Sticky Bit", "SGID", "Immutable Bit"],
+                answer: 0,
+              },
+            ],
           },
         ],
       },
     ],
   },
+
   "network-security-essentials": {
     title: "Network Security Essentials",
     category: "Networking",
@@ -200,59 +257,146 @@ This query will return true, bypassing password verification!`,
     xp: 1200,
     modules: [
       {
-        title: "Module 1: Fundamentals of Network Defense",
+        title: "Module 1: Network Protocols & The OSI Stack",
         lessons: [
           {
-            id: "network-basics",
-            title: "Understanding Network Protocols",
+            id: "net-tcpip-video",
+            title: "TCP/IP 4-Layer Model, 3-Way Handshake & Packet Flow",
             type: "video",
-            duration: "15 mins",
+            duration: "18 mins",
             completed: false,
             videoUrl: "https://www.youtube-nocookie.com/embed/3QhU9jd03a0",
-            content: "Learn the foundation of network communications with TCP/IP, DNS, and IP routing protocols.",
+            content: "Understand TCP vs UDP, IP addressing, the SYN -> SYN-ACK -> ACK three-way handshake, port ranges, and how packets travel across subnets and gateways.",
           },
           {
-            id: "packet-sniffing",
-            title: "Packet Sniffing and Security",
+            id: "net-subnet-reading",
+            title: "Subnetting, Routing Tables & Firewalls",
             type: "reading",
             duration: "20 mins",
             completed: false,
-            content: "Understand how plaintext network traffic can be intercepted and how tools like tcpdump and Wireshark allow analysis.",
+            content: `IPv4 CIDR notation (e.g., /24 = 255.255.255.0 = 254 usable hosts) defines broadcast and network boundaries.
+Packet filtering firewalls (iptables, nftables, UFW) evaluate incoming/outgoing traffic based on state, source/destination IP, and port rules.`,
+          },
+        ],
+      },
+      {
+        title: "Module 2: Packet Analysis & Reconnaissance",
+        lessons: [
+          {
+            id: "wireshark-video",
+            title: "Wireshark Packet Analysis & Traffic Inspection",
+            type: "video",
+            duration: "20 mins",
+            completed: false,
+            videoUrl: "https://www.youtube-nocookie.com/embed/lb1Dw0elw0Q",
+            content: "Master Wireshark filters (http, tcp.flags.syn==1, ip.addr==x.x.x.x), stream reconstruction (Follow TCP Stream), and finding plaintext credentials in captured PCAP files.",
+          },
+          {
+            id: "nmap-video",
+            title: "Port Scanning & Network Reconnaissance with Nmap",
+            type: "video",
+            duration: "22 mins",
+            completed: false,
+            videoUrl: "https://www.youtube-nocookie.com/embed/4t4kBkMsDbY",
+            content: "Learn Nmap scan types: SYN Stealth Scan (-sS), Version Detection (-sV), Default Scripts (-sC), Aggressive Scan (-A), and timing templates (-T4).",
+          },
+          {
+            id: "net-quiz",
+            title: "Network Security Assessment",
+            type: "quiz",
+            duration: "5 mins",
+            completed: false,
+            quizQuestions: [
+              {
+                q: "What are the flags exchanged in a standard TCP 3-Way Handshake?",
+                options: ["SYN -> SYN-ACK -> ACK", "ACK -> SYN -> RST", "SYN -> ACK -> FIN", "PING -> PONG -> ACK"],
+                answer: 0,
+              },
+              {
+                q: "Which Nmap switch performs a TCP SYN stealth scan without completing the connection handshake?",
+                options: ["-sS", "-sT", "-sU", "-sV"],
+                answer: 0,
+              },
+            ],
           },
         ],
       },
     ],
   },
+
   "python-for-security": {
-    title: "Python for Security",
+    title: "Python for Security & Tooling",
     category: "Programming",
     difficulty: "Intermediate",
     xp: 2000,
     modules: [
       {
-        title: "Module 1: Automation and Custom Tooling",
+        title: "Module 1: Socket Programming & Network Scripting",
         lessons: [
           {
-            id: "python-basics",
-            title: "Python Basics for Scripting",
+            id: "py-sec-intro-video",
+            title: "Python Socket Programming & Network Scripting",
             type: "video",
-            duration: "15 mins",
-            completed: false,
-            videoUrl: "https://www.youtube-nocookie.com/embed/fgTGADljAeg",
-            content: "Learn variables, loops, socket programming, and requests library to automate basic security auditing tasks.",
-          },
-          {
-            id: "port-scanner",
-            title: "Building a Simple Port Scanner",
-            type: "reading",
             duration: "20 mins",
             completed: false,
-            content: "Write a simple script using socket module to connect to system addresses and identify open ports.",
+            videoUrl: "https://www.youtube-nocookie.com/embed/3Kq1MIfTWCE",
+            content: "Learn how to use Python's built-in socket library to create client/server connections, send raw bytes, handle timeouts, and parse network banners.",
+          },
+          {
+            id: "py-scanner-video",
+            title: "Building a Multi-Threaded Port Scanner in Python",
+            type: "video",
+            duration: "24 mins",
+            completed: false,
+            videoUrl: "https://www.youtube-nocookie.com/embed/fgTGADljAeg",
+            content: "Step-by-step implementation of a fast multi-threaded port scanner using Python's threading/concurrent.futures modules and socket connections.",
+          },
+        ],
+      },
+      {
+        title: "Module 2: Web Automation & Exploit Scripting",
+        lessons: [
+          {
+            id: "py-web-auto-video",
+            title: "Automating Web Exploitation & Scapy Packet Crafting in Python",
+            type: "video",
+            duration: "26 mins",
+            completed: false,
+            videoUrl: "https://www.youtube-nocookie.com/embed/7utwGRO36h0",
+            content: "Automate HTTP authentication brute-forcing, CSRF token scraping with BeautifulSoup and Requests, and crafting raw ICMP/TCP packets with Scapy.",
+          },
+          {
+            id: "py-exploit-reading",
+            title: "Writing Modular Exploits & CLI Tools with Argparse",
+            type: "reading",
+            duration: "18 mins",
+            completed: false,
+            content: `Structure your security tools using Python's \`argparse\` module with custom headers, multi-target support, and automated error logging for penetration testing engagements.`,
+          },
+          {
+            id: "py-quiz",
+            title: "Python Security Scripting Assessment",
+            type: "quiz",
+            duration: "5 mins",
+            completed: false,
+            quizQuestions: [
+              {
+                q: "Which Python module is standard for low-level TCP/UDP socket network connections?",
+                options: ["socket", "requests", "urllib", "http.client"],
+                answer: 0,
+              },
+              {
+                q: "What Scapy function is used to send custom Layer 3 packets and receive responses?",
+                options: ["sr() or sr1()", "send_all()", "socket.emit()", "packet.dispatch()"],
+                answer: 0,
+              },
+            ],
           },
         ],
       },
     ],
   },
+
   "owasp-top-10": {
     title: "OWASP Top 10 Deep Dive",
     category: "Web Security",
@@ -260,29 +404,72 @@ This query will return true, bypassing password verification!`,
     xp: 1600,
     modules: [
       {
-        title: "Module 1: OWASP Core Framework",
+        title: "Module 1: OWASP Core Framework & Broken Auth",
         lessons: [
           {
-            id: "owasp-intro",
-            title: "Introduction to OWASP Top 10",
+            id: "owasp-overview-video",
+            title: "OWASP Top 10 Overview & Vulnerability Taxonomy",
             type: "video",
-            duration: "10 mins",
+            duration: "15 mins",
             completed: false,
             videoUrl: "https://www.youtube-nocookie.com/embed/rTXN37mXyqg",
-            content: "Overview of the top security risks listed by OWASP, including impact, likelihood, and general mitigations.",
+            content: "Comprehensive overview of the OWASP Top 10 vulnerabilities: Broken Access Control, Cryptographic Failures, Injection, Insecure Design, Security Misconfiguration, and SSRF.",
           },
           {
-            id: "broken-auth",
-            title: "Broken Authentication Mechanisms",
+            id: "owasp-auth-video",
+            title: "Broken Authentication, Session Hijacking & Credential Stuffing",
+            type: "video",
+            duration: "18 mins",
+            completed: false,
+            videoUrl: "https://www.youtube-nocookie.com/embed/4cWBQSwfqhI",
+            content: "Analyze session fixation, weak password reset tokens, JWT signature stripping ('none' alg), and how to enforce robust multi-factor authentication.",
+          },
+        ],
+      },
+      {
+        title: "Module 2: Access Control, IDOR & SSRF",
+        lessons: [
+          {
+            id: "owasp-ssrf-video",
+            title: "Insecure Direct Object References (IDOR) & SSRF Attacks",
+            type: "video",
+            duration: "20 mins",
+            completed: false,
+            videoUrl: "https://www.youtube-nocookie.com/embed/wE1zO1Q0vps",
+            content: "Examine horizontal/vertical privilege escalation through IDOR and how Server-Side Request Forgery (SSRF) exploits internal cloud metadata services (169.254.169.254).",
+          },
+          {
+            id: "owasp-reading",
+            title: "Security Misconfigurations & Sensitive Data Exposure",
             type: "reading",
             duration: "15 mins",
             completed: false,
-            content: "Study authentication flaws, session hijacking, credential stuffing, and brute-force bypass methods.",
+            content: `Common security misconfigurations include default credentials, unnecessary debug pages, open S3 buckets, and verbose stack traces exposing API keys.`,
+          },
+          {
+            id: "owasp-quiz",
+            title: "OWASP Top 10 Assessment",
+            type: "quiz",
+            duration: "6 mins",
+            completed: false,
+            quizQuestions: [
+              {
+                q: "What vulnerability allows an attacker to manipulate parameters like /api/user/1024 to view another user's private data?",
+                options: ["Insecure Direct Object Reference (IDOR)", "Cross-Site Scripting (XSS)", "Clickjacking", "SQL Injection"],
+                answer: 0,
+              },
+              {
+                q: "What is the standard AWS cloud metadata IP address often targeted in SSRF attacks?",
+                options: ["169.254.169.254", "192.168.1.1", "127.0.0.1", "10.0.0.1"],
+                answer: 0,
+              },
+            ],
           },
         ],
       },
     ],
   },
+
   "ethical-hacking-pentest": {
     title: "Ethical Hacking & Penetration Testing",
     category: "CTF",
@@ -290,29 +477,79 @@ This query will return true, bypassing password verification!`,
     xp: 3000,
     modules: [
       {
-        title: "Module 1: Auditing & Reconnaissance",
+        title: "Module 1: Penetration Testing Methodologies & Recon",
         lessons: [
           {
-            id: "pentest-intro",
-            title: "Pentesting Methodologies",
+            id: "pentest-methodology-video",
+            title: "Penetration Testing Methodologies & Ethical Hacking Workflow",
             type: "video",
-            duration: "12 mins",
+            duration: "22 mins",
             completed: false,
-            videoUrl: "https://www.youtube-nocookie.com/embed/3Kq1MIfTWCE",
-            content: "Introduction to standard penetration testing methodologies: reconnaissance, scanning, gaining access, maintaining access, and reporting.",
+            videoUrl: "https://www.youtube-nocookie.com/embed/WnNCNU4W9bI",
+            content: "Explore the end-to-end penetration testing lifecycle: Scope definition, passive/active reconnaissance, vulnerability assessment, exploitation, post-exploitation, and professional remediation reporting.",
           },
           {
-            id: "nmap-scanning",
-            title: "Active Reconnaissance with Nmap",
-            type: "reading",
-            duration: "20 mins",
+            id: "metasploit-video",
+            title: "Vulnerability Scanning & Metasploit Framework Exploitation",
+            type: "video",
+            duration: "25 mins",
             completed: false,
-            content: "Learn Nmap scan types, flags, speed parameters, firewall evasion, and service version detection.",
+            videoUrl: "https://www.youtube-nocookie.com/embed/3FNYvj2U0HM",
+            content: "Master msfconsole, searching exploits, configuring payloads (staged vs stageless Meterpreter), handling multi/handler listeners, and bypassing firewall defenses.",
+          },
+        ],
+      },
+      {
+        title: "Module 2: Post-Exploitation, PrivEsc & Pivoting",
+        lessons: [
+          {
+            id: "privesc-pivoting-video",
+            title: "Post-Exploitation, Linux Privilege Escalation & Pivoting",
+            type: "video",
+            duration: "28 mins",
+            completed: false,
+            videoUrl: "https://www.youtube-nocookie.com/embed/9OC4fFk4p5s",
+            content: "Learn how to escalate privileges from low-privilege user to root via sudo vulnerabilities, cronjobs, and capabilities, followed by SSH tunneling/Chisel pivoting into internal network subnets.",
+          },
+          {
+            id: "pentest-reporting-reading",
+            title: "Executive vs Technical Pentest Reporting",
+            type: "reading",
+            duration: "15 mins",
+            completed: false,
+            content: `A professional pentest report requires:
+1. Executive Summary: Risk overview, business impact, CVSS scores.
+2. Technical Findings: Step-by-step reproduction steps, proof-of-concept evidence, and concrete remediation code.`,
+          },
+          {
+            id: "pentest-quiz",
+            title: "Ethical Hacking Assessment",
+            type: "quiz",
+            duration: "8 mins",
+            completed: false,
+            quizQuestions: [
+              {
+                q: "In Metasploit, what is the primary difference between staged and stageless payloads?",
+                options: [
+                  "Staged payloads send a tiny payload stub that pulls the larger payload in memory",
+                  "Staged payloads do not require network connectivity",
+                  "Stageless payloads only work on Linux systems",
+                  "Staged payloads cannot use Meterpreter",
+                ],
+                answer: 0,
+              },
+              {
+                q: "What technique allows an attacker to route traffic through a compromised machine into a secluded internal network?",
+                options: ["Pivoting / Port Forwarding", "Fuzzing", "OSINT Scraping", "Hash Dumping"],
+                answer: 0,
+              },
+            ],
           },
         ],
       },
     ],
   },
+
   "ai-security-prompt-injection": {
     title: "AI Security & Prompt Injection",
     category: "AI Security",
@@ -320,24 +557,76 @@ This query will return true, bypassing password verification!`,
     xp: 1000,
     modules: [
       {
-        title: "Module 1: Security for LLMs",
+        title: "Module 1: LLM Threat Models & Prompt Injection",
         lessons: [
           {
-            id: "ai-risks",
-            title: "Vulnerabilities of LLM Systems",
+            id: "ai-threat-video",
+            title: "Vulnerabilities of LLM Systems & OWASP Top 10 for LLMs",
             type: "video",
-            duration: "10 mins",
+            duration: "14 mins",
             completed: false,
             videoUrl: "https://www.youtube-nocookie.com/embed/v2gD8BHOaXg",
-            content: "Overview of prompt injections, training data poisoning, model theft, and insecure output handling.",
+            content: "Understand security challenges in Large Language Model (LLM) applications: Prompt Injection (LLM01), Insecure Output Handling (LLM02), Training Data Poisoning (LLM03), and Model Theft.",
           },
           {
-            id: "securing-llm",
-            title: "Hardening LLM Prompts",
+            id: "prompt-injection-demo-video",
+            title: "Direct & Indirect Prompt Injection Attacks with Live Demos",
+            type: "video",
+            duration: "18 mins",
+            completed: false,
+            videoUrl: "https://www.youtube-nocookie.com/embed/bB3dGqK5j3U",
+            content: "Analyze direct jailbreaks ('Ignore previous instructions and do X') and indirect prompt injections (hidden payloads embedded in external web pages, emails, or PDFs ingested by AI agents).",
+          },
+        ],
+      },
+      {
+        title: "Module 2: AI Guardrails & Secure Architecture",
+        lessons: [
+          {
+            id: "ai-defense-video",
+            title: "Hardening AI Systems with Guardrails & Defensive Output Validation",
+            type: "video",
+            duration: "20 mins",
+            completed: false,
+            videoUrl: "https://www.youtube-nocookie.com/embed/T-D1OfcDW1M",
+            content: "Implement defense-in-depth for generative AI: NeMo Guardrails, structured schema enforcement, dual-LLM evaluator patterns, and sanitizing outputs before SQL or shell execution.",
+          },
+          {
+            id: "ai-poisoning-reading",
+            title: "Training Data Poisoning & Supply Chain Risks",
             type: "reading",
             duration: "15 mins",
             completed: false,
-            content: "Methods to validate LLM inputs/outputs, sanitize user fields, and create robust, instruction-compliant system prompts.",
+            content: `Backdoors in pre-trained models, malicious HuggingFace model serialization files (pickle RCE), and poisoning fine-tuning datasets represent critical AI supply chain threats.`,
+          },
+          {
+            id: "ai-quiz",
+            title: "AI Security Assessment",
+            type: "quiz",
+            duration: "5 mins",
+            completed: false,
+            quizQuestions: [
+              {
+                q: "What is an indirect prompt injection attack?",
+                options: [
+                  "An attack where the payload is retrieved from external untrusted content (webpage, email, PDF) read by the AI",
+                  "An attack targeting the physical server hardware",
+                  "A brute-force attack on API keys",
+                  "A DDoS attack on the model hosting provider",
+                ],
+                answer: 0,
+              },
+              {
+                q: "Why is executing raw LLM generated outputs directly in shell commands or database queries dangerous?",
+                options: [
+                  "Insecure Output Handling can allow prompt injections to escalate into Remote Code Execution or SQLi",
+                  "It causes syntax errors in all programming languages",
+                  "LLMs cannot generate valid SQL queries",
+                  "It violates API terms of service",
+                ],
+                answer: 0,
+              },
+            ],
           },
         ],
       },
@@ -362,11 +651,11 @@ export default function CourseDetailPage() {
   useEffect(() => {
     if (!courseId) return;
 
-    // Fetch dynamic course data from backend
+    // Fetch dynamic course data from backend if available
     api.getCourse(courseId)
       .then((data) => {
         if (data && data.lessons && data.lessons.length > 0) {
-          // Map backend lessons to view format
+          // If backend has lessons, map them
           const mappedLessons = data.lessons.map((l: { id: string; title: string; content_type?: string; duration?: number; content?: string }) => ({
             id: l.id,
             title: l.title,
@@ -374,10 +663,15 @@ export default function CourseDetailPage() {
             duration: `${l.duration || 15} mins`,
             completed: false,
             content: l.content || "Lesson content loading...",
+            videoUrl: l.content_type === "video" ? l.content : undefined,
           }));
 
           if (mappedLessons.length > 0) {
-            setActiveLesson(mappedLessons[0]);
+            // Keep rich client lessons if available, otherwise use backend
+            const clientMatch = course.modules.flatMap(m => m.lessons).find(l => l.id === mappedLessons[0].id);
+            if (!clientMatch) {
+              setActiveLesson(mappedLessons[0]);
+            }
           }
         }
       })
@@ -393,9 +687,7 @@ export default function CourseDetailPage() {
       });
     });
 
-    Promise.resolve().then(() => {
-      setCompletedLessonsSet(initialSet);
-    });
+    setCompletedLessonsSet(initialSet);
 
     api.getProgress()
       .then((progressList) => {
@@ -411,7 +703,6 @@ export default function CourseDetailPage() {
         console.warn("Backend offline or progress fetch failed, using offline progress state:", err);
       });
   }, [courseId, course.modules]);
-
 
   const [quizEvaluation, setQuizEvaluation] = useState<{
     passed: boolean;
@@ -523,12 +814,12 @@ export default function CourseDetailPage() {
             <h2 className="text-xl font-bold text-foreground mb-1">{course.title}</h2>
             <div className="flex items-center gap-2 mb-4">
               <Badge variant="success" size="sm">{course.difficulty}</Badge>
-              <span className="text-xs text-foreground-muted">+{course.xp} XP</span>
+              <span className="text-xs text-foreground-muted font-mono">+{course.xp} XP</span>
             </div>
             <div className="space-y-1 mb-4">
               <div className="flex justify-between text-xs font-semibold">
-                <span className="text-foreground-secondary">Progress</span>
-                <span className="text-primary">{progressPct}% Complete</span>
+                <span className="text-foreground-secondary">Course Progress</span>
+                <span className="text-primary font-bold">{progressPct}% Complete</span>
               </div>
               <ProgressBar value={progressPct} variant="gradient" size="sm" />
             </div>
@@ -547,7 +838,7 @@ export default function CourseDetailPage() {
                     Course Certification Exam
                   </p>
                   <p className="text-[10px] text-muted-foreground">
-                    Timed test &amp; official certificate
+                    Proctored test &amp; verifiable credential
                   </p>
                 </div>
               </div>
@@ -580,19 +871,22 @@ export default function CourseDetailPage() {
                       >
                         <div className="flex items-center gap-3">
                           <div className={`p-1.5 rounded-lg ${
-                            isSelected ? "bg-primary/20" : "bg-surface-elevated"
+                            isSelected ? "bg-primary/20 text-primary" : "bg-surface-elevated text-foreground-muted"
                           }`}>
-                            <Icon className={`w-4 h-4 ${isSelected ? "text-primary" : "text-foreground-muted"}`} />
+                            <Icon className="w-4 h-4" />
                           </div>
                           <div>
-                            <p className={`text-sm font-semibold ${isSelected ? "text-foreground" : "text-foreground-secondary"}`}>
+                            <p className={`text-sm font-semibold ${isSelected ? "text-foreground font-bold" : "text-foreground-secondary"}`}>
                               {lesson.title}
                             </p>
-                            <span className="text-xs text-foreground-muted">{lesson.duration}</span>
+                            <span className="text-[11px] text-foreground-muted flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {lesson.duration}
+                            </span>
                           </div>
                         </div>
                         {completedLessonsSet.has(lesson.id) && (
-                          <CheckCircle className="w-4 h-4 text-accent shrink-0 ml-2" />
+                          <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0 ml-2" />
                         )}
                       </button>
                     );
@@ -605,31 +899,34 @@ export default function CourseDetailPage() {
 
         {/* Content Panel (8 cols) */}
         <div className="lg:col-span-8 space-y-6">
-          <Card padding="lg" className="min-h-[500px] flex flex-col">
+          <Card padding="lg" className="min-h-[550px] flex flex-col">
             {/* Active Lesson Header */}
             <div className="border-b border-border pb-4 mb-6 flex items-center justify-between">
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-primary">
+                <span className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                  {activeLesson.type === "video" && <Play className="w-3.5 h-3.5 fill-primary" />}
+                  {activeLesson.type === "reading" && <FileText className="w-3.5 h-3.5" />}
+                  {activeLesson.type === "quiz" && <HelpCircle className="w-3.5 h-3.5" />}
                   {activeLesson.type} Lesson
                 </span>
-                <h2 className="text-2xl font-bold text-foreground mt-0.5">
+                <h2 className="text-xl sm:text-2xl font-bold text-foreground mt-1">
                   {activeLesson.title}
                 </h2>
               </div>
               <Link
                 href="/ai-coach"
-                className="flex items-center gap-1.5 text-xs text-primary hover:text-primary-hover font-semibold transition-colors"
+                className="flex items-center gap-1.5 text-xs text-primary hover:text-primary-hover font-semibold transition-colors px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20"
               >
                 <Bot className="w-4 h-4 text-primary" />
-                Ask Coach
+                Ask AI Coach
               </Link>
             </div>
 
             {/* Embedded YouTube Video Player */}
             {activeLesson.type === "video" && (
-              <div className="mb-6 rounded-[var(--radius-lg)] overflow-hidden bg-black border border-border aspect-video shadow-2xl relative">
+              <div className="mb-6 rounded-2xl overflow-hidden bg-black border border-border aspect-video shadow-2xl relative">
                 <iframe
-                  src={getYouTubeEmbedUrl(activeLesson.videoUrl || activeLesson.content) || "https://www.youtube-nocookie.com/embed/2JYT5f2isg4"}
+                  src={getYouTubeEmbedUrl(activeLesson.videoUrl || activeLesson.content) || "https://www.youtube-nocookie.com/embed/2_a10h63d50"}
                   title={activeLesson.title}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
@@ -638,10 +935,10 @@ export default function CourseDetailPage() {
               </div>
             )}
 
-            {/* Reading Content */}
+            {/* Reading / Video Description Content */}
             <div className="prose prose-invert max-w-none text-foreground-secondary text-sm leading-7 space-y-4 font-normal flex-1">
               {activeLesson.content && (
-                <div className="whitespace-pre-line bg-surface-elevated/40 p-4 rounded-[var(--radius-lg)] border border-border font-mono text-xs">
+                <div className="whitespace-pre-line bg-surface-elevated/40 p-4 rounded-xl border border-border font-sans text-xs sm:text-sm leading-relaxed">
                   {activeLesson.content}
                 </div>
               )}
@@ -662,12 +959,12 @@ export default function CourseDetailPage() {
                         let optClass = "border-border hover:bg-surface-elevated/50 text-foreground-secondary";
                         if (quizSubmitted) {
                           if (isCorrect) {
-                            optClass = "border-success bg-success/10 text-success";
+                            optClass = "border-success bg-success/10 text-success font-bold";
                           } else if (isSelected) {
                             optClass = "border-error bg-error/10 text-error";
                           }
                         } else if (isSelected) {
-                          optClass = "border-primary bg-primary/10 text-primary";
+                          optClass = "border-primary bg-primary/10 text-primary font-semibold";
                         }
 
                         return (
@@ -686,7 +983,7 @@ export default function CourseDetailPage() {
                 ))}
 
                 {quizSubmitted && quizEvaluation && (
-                  <div className={`p-4 rounded-[var(--radius-lg)] border space-y-3 ${
+                  <div className={`p-4 rounded-xl border space-y-3 ${
                     quizEvaluation.passed ? "bg-success/10 border-success/30 text-success" : "bg-warning/10 border-warning/30 text-warning"
                   }`}>
                     <div className="flex items-center justify-between">
@@ -719,7 +1016,7 @@ export default function CourseDetailPage() {
                     <div className="flex items-center gap-4">
                       <p className="text-sm font-semibold text-foreground">
                         Your Score:{" "}
-                        <span className={quizScore === activeLesson.quizQuestions.length ? "text-success" : "text-warning"}>
+                        <span className={quizScore === activeLesson.quizQuestions.length ? "text-success font-bold" : "text-warning font-bold"}>
                           {quizScore} / {activeLesson.quizQuestions.length}
                         </span>
                       </p>
@@ -729,7 +1026,7 @@ export default function CourseDetailPage() {
                         setQuizScore(0);
                         setQuizEvaluation(null);
                       }}>
-                        Retry
+                        Retry Quiz
                       </Button>
                     </div>
                   )}
@@ -741,8 +1038,8 @@ export default function CourseDetailPage() {
             {activeLesson.type !== "quiz" && (
               <div className="mt-8 pt-4 border-t border-border flex justify-end">
                 {completedLessonsSet.has(activeLesson.id) ? (
-                  <div className="flex items-center gap-2 text-accent text-sm font-semibold">
-                    <CheckCircle className="w-5 h-5 animate-pulse" />
+                  <div className="flex items-center gap-2 text-emerald-400 text-sm font-bold">
+                    <CheckCircle className="w-5 h-5 animate-pulse text-emerald-400" />
                     Lesson Completed
                   </div>
                 ) : (
