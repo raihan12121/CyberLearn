@@ -74,15 +74,21 @@ export default function CertificatesPage() {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">My Certificates</h1>
+            <h1 className="text-2xl font-bold text-foreground">Certificates</h1>
             <p className="text-foreground-secondary mt-1">
-              Verify, share, or download certificates of completion for finished courses.
+              Verify, share, or download official certificates of completion and qualification credentials.
             </p>
           </div>
-          <Badge variant="primary" size="md" className="bg-primary/5 border border-primary/20 text-primary py-2 px-4 flex items-center gap-2">
-            <Award className="w-5 h-5 text-primary" />
-            <span>{verifiedCount} Verified Credential{verifiedCount !== 1 ? "s" : ""}</span>
-          </Badge>
+          <div className="flex items-center gap-3">
+            <Button variant="primary" size="sm" onClick={() => window.location.href = "/exams"} className="font-bold">
+              <Award className="w-4 h-4 mr-1.5" />
+              <span>Take Certification Exams →</span>
+            </Button>
+            <Badge variant="primary" size="md" className="bg-primary/5 border border-primary/20 text-primary py-2 px-4 flex items-center gap-2">
+              <Award className="w-5 h-5 text-primary" />
+              <span>{verifiedCount} Verified Credential{verifiedCount !== 1 ? "s" : ""}</span>
+            </Badge>
+          </div>
         </div>
       </motion.div>
 

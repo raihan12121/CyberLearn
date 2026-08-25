@@ -152,6 +152,193 @@ def seed_default_exams_if_empty(db: Session):
         for q in questions2:
             db.add(q)
 
+    # 3. Cisco Certified Network Associate (CCNA) Security Exam
+    exam3 = db.query(models.Exam).filter(models.Exam.id == "exam-ccna-security").first()
+    if not exam3:
+        net_course = db.query(models.Course).filter(models.Course.id == "network-security-essentials").first()
+        exam3 = models.Exam(
+            id="exam-ccna-security",
+            course_id=net_course.id if net_course else "network-security-essentials",
+            title="Cisco CCNA Security & Network Defense Exam",
+            description="Official qualification exam testing IPv4/IPv6 subnetting, TCP/IP handshakes, Access Control Lists (ACLs), VLAN trunking, and firewall filtering.",
+            duration_minutes=30,
+            passing_score_pct=70,
+            total_marks=100,
+            is_published=True
+        )
+        db.add(exam3)
+        db.flush()
+
+    if exam3 and db.query(models.ExamQuestion).filter(models.ExamQuestion.exam_id == exam3.id).count() == 0:
+        questions3 = [
+            models.ExamQuestion(
+                exam_id=exam3.id,
+                question_text="How many usable host IP addresses are available in a standard /28 IPv4 subnet?",
+                question_type="mcq",
+                options=["14 usable hosts", "16 usable hosts", "30 usable hosts", "6 usable hosts"],
+                correct_answer="0",
+                explanation="A /28 subnet has 32 - 28 = 4 host bits (2^4 = 16 total addresses). Subtracting Network and Broadcast gives 14 usable hosts.",
+                points=25,
+                sort_order=1
+            ),
+            models.ExamQuestion(
+                exam_id=exam3.id,
+                question_text="What is the precise 3-step TCP connection establishment sequence?",
+                question_type="mcq",
+                options=["SYN -> SYN-ACK -> ACK", "ACK -> SYN -> DATA", "SYN -> ACK -> RST", "PING -> ECHO -> ACK"],
+                correct_answer="0",
+                explanation="The classic 3-way handshake begins with client SYN, server replies with SYN-ACK, and client acknowledges with ACK.",
+                points=25,
+                sort_order=2
+            ),
+            models.ExamQuestion(
+                exam_id=exam3.id,
+                question_text="What type of Cisco ACL filters traffic based on source IP, destination IP, protocols (TCP/UDP), and destination port numbers?",
+                question_type="mcq",
+                options=["Extended ACL (Numbered 100-199 / Named)", "Standard ACL (Numbered 1-99)", "Reflexive ACL only", "Dynamic Time-based ACL"],
+                correct_answer="0",
+                explanation="Extended ACLs provide granular filtering by inspecting source, destination, protocol, and layer 4 port numbers.",
+                points=25,
+                sort_order=3
+            ),
+            models.ExamQuestion(
+                exam_id=exam3.id,
+                question_text="Which encapsulation standard tags Ethernet frames with 802.1Q headers to carry multiple VLANs across a single trunk link?",
+                question_type="mcq",
+                options=["IEEE 802.1Q Trunking", "ISL Proprietary Protocol", "STP 802.1D", "VTP Client Mode"],
+                correct_answer="0",
+                explanation="IEEE 802.1Q is the vendor-neutral industry standard for VLAN tagging across switch trunk links.",
+                points=25,
+                sort_order=4
+            ),
+        ]
+        for q in questions3:
+            db.add(q)
+
+    # 4. CompTIA Security+ (SY0-701) Comprehensive Exam
+    exam4 = db.query(models.Exam).filter(models.Exam.id == "exam-comptia-secplus").first()
+    if not exam4:
+        exam4 = models.Exam(
+            id="exam-comptia-secplus",
+            course_id=None,
+            title="CompTIA Security+ (SY0-701) Certification Exam",
+            description="Industry benchmark certification covering threat vectors, PKI asymmetric cryptography, risk management, and zero-trust security architectures.",
+            duration_minutes=35,
+            passing_score_pct=70,
+            total_marks=100,
+            is_published=True
+        )
+        db.add(exam4)
+        db.flush()
+
+    if exam4 and db.query(models.ExamQuestion).filter(models.ExamQuestion.exam_id == exam4.id).count() == 0:
+        questions4 = [
+            models.ExamQuestion(
+                exam_id=exam4.id,
+                question_text="Which cryptographic concept uses a mathematically linked Public Key for encryption and Private Key for decryption?",
+                question_type="mcq",
+                options=["Asymmetric (Public Key) Cryptography (e.g. RSA, ECC)", "Symmetric Block Cipher (e.g. AES-256)", "Cryptographic Hashing (e.g. SHA-256)", "One-Time Pad (OTP)"],
+                correct_answer="0",
+                explanation="Asymmetric cryptography uses a public-private keypair for secure key exchange, encryption, and digital signatures.",
+                points=25,
+                sort_order=1
+            ),
+            models.ExamQuestion(
+                exam_id=exam4.id,
+                question_text="What foundational principle forms the core of a modern Zero Trust Architecture (ZTA)?",
+                question_type="mcq",
+                options=["Never Trust, Always Verify across all identity and context checks", "Trust all endpoints located inside the internal LAN perimeter", "Authenticate once at morning login and bypass subsequent checks", "Rely exclusively on perimeter border firewalls"],
+                correct_answer="0",
+                explanation="Zero Trust assumes breach and requires continuous verification of every transaction, device, and user identity.",
+                points=25,
+                sort_order=2
+            ),
+            models.ExamQuestion(
+                exam_id=exam4.id,
+                question_text="A high-value executive receives a tailored email referencing internal corporate projects attempting credential theft. What attack is this?",
+                question_type="mcq",
+                options=["Whaling (Targeted Executive Spearphishing)", "Mass Vishing Call", "Watering Hole Attack", "Shoulder Surfing"],
+                correct_answer="0",
+                explanation="Whaling is a highly targeted form of spear phishing directed specifically at senior executives and high-profile individuals.",
+                points=25,
+                sort_order=3
+            ),
+            models.ExamQuestion(
+                exam_id=exam4.id,
+                question_text="Which protocol is used by client systems to quickly check the real-time revocation status of an X.509 digital certificate?",
+                question_type="mcq",
+                options=["Online Certificate Status Protocol (OCSP)", "Certificate Revocation List (CRL) full download", "Simple Network Management Protocol (SNMP)", "Network Time Protocol (NTP)"],
+                correct_answer="0",
+                explanation="OCSP provides real-time, lightweight certificate revocation queries without downloading massive CRL files.",
+                points=25,
+                sort_order=4
+            ),
+        ]
+        for q in questions4:
+            db.add(q)
+
+    # 5. Certified Ethical Hacker (CEH) Associate Exam
+    exam5 = db.query(models.Exam).filter(models.Exam.id == "exam-ceh-associate").first()
+    if not exam5:
+        exam5 = models.Exam(
+            id="exam-ceh-associate",
+            course_id=None,
+            title="Certified Ethical Hacker (CEH) Associate Exam",
+            description="Practical offensive security qualification covering Nmap active port scanning, Metasploit exploitation, and Linux privilege escalation.",
+            duration_minutes=30,
+            passing_score_pct=70,
+            total_marks=100,
+            is_published=True
+        )
+        db.add(exam5)
+        db.flush()
+
+    if exam5 and db.query(models.ExamQuestion).filter(models.ExamQuestion.exam_id == exam5.id).count() == 0:
+        questions5 = [
+            models.ExamQuestion(
+                exam_id=exam5.id,
+                question_text="Which Nmap scan flag initiates a TCP SYN 'Half-Open' stealth scan that avoids completing the 3-way handshake?",
+                question_type="mcq",
+                options=["nmap -sS", "nmap -sT", "nmap -sU", "nmap -sn"],
+                correct_answer="0",
+                explanation="nmap -sS sends SYN packets and tears down connections with RST upon receiving SYN-ACK, minimizing logging on legacy systems.",
+                points=25,
+                sort_order=1
+            ),
+            models.ExamQuestion(
+                exam_id=exam5.id,
+                question_text="In binary exploitation, what occurs when an attacker writes more data into a fixed buffer than allocated, overwriting the Instruction Pointer (EIP/RIP)?",
+                question_type="mcq",
+                options=["Stack Buffer Overflow leading to arbitrary code execution", "Integer Underflow", "Race Condition (TOCTOU)", "Denial of Service without memory corruption"],
+                correct_answer="0",
+                explanation="Buffer overflows overwrite adjacent memory on the call stack, enabling attackers to hijack the saved return address/instruction pointer.",
+                points=25,
+                sort_order=2
+            ),
+            models.ExamQuestion(
+                exam_id=exam5.id,
+                question_text="Which Metasploit post-exploitation payload runs entirely in memory as a dynamically injected DLL, providing extensive pivoting capabilities?",
+                question_type="mcq",
+                options=["Meterpreter", "Shell Reverse TCP", "Generic Single Payload", "Netcat Listener"],
+                correct_answer="0",
+                explanation="Meterpreter is an advanced, memory-resident staged payload that avoids touching the disk and provides stealthy pivoting features.",
+                points=25,
+                sort_order=3
+            ),
+            models.ExamQuestion(
+                exam_id=exam5.id,
+                question_text="Which Linux binary tool or command is used to inspect all listening network ports and associated process IDs on a target server?",
+                question_type="mcq",
+                options=["ss -tulpn (or netstat -tulpn)", "ls -la /dev/tcp", "cat /etc/hosts", "tcpdump -i any"],
+                correct_answer="0",
+                explanation="ss -tulpn lists listening TCP and UDP sockets with program/process names and port mappings.",
+                points=25,
+                sort_order=4
+            ),
+        ]
+        for q in questions5:
+            db.add(q)
+
     db.commit()
 
 @router.get("", response_model=List[schemas.ExamResponse])
