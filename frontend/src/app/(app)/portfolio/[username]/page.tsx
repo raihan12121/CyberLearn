@@ -61,6 +61,10 @@ interface PublicProfile {
   id?: string;
   full_name: string;
   username: string;
+  avatar_url?: string;
+  bio?: string;
+  primary_focus?: string;
+  experience_level?: string;
   role: string;
   rank: number;
   xp: number;
@@ -447,7 +451,7 @@ fingerprint: 4E91 C90A 7B12 8D4F 391A  8801 E762 9401 E672 94B2
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
             <div className="relative">
               <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-surface-elevated border-2 border-primary/40 flex items-center justify-center text-3xl sm:text-4xl font-extrabold text-primary shadow-lg overflow-hidden">
-                <Avatar name={displayName} size="lg" className="w-full h-full text-2xl font-bold" />
+                <Avatar src={profile?.avatar_url} name={displayName} size="xl" className="w-full h-full" />
               </div>
               <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-surface border-2 border-primary flex items-center justify-center text-primary shadow-sm" title="Cryptographically Verified Identity">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />

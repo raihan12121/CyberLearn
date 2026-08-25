@@ -36,6 +36,16 @@ export default function SettingsPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [bio, setBio] = useState("");
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileMessage, setProfileMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Username validation state
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
   // Passwords Form state
   const [currentPassword, setCurrentPassword] = useState("");
@@ -48,7 +58,7 @@ export default function SettingsPage() {
   const [marketing, setMarketing] = useState(false);
 
   // Subscription & Invoices state
-  const { user, fetchUser } = useAuthStore();
+  const { user, fetchUser, setUser } = useAuthStore();
   const [subLoading, setSubLoading] = useState(false);
   const [subMessage, setSubMessage] = useState<string | null>(null);
   const [invoices, setInvoices] = useState<any[]>([]);
@@ -63,6 +73,8 @@ export default function SettingsPage() {
           setFullName(data.full_name || "");
           setEmail(data.email || "");
           setUsername(data.username || data.email.split("@")[0]);
+          setAvatarUrl(data.avatar_url || "");
+          setBio(data.bio || "");
         }
       })
       .catch((err) => console.error("Error fetching profile settings:", err));
@@ -79,6 +91,81 @@ export default function SettingsPage() {
       })
       .catch(() => {});
   }, []);
+
+  // Debounced username checking
+  useEffect(() => {
+    if (!username || (user && username === user.username)) {
+      setUsernameAvailable(null);
+      setUsernameError(null);
+      return;
+    }
+
+    const clean = username.trim();
+    if (clean.length < 3) {
+      setUsernameAvailable(false);
+      setUsernameError("Username must be at least 3 characters");
+      return;
+    }
+    if (!/^[a-zA-Z0-9_-]+$/.test(clean)) {
+      setUsernameAvailable(false);
+      setUsernameError("Only letters, numbers, underscores, and hyphens allowed");
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsCheckingUsername(true);
+      try {
+        const res = await api.checkUsernameAvailability(clean);
+        setUsernameAvailable(res.available);
+        if (!res.available) setUsernameError(res.message);
+        else setUsernameError(null);
+      } catch {
+        setUsernameAvailable(true);
+        setUsernameError(null);
+      } finally {
+        setIsCheckingUsername(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [username, user]);
+
+  const handleAvatarFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Selected photo exceeds the 5MB file size limit.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const base64 = event.target?.result as string;
+      if (base64) {
+        setAvatarUrl(base64);
+        try {
+          const updated = await api.uploadAvatar(base64);
+          setUser(updated);
+          setProfileMessage({ type: "success", text: "Profile picture uploaded successfully!" });
+        } catch (err: any) {
+          console.warn("Avatar upload failed:", err);
+        }
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveAvatar = async () => {
+    setAvatarUrl("");
+    try {
+      const updated = await api.removeAvatar();
+      setUser(updated);
+      setProfileMessage({ type: "success", text: "Profile picture removed successfully." });
+    } catch (err: any) {
+      console.warn("Avatar removal failed:", err);
+    }
+  };
 
   const handleCancelSub = async () => {
     if (!confirm("Are you sure you want to cancel your subscription? Courses and sandbox labs will be locked.")) {
@@ -98,15 +185,31 @@ export default function SettingsPage() {
   };
 
   // Profile Saving
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    api.updateProfile({ full_name: fullName, email, username })
-      .then(() => {
-        alert("Profile configurations saved successfully!");
-      })
-      .catch((err) => {
-        alert("Error saving profile details: " + err.message);
+    if (usernameError || usernameAvailable === false) {
+      alert("Please resolve the username error before saving.");
+      return;
+    }
+
+    setProfileSaving(true);
+    setProfileMessage(null);
+    try {
+      const updated = await api.updateProfile({
+        full_name: fullName.trim(),
+        username: username.trim(),
+        email: email.trim(),
+        avatar_url: avatarUrl || "remove",
+        bio: bio.trim(),
       });
+      setUser(updated);
+      await fetchUser(true);
+      setProfileMessage({ type: "success", text: "Profile settings saved successfully!" });
+    } catch (err: any) {
+      setProfileMessage({ type: "error", text: err.message || "Failed to update profile settings." });
+    } finally {
+      setProfileSaving(false);
+    }
   };
 
   // Password Update
@@ -219,61 +322,153 @@ export default function SettingsPage() {
           {/* PROFILE TAB */}
           {activeTab === "profile" && (
             <Card padding="lg" className="space-y-6">
-              <div className="border-b border-border pb-4">
-                <h3 className="text-base font-bold text-foreground">Profile Information</h3>
-                <p className="text-xs text-foreground-secondary">Update your public profile display variables.</p>
+              <div className="border-b border-border pb-4 flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-bold text-foreground">Profile &amp; Operative Identity</h3>
+                  <p className="text-xs text-foreground-secondary">Manage your public avatar photo, legal certificate name, and unique hacker handle.</p>
+                </div>
               </div>
 
-              {/* Avatar upload layout */}
-              <div className="flex items-center gap-4">
-                <Avatar name={fullName} size="lg" className="w-16 h-16" />
-                <div>
-                  <Button variant="outline" size="sm" onClick={() => alert("Simulated photo upload triggered!")}>
-                    Change Photo
-                  </Button>
-                  <p className="text-[10px] text-foreground-muted mt-1.5 font-normal">
-                    JPG, PNG, or GIF. Max size 2MB.
+              {profileMessage && (
+                <div className={`p-3.5 rounded-2xl text-xs font-semibold flex items-center gap-2.5 ${
+                  profileMessage.type === "success"
+                    ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                    : "bg-red-500/15 text-red-400 border border-red-500/30"
+                }`}>
+                  {profileMessage.type === "success" ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
+                  <span>{profileMessage.text}</span>
+                </div>
+              )}
+
+              {/* Avatar upload & removal controls */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 p-4 rounded-2xl bg-surface-elevated/60 border border-border">
+                <Avatar src={avatarUrl} name={fullName || username} size="xl" className="w-20 h-20 shadow-md ring-2 ring-primary/30" />
+                <div className="space-y-2 flex-1">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleAvatarFileUpload}
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="font-bold text-xs"
+                    >
+                      <span>Upload New Photo</span>
+                    </Button>
+                    {avatarUrl && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRemoveAvatar}
+                        className="text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 border-red-500/30"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 mr-1" />
+                        <span>Remove Photo</span>
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-foreground-muted">
+                    Supports Google account photo, PNG, JPG, or WEBP up to 5MB. Removing reverts to initials.
                   </p>
                 </div>
               </div>
 
-              <form onSubmit={handleSaveProfile} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <form onSubmit={handleSaveProfile} className="space-y-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-foreground-secondary">Full Name</label>
+                    <label className="text-xs font-bold text-foreground uppercase font-mono tracking-wider">
+                      Full Legal Name
+                    </label>
                     <input
                       type="text"
                       required
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      className="w-full bg-surface-elevated border border-border rounded-[var(--radius)] px-4 py-2.5 text-xs text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary-glow transition-all duration-200"
+                      placeholder="e.g. Alex Morgan"
+                      className="w-full bg-surface-elevated border border-border rounded-xl px-4 py-2.5 text-xs text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                     />
+                    <p className="text-[10px] text-foreground-muted">Printed on official course certificates and diplomas.</p>
                   </div>
+
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-foreground-secondary">Username</label>
-                    <input
-                      type="text"
-                      required
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      className="w-full bg-surface-elevated border border-border rounded-[var(--radius)] px-4 py-2.5 text-xs text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary-glow transition-all duration-200"
-                    />
+                    <label className="text-xs font-bold text-foreground uppercase font-mono tracking-wider">
+                      Unique Hacker Handle / Username
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-foreground-muted font-mono text-xs">
+                        @
+                      </div>
+                      <input
+                        type="text"
+                        required
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))}
+                        maxLength={25}
+                        placeholder="e.g. shadow_phantom"
+                        className={`w-full bg-surface-elevated border rounded-xl pl-7 pr-8 py-2.5 text-xs font-mono text-foreground focus:outline-none transition-all ${
+                          usernameAvailable === true
+                            ? "border-emerald-500/60 ring-1 ring-emerald-500/30"
+                            : usernameAvailable === false
+                            ? "border-red-500/60 ring-1 ring-red-500/30"
+                            : "border-border focus:border-primary"
+                        }`}
+                      />
+                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                        {isCheckingUsername ? (
+                          <div className="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                        ) : usernameAvailable === true ? (
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                        ) : usernameAvailable === false ? (
+                          <AlertCircle className="w-3.5 h-3.5 text-red-400" />
+                        ) : null}
+                      </div>
+                    </div>
+                    {usernameError && (
+                      <p className="text-[10px] text-red-400 font-semibold">{usernameError}</p>
+                    )}
+                    {usernameAvailable === true && (
+                      <p className="text-[10px] text-emerald-400 font-semibold">✓ Handle is available!</p>
+                    )}
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground-secondary">Email Address</label>
+                  <label className="text-xs font-bold text-foreground uppercase font-mono tracking-wider">
+                    Operative Bio &amp; Mission Statement
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    placeholder="Short bio displayed on your public cybersecurity portfolio..."
+                    maxLength={160}
+                    className="w-full bg-surface-elevated border border-border rounded-xl px-4 py-2.5 text-xs text-foreground focus:outline-none focus:border-primary transition-all resize-none"
+                  />
+                  <div className="text-right text-[10px] text-foreground-muted font-mono">{bio.length}/160</div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-foreground uppercase font-mono tracking-wider">Email Address</label>
                   <input
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-surface-elevated border border-border rounded-[var(--radius)] px-4 py-2.5 text-xs text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary-glow transition-all duration-200"
+                    className="w-full bg-surface-elevated border border-border rounded-xl px-4 py-2.5 text-xs text-foreground focus:outline-none focus:border-primary transition-all"
                   />
                 </div>
 
                 <div className="pt-4 border-t border-border flex justify-end">
-                  <Button type="submit">Save Settings</Button>
+                  <Button type="submit" loading={profileSaving} className="font-bold">
+                    Save Profile Changes
+                  </Button>
                 </div>
               </form>
             </Card>

@@ -177,7 +177,7 @@ async def oauth_exchange(body: schemas.OAuthCallbackRequest, db: Session = Depen
         # Ensure user is verified if logging in via verified OAuth
         if not db_user.is_verified:
             db_user.is_verified = True
-        if avatar_url and not db_user.avatar_url:
+        if avatar_url:
             db_user.avatar_url = avatar_url
         db.commit()
         
@@ -231,6 +231,18 @@ def social_login(provider_in: schemas.SocialLoginRequest, db: Session = Depends(
     full_name = provider_in.full_name or email.split("@")[0]
     username = email.split("@")[0]
 
+    avatar_url = provider_in.avatar_url
+    if not avatar_url and provider_in.provider_token:
+        parts = provider_in.provider_token.split(".")
+        if len(parts) == 3:
+            try:
+                padded = parts[1] + "=" * (-len(parts[1]) % 4)
+                payload_bytes = base64.urlsafe_b64decode(padded.encode("utf-8"))
+                payload = json.loads(payload_bytes.decode("utf-8"))
+                avatar_url = payload.get("picture") or payload.get("avatar_url")
+            except Exception:
+                pass
+
     db_user = db.query(models.User).filter(models.User.email == email).first()
     if not db_user:
         random_password = secrets.token_urlsafe(32)
@@ -245,6 +257,7 @@ def social_login(provider_in: schemas.SocialLoginRequest, db: Session = Depends(
             username=username,
             password_hash=hashed_password,
             full_name=full_name,
+            avatar_url=avatar_url,
             role="student",
             is_verified=True,
             xp=0,
@@ -260,7 +273,9 @@ def social_login(provider_in: schemas.SocialLoginRequest, db: Session = Depends(
             pass
         if not db_user.is_verified:
             db_user.is_verified = True
-            db.commit()
+        if avatar_url:
+            db_user.avatar_url = avatar_url
+        db.commit()
         
     access_token = create_access_token(data={"sub": db_user.email, "role": db_user.role})
     return {"access_token": access_token, "token_type": "bearer"}

@@ -209,6 +209,8 @@ def update_profile(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
+    import re
+
     if user_update.email is not None and user_update.email != current_user.email:
         # Check if email is already taken
         exists = db.query(models.User).filter(models.User.email == user_update.email).first()
@@ -220,19 +222,69 @@ def update_profile(
         current_user.verification_token = new_token
         background_tasks.add_task(send_verification_email, current_user.email, new_token, current_user.full_name or "Learner")
         
-    if user_update.username is not None and user_update.username != current_user.username:
+    if user_update.username is not None and user_update.username.strip() != (current_user.username or ""):
+        clean_username = user_update.username.strip()
+        if len(clean_username) < 3 or len(clean_username) > 25:
+            raise HTTPException(status_code=400, detail="Username must be between 3 and 25 characters.")
+        if not re.match(r"^[a-zA-Z0-9_-]+$", clean_username):
+            raise HTTPException(status_code=400, detail="Username may only contain letters, numbers, underscores, and hyphens.")
         # Check if username is already taken
-        exists = db.query(models.User).filter(models.User.username == user_update.username).first()
+        exists = db.query(models.User).filter(
+            func.lower(models.User.username) == clean_username.lower(),
+            models.User.id != current_user.id
+        ).first()
         if exists:
-            raise HTTPException(status_code=400, detail="Username is already taken.")
-        current_user.username = user_update.username
+            raise HTTPException(status_code=400, detail=f"The username '{clean_username}' is already taken.")
+        current_user.username = clean_username
         
     if user_update.full_name is not None:
-        current_user.full_name = user_update.full_name
+        current_user.full_name = user_update.full_name.strip() or None
         
     if user_update.avatar_url is not None:
-        current_user.avatar_url = user_update.avatar_url
+        clean_av = user_update.avatar_url.strip()
+        if clean_av == "" or clean_av.lower() in ["null", "none", "remove", "delete"]:
+            current_user.avatar_url = None
+        else:
+            current_user.avatar_url = clean_av
+
+    if user_update.bio is not None:
+        current_user.bio = user_update.bio.strip() or None
+    if user_update.primary_focus is not None:
+        current_user.primary_focus = user_update.primary_focus
+    if user_update.experience_level is not None:
+        current_user.experience_level = user_update.experience_level
+    if user_update.is_onboarded is not None:
+        current_user.is_onboarded = user_update.is_onboarded
         
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+@router.post("/me/avatar", response_model=schemas.UserResponse)
+def upload_avatar(
+    data: dict,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    avatar_url = data.get("avatar_url") or data.get("image")
+    if not avatar_url or not isinstance(avatar_url, str) or not avatar_url.strip():
+        raise HTTPException(status_code=400, detail="A valid avatar image URL or Base64 string is required.")
+    
+    clean_av = avatar_url.strip()
+    if len(clean_av) > 7_000_000: # 5MB limit
+        raise HTTPException(status_code=400, detail="Avatar image exceeds the 5MB size limit.")
+        
+    current_user.avatar_url = clean_av
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+@router.delete("/me/avatar", response_model=schemas.UserResponse)
+def remove_avatar(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    current_user.avatar_url = None
     db.commit()
     db.refresh(current_user)
     return current_user
@@ -361,6 +413,10 @@ def get_public_user_profile(username: str, db: Session = Depends(get_db)):
     return {
         "full_name": user.full_name or user.username or "Learner",
         "username": user.username or username,
+        "avatar_url": user.avatar_url,
+        "bio": user.bio,
+        "primary_focus": user.primary_focus,
+        "experience_level": user.experience_level,
         "role": user.role,
         "rank": rank,
         "xp": user.xp,

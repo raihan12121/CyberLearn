@@ -205,6 +205,13 @@ export const api = {
     method: "PUT",
     body: JSON.stringify(data),
   }),
+  uploadAvatar: (avatarUrlOrBase64: string) => apiFetch("/users/me/avatar", {
+    method: "POST",
+    body: JSON.stringify({ avatar_url: avatarUrlOrBase64 }),
+  }),
+  removeAvatar: () => apiFetch("/users/me/avatar", {
+    method: "DELETE",
+  }),
   deleteAccount: () => apiFetch("/users/me", {
     method: "DELETE",
   }),

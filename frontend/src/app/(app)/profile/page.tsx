@@ -48,6 +48,7 @@ export default function ProfilePage() {
   const [profileData, setProfileData] = useState({
     full_name: "John Doe",
     username: "johndoe",
+    avatar_url: "",
     joined_date: "Joined June 2026",
     role: "student",
     rank: 248,
@@ -67,6 +68,7 @@ export default function ProfilePage() {
           setProfileData({
             full_name: data.full_name || "John Doe",
             username: data.username || data.email.split("@")[0],
+            avatar_url: data.avatar_url || "",
             joined_date: data.joined_date || "Joined June 2026",
             role: data.role || "student",
             rank: data.rank,
@@ -106,7 +108,7 @@ export default function ProfilePage() {
         className="relative overflow-hidden rounded-[var(--radius-xl)] bg-gradient-to-r from-primary/10 via-secondary/10 to-surface border border-border p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6"
       >
         <div className="flex flex-col md:flex-row items-center gap-5 text-center md:text-left">
-          <Avatar name={profileData.full_name} size="lg" className="w-20 h-20 border-2 border-primary" />
+          <Avatar src={profileData.avatar_url} name={profileData.full_name} size="lg" className="w-20 h-20 border-2 border-primary shadow-md" />
           <div>
             <div className="flex items-center justify-center md:justify-start gap-2 flex-wrap">
               <h1 className="text-2xl font-bold text-foreground">{profileData.full_name}</h1>
