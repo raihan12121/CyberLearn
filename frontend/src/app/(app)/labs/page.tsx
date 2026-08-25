@@ -205,7 +205,7 @@ export default function LabsCatalogPage() {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Practice Labs</h1>
+            <h1 className="text-2xl font-bold text-foreground">Labs</h1>
             <p className="text-foreground-secondary mt-1">
               Start isolated sandbox container environments directly in your browser.
             </p>

@@ -26,6 +26,7 @@ import {
   ShieldAlert,
   Sun,
   Moon,
+  FileCheck,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/lib/authStore";
@@ -52,9 +53,9 @@ const studentNavSections: NavSection[] = [
   {
     title: "Learn Hub",
     items: [
-      { label: "Video & Text Courses", href: "/courses", icon: BookOpen },
+      { label: "Courses", href: "/courses", icon: BookOpen },
       { label: "Live Batches", href: "/batches", icon: GraduationCap },
-      { label: "Practice Labs", href: "/labs", icon: Terminal },
+      { label: "Labs", href: "/labs", icon: Terminal },
     ],
   },
   {
@@ -62,7 +63,8 @@ const studentNavSections: NavSection[] = [
     items: [
       { label: "CTF Challenges", href: "/challenges", icon: Swords },
       { label: "Leaderboard", href: "/leaderboard", icon: Trophy },
-      { label: "Certificates & Exams", href: "/certificates", icon: Award },
+      { label: "Exams", href: "/exams", icon: FileCheck },
+      { label: "Certificates", href: "/certificates", icon: Award },
       { label: "ID Verification", href: "/verify-nid", icon: BadgeCheck },
       { label: "Community", href: "/community", icon: Users },
     ],
