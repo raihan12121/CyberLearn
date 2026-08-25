@@ -46,18 +46,23 @@ const mockCertificates = [
 
 export default function CertificatesPage() {
   const [activeTab, setActiveTab] = useState("all");
-  const [certificates, setCertificates] = useState(mockCertificates);
-  const [shareCert, setShareCert] = useState<typeof mockCertificates[0] | null>(null);
-  const [printCert, setPrintCert] = useState<typeof mockCertificates[0] | null>(null);
+  const [certificates, setCertificates] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [shareCert, setShareCert] = useState<any | null>(null);
+  const [printCert, setPrintCert] = useState<any | null>(null);
 
   useEffect(() => {
+    setLoading(true);
     api.getCertificates()
       .then((data) => {
-        if (data && data.length > 0) {
+        if (Array.isArray(data)) {
           setCertificates(data);
         }
       })
-      .catch((err) => console.log("Using cached mock certificates:", err));
+      .catch((err) => {
+        console.warn("Could not fetch certificates:", err);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const filtered = certificates.filter((cert) => {

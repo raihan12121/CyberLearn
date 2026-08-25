@@ -339,6 +339,49 @@ def get_user_progress(
 ):
     return db.query(models.Progress).filter(models.Progress.user_id == current_user.id).all()
 
+def check_and_issue_course_completion(current_user: models.User, course_id: str, db: Session) -> Optional[models.Certificate]:
+    """
+    Checks if all lessons in a course are marked completed by the user.
+    If complete and not already certified, issues official Certificate and awards 500 XP bonus.
+    """
+    course = db.query(models.Course).filter(models.Course.id == course_id).first()
+    if not course:
+        return None
+    lessons = db.query(models.Lesson).filter(models.Lesson.course_id == course_id).all()
+    if not lessons:
+        return None
+    total_lessons = len(lessons)
+    completed_count = db.query(models.Progress).filter(
+        models.Progress.user_id == current_user.id,
+        models.Progress.course_id == course_id,
+        models.Progress.status == "completed"
+    ).count()
+
+    if completed_count >= total_lessons:
+        existing_cert = db.query(models.Certificate).filter(
+            models.Certificate.user_id == current_user.id,
+            models.Certificate.course_id == course_id
+        ).first()
+        if not existing_cert:
+            import uuid
+            from datetime import datetime, timezone
+            course_code = "".join([w[0] for w in course.title.split() if w.isalpha()]).upper()[:6]
+            token = f"CERT-{course_code}-{uuid.uuid4().hex[:8].upper()}"
+            new_cert = models.Certificate(
+                user_id=current_user.id,
+                course_id=course.id,
+                score_pct=100.0,
+                certificate_type="course_completion",
+                verification_token=token,
+                issued_at=datetime.now(timezone.utc)
+            )
+            db.add(new_cert)
+            current_user.xp += 500
+            db.commit()
+            db.refresh(new_cert)
+            return new_cert
+    return None
+
 @router.post("/progress", response_model=schemas.ProgressResponse)
 def update_progress(
     progress_in: schemas.ProgressUpdate,
@@ -391,6 +434,11 @@ def update_progress(
         
     db.commit()
     db.refresh(db_progress)
+
+    # Check and trigger automated course completion certificate
+    if progress_in.status == "completed":
+        check_and_issue_course_completion(current_user, course.id, db)
+
     return db_progress
 
 @router.get("/{course_id}", response_model=schemas.CourseResponse)
@@ -557,6 +605,7 @@ def submit_quiz_assessment(
             current_user.xp += xp_awarded
 
         db.commit()
+        check_and_issue_course_completion(current_user, lesson.course_id, db)
 
     return schemas.QuizEvaluationResponse(
         passed=passed,

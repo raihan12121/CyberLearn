@@ -290,7 +290,7 @@ class Certificate(Base):
     
     id = Column(String(36), primary_key=True, default=generate_uuid)
     user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
-    course_id = Column(String(36), ForeignKey("courses.id"), nullable=False, index=True)
+    course_id = Column(String(36), ForeignKey("courses.id"), nullable=True, index=True)
     exam_id = Column(String(36), ForeignKey("exams.id"), nullable=True, index=True)
     score_pct = Column(Numeric(5, 2), nullable=True)
     certificate_type = Column(String(50), default="course_completion", index=True) # course_completion, exam_certified

@@ -314,18 +314,30 @@ def get_public_user_profile(username: str, db: Session = Depends(get_db)):
             "desc": "Verified active practitioner on CyberLearn."
         }]
         
-    # Get verified certificates
-    certs = db.query(models.Certificate, models.Course).join(
-        models.Course, models.Certificate.course_id == models.Course.id
-    ).filter(models.Certificate.user_id == user.id).all()
-    
+    # Get all verified certificates (both course completions and professional exam certifications)
+    user_certs = db.query(models.Certificate).filter(models.Certificate.user_id == user.id).all()
     certificates_res = []
-    for cert, course in certs:
+    for cert in user_certs:
+        title = "Cybersecurity Certificate"
+        category = "Security"
+        if cert.exam_id:
+            exam = db.query(models.Exam).filter(models.Exam.id == cert.exam_id).first()
+            if exam:
+                title = exam.title
+                category = "Certification Exam"
+        elif cert.course_id:
+            course = db.query(models.Course).filter(models.Course.id == cert.course_id).first()
+            if course:
+                title = course.title
+                category = course.category or "Security"
+
         certificates_res.append({
             "id": cert.verification_token,
-            "courseTitle": course.title,
-            "category": course.category or "Security",
-            "issueDate": cert.issued_at.strftime("%B %d, %Y"),
+            "courseTitle": title,
+            "category": category,
+            "scorePct": float(cert.score_pct) if cert.score_pct is not None else 100.0,
+            "certificateType": cert.certificate_type or "course_completion",
+            "issueDate": cert.issued_at.strftime("%B %d, %Y") if cert.issued_at else "Issued",
             "credentialUrl": f"/verify/{cert.verification_token}"
         })
         
