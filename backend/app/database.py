@@ -61,7 +61,11 @@ def run_auto_migrations(engine):
                     ("verified_at", "DATETIME"),
                     ("subscription_tier", "VARCHAR(50) DEFAULT 'free'"),
                     ("subscription_status", "VARCHAR(20) DEFAULT 'inactive'"),
-                    ("subscription_expires_at", "DATETIME")
+                    ("subscription_expires_at", "DATETIME"),
+                    ("is_onboarded", "BOOLEAN DEFAULT 0"),
+                    ("bio", "TEXT"),
+                    ("primary_focus", "VARCHAR(100)"),
+                    ("experience_level", "VARCHAR(50)")
                 ]
                 for col_name, col_type in new_user_cols:
                     if col_name not in existing_user_cols:

@@ -10,6 +10,10 @@ export interface UserProfile {
   xp: number;
   streak_days?: number;
   avatar_url?: string;
+  bio?: string;
+  primary_focus?: string;
+  experience_level?: string;
+  is_onboarded?: boolean;
   verification_status?: string;
   is_verified?: boolean;
   subscription_tier?: string;

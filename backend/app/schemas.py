@@ -39,9 +39,26 @@ class UserResponse(UserBase):
     xp: int
     streak_days: int
     avatar_url: Optional[str] = None
+    bio: Optional[str] = None
+    primary_focus: Optional[str] = None
+    experience_level: Optional[str] = None
+    is_onboarded: Optional[bool] = False
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class OnboardingRequest(BaseModel):
+    username: str
+    full_name: Optional[str] = None
+    primary_focus: Optional[str] = None
+    experience_level: Optional[str] = None
+    bio: Optional[str] = None
+    avatar_url: Optional[str] = None
+
+class UsernameCheckResponse(BaseModel):
+    username: str
+    available: bool
+    message: str
 
 class SubscriptionStatusResponse(BaseModel):
     tier: str
@@ -68,6 +85,10 @@ class UserUpdate(BaseModel):
     username: Optional[str] = None
     email: Optional[EmailStr] = None
     avatar_url: Optional[str] = None
+    bio: Optional[str] = None
+    primary_focus: Optional[str] = None
+    experience_level: Optional[str] = None
+    is_onboarded: Optional[bool] = None
 
 class PasswordUpdate(BaseModel):
     current_password: str

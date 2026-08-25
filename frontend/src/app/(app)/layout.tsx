@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Sidebar, TopNav } from "@/components/layout";
+import { OnboardingModal } from "@/components/OnboardingModal";
 import { getAuthToken, removeAuthToken } from "@/lib/api";
 import { useAuthStore } from "@/lib/authStore";
 import { Shield } from "lucide-react";
@@ -83,6 +84,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <TopNav onMenuClick={() => setMobileOpen(true)} />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">{children}</main>
       </div>
+      <OnboardingModal />
     </div>
   );
 }

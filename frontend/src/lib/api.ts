@@ -320,7 +320,6 @@ export const api = {
   }),
 
   // Course Exams & Certification
-
   getExams: () => apiFetch("/exams"),
   getCourseExam: (courseId: string) => apiFetch(`/exams/course/${courseId}`),
   getExamDetails: (examId: string) => apiFetch(`/exams/${examId}`),
@@ -329,5 +328,19 @@ export const api = {
     body: JSON.stringify({ answers }),
   }),
   getMyExamSubmissions: () => apiFetch("/exams/submissions/my"),
+
+  // Onboarding & Unique Username
+  checkUsernameAvailability: (username: string) => apiFetch(`/auth/check-username?username=${encodeURIComponent(username)}`),
+  completeOnboarding: (data: {
+    username: string;
+    full_name?: string;
+    primary_focus?: string;
+    experience_level?: string;
+    bio?: string;
+    avatar_url?: string;
+  }) => apiFetch("/auth/complete-onboarding", {
+    method: "POST",
+    body: JSON.stringify(data),
+  }),
 };
 

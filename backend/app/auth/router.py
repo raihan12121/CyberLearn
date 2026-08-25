@@ -265,9 +265,131 @@ def social_login(provider_in: schemas.SocialLoginRequest, db: Session = Depends(
     access_token = create_access_token(data={"sub": db_user.email, "role": db_user.role})
     return {"access_token": access_token, "token_type": "bearer"}
 
+@router.get("/check-username", response_model=schemas.UsernameCheckResponse)
+def check_username_availability(
+    username: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[models.User] = Depends(lambda: None)
+):
+    import re
+    from sqlalchemy import func
+    
+    clean_username = username.strip()
+    if not clean_username:
+        return schemas.UsernameCheckResponse(
+            username=username,
+            available=False,
+            message="Username cannot be empty."
+        )
+    
+    if len(clean_username) < 3:
+        return schemas.UsernameCheckResponse(
+            username=clean_username,
+            available=False,
+            message="Username must be at least 3 characters long."
+        )
+    
+    if len(clean_username) > 25:
+        return schemas.UsernameCheckResponse(
+            username=clean_username,
+            available=False,
+            message="Username cannot exceed 25 characters."
+        )
+        
+    if not re.match(r"^[a-zA-Z0-9_-]+$", clean_username):
+        return schemas.UsernameCheckResponse(
+            username=clean_username,
+            available=False,
+            message="Username may only contain letters, numbers, underscores, and hyphens."
+        )
+        
+    existing = db.query(models.User).filter(func.lower(models.User.username) == clean_username.lower()).first()
+    if existing:
+        return schemas.UsernameCheckResponse(
+            username=clean_username,
+            available=False,
+            message="This username is already claimed by another operative."
+        )
+        
+    return schemas.UsernameCheckResponse(
+        username=clean_username,
+        available=True,
+        message="Username is available!"
+    )
+
+@router.post("/complete-onboarding", response_model=schemas.UserResponse)
+def complete_onboarding(
+    onboarding_in: schemas.OnboardingRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    import re
+    from sqlalchemy import func
+    
+    clean_username = onboarding_in.username.strip()
+    if not clean_username or len(clean_username) < 3 or len(clean_username) > 25:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username must be between 3 and 25 characters."
+        )
+        
+    if not re.match(r"^[a-zA-Z0-9_-]+$", clean_username):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username may only contain letters, numbers, underscores, and hyphens."
+        )
+        
+    # Check uniqueness against other users
+    existing = db.query(models.User).filter(
+        func.lower(models.User.username) == clean_username.lower(),
+        models.User.id != current_user.id
+    ).first()
+    
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"The username '{clean_username}' is already taken. Please choose another handle."
+        )
+        
+    current_user.username = clean_username
+    if onboarding_in.full_name:
+        current_user.full_name = onboarding_in.full_name.strip()
+    if onboarding_in.primary_focus:
+        current_user.primary_focus = onboarding_in.primary_focus
+    if onboarding_in.experience_level:
+        current_user.experience_level = onboarding_in.experience_level
+    if onboarding_in.bio:
+        current_user.bio = onboarding_in.bio
+    if onboarding_in.avatar_url:
+        current_user.avatar_url = onboarding_in.avatar_url
+        
+    if not current_user.is_onboarded:
+        current_user.is_onboarded = True
+        current_user.xp += 100 # Onboarding Welcome XP Bonus
+        
+        # Award Initiation badge
+        has_initiate = db.query(models.Achievement).filter(
+            models.Achievement.user_id == current_user.id,
+            models.Achievement.badge_name == "Cyber Initiate"
+        ).first()
+        if not has_initiate:
+            db.add(models.Achievement(
+                user_id=current_user.id,
+                badge_name="Cyber Initiate",
+                badge_icon="⚡"
+            ))
+            
+    db.commit()
+    db.refresh(current_user)
+    
+    res = schemas.UserResponse.model_validate(current_user)
+    res.is_subscribed = has_active_subscription(current_user)
+    return res
+
 @router.get("/me", response_model=schemas.UserResponse)
 def get_me(current_user: models.User = Depends(get_current_user)):
     res = schemas.UserResponse.model_validate(current_user)
     res.is_subscribed = has_active_subscription(current_user)
     return res
+
 

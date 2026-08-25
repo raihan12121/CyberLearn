@@ -24,6 +24,10 @@ class User(Base):
     xp = Column(Integer, default=0, index=True)
     streak_days = Column(Integer, default=0)
     avatar_url = Column(Text, nullable=True)
+    bio = Column(Text, nullable=True)
+    primary_focus = Column(String(100), nullable=True) # e.g. Web Security, Penetration Testing, Network Defense
+    experience_level = Column(String(50), nullable=True) # Beginner, Intermediate, Advanced
+    is_onboarded = Column(Boolean, default=False)
     
     # Human/NID Identity Verification fields
     nid_number = Column(String(50), nullable=True, index=True)

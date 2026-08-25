@@ -55,13 +55,15 @@ def run_tests():
     print("[2] Testing Mandatory ID Verification Rule for Certificate Issuance...")
     
     # Register a new unverified student
-    email = "unverified_learner@cyberlearn.io"
+    import uuid
+    uid = uuid.uuid4().hex[:6]
+    email = f"unverified_learner_{uid}@cyberlearn.io"
     password = "Password123!"
     reg_res = client.post("/auth/register", json={
         "email": email,
         "password": password,
         "full_name": "Unverified Learner",
-        "username": "unverifiedlearner"
+        "username": f"unverifiedlearner_{uid}"
     })
     token = reg_res.json()["access_token"] if reg_res.status_code == 200 else client.post("/auth/login", json={"email": email, "password": password}).json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
