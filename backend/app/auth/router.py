@@ -199,12 +199,26 @@ def email_diagnostic():
     return {
         "brevo_api_key_configured": bool(brevo_key),
         "brevo_key_type": key_type,
-        "configured_sender_email": settings.EMAILS_FROM_EMAIL or "noreply@cyberlearn.io",
-        "configured_sender_name": settings.EMAILS_FROM_NAME or "CyberLearn Security",
+        "configured_sender_email": settings.EMAILS_FROM_EMAIL or "mdraihan2328@gmail.com",
+        "configured_sender_name": settings.EMAILS_FROM_NAME or "Cyber Learn",
         "smtp_host": settings.SMTP_HOST,
         "smtp_user_set": bool(settings.SMTP_USER),
         "brevo_api_status": brevo_api_status,
         "discovered_verified_senders": verified_senders,
+    }
+
+@router.get("/test-send-otp")
+def test_send_otp_endpoint(email: str = "arshaful730@gmail.com"):
+    """
+    Direct synchronous test dispatch of 6-digit OTP email to diagnose Brevo status in real-time.
+    """
+    from .email import send_otp_verification_email_with_report
+    otp_code = str(secrets.randbelow(900000) + 100000)
+    report = send_otp_verification_email_with_report(email, otp_code, "Operative Test")
+    return {
+        "target_email": email,
+        "test_otp_code": otp_code,
+        "dispatch_report": report
     }
 
 @router.get("/verify-email")
