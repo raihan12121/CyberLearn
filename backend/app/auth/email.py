@@ -241,7 +241,15 @@ def send_otp_verification_email_with_report(recipient_email: str, otp_code: str,
 
             with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=12) as server:
                 server.starttls()
-                server.login(smtp_user, smtp_pass)
+                try:
+                    server.login(smtp_user, smtp_pass)
+                except Exception as login_err:
+                    if smtp_user != "b6d030001@smtp-brevo.com":
+                        server.login("b6d030001@smtp-brevo.com", smtp_pass)
+                    elif smtp_user != "mdraihan2328@gmail.com":
+                        server.login("mdraihan2328@gmail.com", smtp_pass)
+                    else:
+                        raise login_err
                 server.sendmail(sender_email, [recipient_email], msg.as_string())
 
             method_info["success"] = True
