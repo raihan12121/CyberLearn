@@ -12,19 +12,19 @@ interface BadgeProps {
 }
 
 const variantClasses: Record<BadgeVariant, string> = {
-  default: "bg-surface-bright text-foreground-secondary",
-  primary: "bg-primary/15 text-primary-light",
-  secondary: "bg-secondary/15 text-secondary-light",
-  success: "bg-accent/15 text-accent-light",
-  warning: "bg-warning/15 text-warning",
-  danger: "bg-error/15 text-error",
-  purple: "bg-secondary/15 text-secondary-light",
+  default: "bg-slate-800 text-slate-300 border border-slate-700/60",
+  primary: "bg-blue-500/10 text-blue-400 border border-blue-500/20",
+  secondary: "bg-slate-800/80 text-slate-300 border border-slate-700/40",
+  success: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20",
+  warning: "bg-amber-500/10 text-amber-400 border border-amber-500/20",
+  danger: "bg-rose-500/10 text-rose-400 border border-rose-500/20",
+  purple: "bg-blue-500/10 text-blue-400 border border-blue-500/20", // standardized to clean blue
   outline: "bg-transparent border border-border text-foreground-secondary",
 };
 
 const sizeClasses: Record<BadgeSize, string> = {
-  sm: "px-2 py-0.5 text-[10px]",
-  md: "px-2.5 py-1 text-xs",
+  sm: "px-2 py-0.5 text-[10px] font-semibold tracking-wide",
+  md: "px-2.5 py-1 text-xs font-semibold tracking-wide",
 };
 
 export default function Badge({
@@ -37,7 +37,7 @@ export default function Badge({
   return (
     <span
       className={`
-        inline-flex items-center gap-1 font-medium rounded-full whitespace-nowrap
+        inline-flex items-center gap-1.5 rounded-full whitespace-nowrap
         ${variantClasses[variant]}
         ${sizeClasses[size]}
         ${className}
@@ -47,12 +47,12 @@ export default function Badge({
         <span
           className={`w-1.5 h-1.5 rounded-full ${
             variant === "success"
-              ? "bg-accent"
+              ? "bg-emerald-400"
               : variant === "danger"
-              ? "bg-error"
+              ? "bg-rose-400"
               : variant === "warning"
-              ? "bg-warning"
-              : "bg-primary"
+              ? "bg-amber-400"
+              : "bg-blue-400"
           }`}
         />
       )}

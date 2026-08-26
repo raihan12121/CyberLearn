@@ -171,22 +171,22 @@ export default function DashboardPage() {
       {/* Admin Mode Quick Switcher Banner */}
       {isAdmin && (
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
+          initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-primary/10 to-amber-500/5 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl"
+          className="p-4 sm:p-5 rounded-xl bg-blue-950/30 border border-blue-800/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm"
         >
           <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center shrink-0 shadow-inner">
-              <Shield className="w-6 h-6" />
+            <div className="w-10 h-10 rounded-lg bg-blue-600/20 text-blue-400 border border-blue-500/30 flex items-center justify-center shrink-0">
+              <Shield className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm font-bold text-foreground">Administrator Session Active</span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/40">
+                <span className="text-sm font-bold text-white">Administrator Session Active</span>
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-500/15 text-blue-400 border border-blue-500/30">
                   System Admin
                 </span>
               </div>
-              <p className="text-xs text-foreground-secondary mt-0.5">
+              <p className="text-xs text-slate-400 mt-0.5">
                 You are currently viewing the student dashboard. Switch to the Admin Control Center to manage users, review student KYC verifications, and inspect system telemetry.
               </p>
             </div>
@@ -194,7 +194,8 @@ export default function DashboardPage() {
 
           <Button
             onClick={() => router.push("/admin")}
-            className="shrink-0 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold border-none shadow-md flex items-center gap-2 cursor-pointer text-xs"
+            size="sm"
+            className="shrink-0 flex items-center gap-2 cursor-pointer"
           >
             <Shield className="w-4 h-4" />
             <span>Open Admin Portal</span>

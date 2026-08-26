@@ -11,22 +11,22 @@ interface ProgressBarProps {
 }
 
 const variantBg: Record<string, string> = {
-  primary: "bg-primary",
-  gradient: "bg-gradient-to-r from-primary to-accent",
-  success: "bg-accent",
-  warning: "bg-warning",
+  primary: "bg-blue-600",
+  gradient: "bg-gradient-to-r from-blue-600 to-blue-400",
+  success: "bg-emerald-500",
+  warning: "bg-amber-500",
 };
 
 const sizeClasses: Record<string, string> = {
-  sm: "h-1.5",
-  md: "h-2.5",
-  lg: "h-3.5",
+  sm: "h-1",
+  md: "h-2",
+  lg: "h-3",
 };
 
 export default function ProgressBar({
   value,
   max = 100,
-  variant = "gradient",
+  variant = "primary",
   size = "md",
   showLabel = false,
   label,
@@ -44,14 +44,14 @@ export default function ProgressBar({
             </span>
           )}
           {showLabel && (
-            <span className="text-xs font-semibold text-foreground-secondary">
+            <span className="text-xs font-mono font-semibold text-foreground-secondary">
               {Math.round(percentage)}%
             </span>
           )}
         </div>
       )}
       <div
-        className={`w-full bg-surface-bright rounded-full overflow-hidden ${sizeClasses[size]}`}
+        className={`w-full bg-slate-800/80 border border-slate-700/30 rounded-full overflow-hidden ${sizeClasses[size]}`}
       >
         <div
           className={`h-full rounded-full transition-all duration-500 ease-out ${variantBg[variant]}`}

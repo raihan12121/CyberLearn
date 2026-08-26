@@ -219,18 +219,143 @@ export const api = {
     method: "DELETE",
   }),
 
-  // Admin
+  // Admin Control Center API
   getAdminMetrics: () => apiFetch("/admin/metrics"),
-  getAdminUsers: () => apiFetch("/admin/users"),
+  getAdminUsers: (params?: { search?: string; role?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.search) q.append("search", params.search);
+    if (params?.role && params.role !== "all") q.append("role", params.role);
+    const qs = q.toString();
+    return apiFetch(`/admin/users${qs ? `?${qs}` : ""}`);
+  },
+  createAdminUser: (data: Record<string, unknown>) => apiFetch("/admin/users", {
+    method: "POST",
+    body: JSON.stringify(data),
+  }),
+  updateAdminUser: (userId: string, data: Record<string, unknown>) => apiFetch(`/admin/users/${userId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  }),
+  deleteAdminUser: (userId: string) => apiFetch(`/admin/users/${userId}`, {
+    method: "DELETE",
+  }),
 
-  // Leaderboard
-  getLeaderboard: () => apiFetch("/leaderboard"),
+  // Admin Courses & Lessons
+  getAdminCourses: () => apiFetch("/admin/courses"),
+  createAdminCourse: (data: Record<string, unknown>) => apiFetch("/admin/courses", {
+    method: "POST",
+    body: JSON.stringify(data),
+  }),
+  updateAdminCourse: (courseId: string, data: Record<string, unknown>) => apiFetch(`/admin/courses/${courseId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  }),
+  deleteAdminCourse: (courseId: string) => apiFetch(`/admin/courses/${courseId}`, {
+    method: "DELETE",
+  }),
+  getAdminCourseLessons: (courseId: string) => apiFetch(`/admin/courses/${courseId}/lessons`),
+  createAdminLesson: (courseId: string, data: Record<string, unknown>) => apiFetch(`/admin/courses/${courseId}/lessons`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  }),
+  updateAdminLesson: (lessonId: string, data: Record<string, unknown>) => apiFetch(`/admin/lessons/${lessonId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  }),
+  deleteAdminLesson: (lessonId: string) => apiFetch(`/admin/lessons/${lessonId}`, {
+    method: "DELETE",
+  }),
 
-  // Certificates
-  getCertificates: () => apiFetch("/certificates"),
+  // Admin Exams & Questions
+  getAdminExams: () => apiFetch("/admin/exams"),
+  createAdminExam: (data: Record<string, unknown>) => apiFetch("/admin/exams", {
+    method: "POST",
+    body: JSON.stringify(data),
+  }),
+  updateAdminExam: (examId: string, data: Record<string, unknown>) => apiFetch(`/admin/exams/${examId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  }),
+  deleteAdminExam: (examId: string) => apiFetch(`/admin/exams/${examId}`, {
+    method: "DELETE",
+  }),
+  getAdminExamQuestions: (examId: string) => apiFetch(`/admin/exams/${examId}/questions`),
+  createAdminExamQuestion: (examId: string, data: Record<string, unknown>) => apiFetch(`/admin/exams/${examId}/questions`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  }),
+  updateAdminExamQuestion: (questionId: string, data: Record<string, unknown>) => apiFetch(`/admin/exams/questions/${questionId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  }),
+  deleteAdminExamQuestion: (questionId: string) => apiFetch(`/admin/exams/questions/${questionId}`, {
+    method: "DELETE",
+  }),
+  getAdminExamSubmissions: () => apiFetch("/admin/exams/submissions"),
 
-  // Admin: retrieve the generated flag for a specific lab (for container provisioning/testing)
-  getLabFlag: (labId: string) => apiFetch(`/labs/${labId}/flag`),
+  // Admin Cohorts & Batches
+  getAdminBatches: () => apiFetch("/admin/batches"),
+  createAdminBatch: (data: Record<string, unknown>) => apiFetch("/admin/batches", {
+    method: "POST",
+    body: JSON.stringify(data),
+  }),
+  updateAdminBatch: (batchId: string, data: Record<string, unknown>) => apiFetch(`/admin/batches/${batchId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  }),
+  deleteAdminBatch: (batchId: string) => apiFetch(`/admin/batches/${batchId}`, {
+    method: "DELETE",
+  }),
+  getAdminBatchStudents: (batchId: string) => apiFetch(`/admin/batches/${batchId}/students`),
+  enrollAdminBatchStudent: (batchId: string, data: { user_id?: string; email?: string }) => apiFetch(`/admin/batches/${batchId}/enroll`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  }),
+  removeAdminBatchStudent: (batchId: string, userId: string) => apiFetch(`/admin/batches/${batchId}/students/${userId}`, {
+    method: "DELETE",
+  }),
+
+  // Admin Labs & Sandboxes
+  getAdminLabs: () => apiFetch("/admin/labs"),
+  createAdminLab: (data: Record<string, unknown>) => apiFetch("/admin/labs", {
+    method: "POST",
+    body: JSON.stringify(data),
+  }),
+  updateAdminLab: (labId: string, data: Record<string, unknown>) => apiFetch(`/admin/labs/${labId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  }),
+  deleteAdminLab: (labId: string) => apiFetch(`/admin/labs/${labId}`, {
+    method: "DELETE",
+  }),
+  getAdminLabSessions: (statusFilter?: string) => apiFetch(`/admin/lab-sessions${statusFilter ? `?status_filter=${statusFilter}` : ""}`),
+  terminateAdminLabSession: (sessionId: string) => apiFetch(`/admin/lab-sessions/${sessionId}/terminate`, {
+    method: "POST",
+  }),
+
+  // Admin Certificates
+  getAdminCertificates: () => apiFetch("/admin/certificates"),
+  issueAdminCertificate: (data: { user_id: string; course_id?: string; exam_id?: string; score_pct?: number; certificate_type?: string }) => apiFetch("/admin/certificates/issue", {
+    method: "POST",
+    body: JSON.stringify(data),
+  }),
+  revokeAdminCertificate: (certId: string) => apiFetch(`/admin/certificates/${certId}`, {
+    method: "DELETE",
+  }),
+
+  // Admin Community Moderation
+  getAdminPosts: () => apiFetch("/admin/posts"),
+  deleteAdminComment: (commentId: string) => apiFetch(`/admin/comments/${commentId}`, {
+    method: "DELETE",
+  }),
+
+  // Admin Financials & Invoices
+  getAdminFinancials: () => apiFetch("/admin/financials"),
+  getAdminInvoices: () => apiFetch("/admin/invoices"),
+  updateAdminInvoiceStatus: (invoiceId: string, status: string) => apiFetch(`/admin/invoices/${invoiceId}/status`, {
+    method: "PUT",
+    body: JSON.stringify({ status }),
+  }),
 
   // Profile Updates & Details
   updateProfile: (data: Record<string, unknown>) => apiFetch("/users/me", {
@@ -255,7 +380,10 @@ export const api = {
 
   // Public Recruiter Portfolio & Certificate Verification
   getPublicProfile: (username: string) => apiFetch(`/users/${username}/public-profile`),
+  getCertificates: () => apiFetch("/certificates"),
   verifyCertificate: (token: string) => apiFetch(`/certificates/verify/${token}`),
+  getLeaderboard: () => apiFetch("/leaderboard"),
+  getLabFlag: (labId: string) => apiFetch(`/labs/${labId}/flag`),
 
   // Live Proxy Inspection Forwarder
   forwardProxyRequest: (data: { method: string; url: string; headers?: Record<string, string>; body?: string }) => apiFetch("/labs/proxy/forward", {
