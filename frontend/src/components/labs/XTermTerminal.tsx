@@ -151,25 +151,25 @@ export default function XTermTerminal({ sessionId, labId }: XTermTerminalProps) 
       fontSize: 13,
       fontFamily: "'JetBrains Mono', 'Fira Code', 'Courier New', monospace",
       theme: {
-        background: "#090D16",
-        foreground: "#E2E8F0",
-        cursor: "#10B981",
-        selectionBackground: "#1E293B",
-        black: "#090D16",
-        red: "#EF4444",
+        background: "#070A12",
+        foreground: "#F1F5F9",
+        cursor: "#38BDF8",
+        selectionBackground: "rgba(56, 189, 248, 0.25)",
+        black: "#070A12",
+        red: "#F43F5E",
         green: "#10B981",
         yellow: "#F59E0B",
-        blue: "#3B82F6",
-        magenta: "#A855F7",
-        cyan: "#06B6D4",
+        blue: "#38BDF8",
+        magenta: "#818CF8",
+        cyan: "#22D3EE",
         white: "#F8FAFC",
         brightBlack: "#475569",
-        brightRed: "#F87171",
+        brightRed: "#FB7185",
         brightGreen: "#34D399",
         brightYellow: "#FBBF24",
-        brightBlue: "#60A5FA",
-        brightMagenta: "#C084FC",
-        brightCyan: "#22D3EE",
+        brightBlue: "#7DD3FC",
+        brightMagenta: "#A5B4FC",
+        brightCyan: "#67E8F9",
         brightWhite: "#FFFFFF",
       },
     });
@@ -295,9 +295,9 @@ export default function XTermTerminal({ sessionId, labId }: XTermTerminalProps) 
   };
 
   return (
-    <div className="flex flex-col h-[420px] sm:h-[520px] bg-[#090D16] border border-zinc-800 rounded-[var(--radius-xl)] overflow-hidden">
+    <div className="flex flex-col h-[420px] sm:h-[520px] bg-terminal-bg border border-border rounded-[var(--radius-xl)] overflow-hidden shadow-2xl">
       {/* Terminal Header status bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2 bg-zinc-900/80 border-b border-zinc-800 text-xs font-mono text-zinc-400">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2 bg-surface border-b border-border text-xs font-mono text-foreground-muted">
         <div className="flex items-center gap-2">
           <TerminalIcon className="w-4 h-4 text-emerald-400 shrink-0" />
           <span className="font-semibold text-zinc-200 text-xs truncate">bash @ cyberlearn-sandbox</span>

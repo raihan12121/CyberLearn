@@ -30,10 +30,10 @@ import { Card, Badge, ProgressBar, Button } from "@/components/ui";
 import { api } from "@/lib/api";
 
 const DEFAULT_STATS = [
-  { label: "Total Users", value: "10,245", change: "+12% this month", icon: Users, color: "text-primary", bg: "bg-primary/10" },
-  { label: "Total Revenue", value: "$4,850.00", change: "42 active subs", icon: DollarSign, color: "text-success", bg: "bg-success/10" },
-  { label: "Active Sandboxes", value: "84", change: "42% CPU load", icon: TerminalIcon, color: "text-accent", bg: "bg-accent/10" },
-  { label: "Issued Credentials", value: "189", change: "5 active tracks", icon: Award, color: "text-warning", bg: "bg-warning/10" },
+  { label: "Total Users", value: "10,245", change: "+12% this month", icon: Users, color: "text-sky-400", bg: "bg-sky-500/15 border-sky-500/30" },
+  { label: "Total Revenue", value: "$4,850.00", change: "42 active subs", icon: DollarSign, color: "text-emerald-400", bg: "bg-emerald-500/15 border-emerald-500/30" },
+  { label: "Active Sandboxes", value: "84", change: "42% CPU load", icon: TerminalIcon, color: "text-indigo-400", bg: "bg-indigo-500/15 border-indigo-500/30" },
+  { label: "Issued Credentials", value: "189", change: "5 active tracks", icon: Award, color: "text-amber-400", bg: "bg-amber-500/15 border-amber-500/30" },
 ];
 
 const DEFAULT_CONTAINERS = [
@@ -44,21 +44,21 @@ const DEFAULT_CONTAINERS = [
 ];
 
 const SYSTEM_SERVICES = [
-  { name: "FastAPI Core Engine", status: "Online", latency: "14ms", icon: Activity },
-  { name: "Container Sandbox Pool", status: "Online", latency: "28ms", icon: TerminalIcon },
-  { name: "PostgreSQL Database", status: "Online", latency: "4ms", icon: Database },
-  { name: "AI Tutor LLM Gateway", status: "Online", latency: "120ms", icon: Zap },
+  { name: "FastAPI Core Engine", status: "Online", latency: "14ms", icon: Activity, color: "text-sky-400" },
+  { name: "Container Sandbox Pool", status: "Online", latency: "28ms", icon: TerminalIcon, color: "text-indigo-400" },
+  { name: "PostgreSQL Database", status: "Online", latency: "4ms", icon: Database, color: "text-emerald-400" },
+  { name: "AI Tutor LLM Gateway", status: "Online", latency: "120ms", icon: Zap, color: "text-amber-400" },
 ];
 
 const ADMIN_QUICK_LINKS = [
-  { label: "User Governance", href: "/admin/users", icon: Users, desc: "Manage accounts, roles & subscriptions" },
-  { label: "Course Curriculum", href: "/admin/courses", icon: BookOpen, desc: "Edit courses, modules & lessons" },
-  { label: "Exams & Banks", href: "/admin/exams", icon: FileCheck, desc: "Question bank & pass/fail grades" },
-  { label: "Live Cohorts", href: "/admin/batches", icon: GraduationCap, desc: "Batch schedules & rosters" },
-  { label: "Sandbox Pools", href: "/admin/labs", icon: TerminalIcon, desc: "Lab environments & container sessions" },
-  { label: "KYC Verification", href: "/admin/verifications", icon: BadgeCheck, desc: "NID identity review queue" },
-  { label: "Issued Credentials", href: "/admin/certificates", icon: Award, desc: "Credential registry & minting" },
-  { label: "Financials & Billing", href: "/admin/billing", icon: DollarSign, desc: "Settled invoices & promo codes" },
+  { label: "User Governance", href: "/admin/users", icon: Users, color: "text-sky-400", bg: "bg-sky-500/10 border-sky-500/20", desc: "Manage accounts, roles & subscriptions" },
+  { label: "Course Curriculum", href: "/admin/courses", icon: BookOpen, color: "text-indigo-400", bg: "bg-indigo-500/10 border-indigo-500/20", desc: "Edit courses, modules & lessons" },
+  { label: "Exams & Banks", href: "/admin/exams", icon: FileCheck, color: "text-purple-400", bg: "bg-purple-500/10 border-purple-500/20", desc: "Question bank & pass/fail grades" },
+  { label: "Live Cohorts", href: "/admin/batches", icon: GraduationCap, color: "text-cyan-400", bg: "bg-cyan-500/10 border-cyan-500/20", desc: "Batch schedules & rosters" },
+  { label: "Sandbox Pools", href: "/admin/labs", icon: TerminalIcon, color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20", desc: "Lab environments & container sessions" },
+  { label: "KYC Verification", href: "/admin/verifications", icon: BadgeCheck, color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20", desc: "NID identity review queue" },
+  { label: "Issued Credentials", href: "/admin/certificates", icon: Award, color: "text-rose-400", bg: "bg-rose-500/10 border-rose-500/20", desc: "Credential registry & minting" },
+  { label: "Financials & Billing", href: "/admin/billing", icon: DollarSign, color: "text-teal-400", bg: "bg-teal-500/10 border-teal-500/20", desc: "Settled invoices & promo codes" },
 ];
 
 export default function AdminOverviewPage() {
@@ -90,29 +90,30 @@ export default function AdminOverviewPage() {
       if (data.stats) {
         const mappedStats = data.stats.map((s: { label: string; value: string; change: string }) => {
           let icon = Activity;
-          if (s.label === "Total Users") icon = Users;
-          else if (s.label === "Total Revenue") icon = DollarSign;
-          else if (s.label === "Active Sandboxes") icon = TerminalIcon;
-          else if (s.label === "Issued Credentials") icon = Award;
+          let color = "text-sky-400";
+          let bg = "bg-sky-500/15 border-sky-500/30";
+          if (s.label === "Total Users") {
+            icon = Users;
+            color = "text-sky-400";
+            bg = "bg-sky-500/15 border-sky-500/30";
+          } else if (s.label === "Total Revenue") {
+            icon = DollarSign;
+            color = "text-emerald-400";
+            bg = "bg-emerald-500/15 border-emerald-500/30";
+          } else if (s.label === "Active Sandboxes") {
+            icon = TerminalIcon;
+            color = "text-indigo-400";
+            bg = "bg-indigo-500/15 border-indigo-500/30";
+          } else if (s.label === "Issued Credentials") {
+            icon = Award;
+            color = "text-amber-400";
+            bg = "bg-amber-500/15 border-amber-500/30";
+          }
           return {
             ...s,
             icon,
-            color:
-              s.label === "Total Users"
-                ? "text-primary"
-                : s.label === "Total Revenue"
-                ? "text-success"
-                : s.label === "Active Sandboxes"
-                ? "text-accent"
-                : "text-warning",
-            bg:
-              s.label === "Total Users"
-                ? "bg-primary/10"
-                : s.label === "Total Revenue"
-                ? "bg-success/10"
-                : s.label === "Active Sandboxes"
-                ? "bg-accent/10"
-                : "bg-warning/10",
+            color,
+            bg,
           };
         });
         setStatsData(mappedStats);
@@ -137,15 +138,15 @@ export default function AdminOverviewPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[500px]">
-        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 border-4 border-sky-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   if (unauthorized) {
     return (
-      <div className="max-w-md mx-auto my-20 p-6 bg-surface border border-error/30 rounded-2xl text-center space-y-4 shadow-xl">
-        <div className="w-12 h-12 rounded-full bg-error/10 text-error flex items-center justify-center mx-auto">
+      <div className="max-w-md mx-auto my-20 p-6 bg-surface border border-rose-500/30 rounded-2xl text-center space-y-4 shadow-xl">
+        <div className="w-12 h-12 rounded-full bg-rose-500/15 text-rose-400 flex items-center justify-center mx-auto border border-rose-500/30">
           <Shield className="w-6 h-6" />
         </div>
         <h2 className="text-xl font-bold text-foreground">Access Denied</h2>
@@ -162,19 +163,19 @@ export default function AdminOverviewPage() {
   return (
     <div className="max-w-[1400px] mx-auto space-y-6 pb-16">
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#1E293B] pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
         <div className="flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-blue-600/15 text-blue-400 border border-blue-500/25 flex items-center justify-center shadow-sm shadow-blue-500/10">
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-sky-500/20 to-indigo-500/20 text-sky-400 border border-sky-500/30 flex items-center justify-center shadow-sm shadow-sky-500/10">
             <Shield className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2.5">
-              <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Overview & Cluster Health</h1>
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-500/10 text-blue-400 border border-blue-500/20">
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Overview & Cluster Health</h1>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-sky-500/15 text-sky-400 border border-sky-500/30">
                 Live System Telemetry
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-foreground-muted mt-0.5">
               Real-time cybersecurity platform telemetry, container pool infrastructure, and platform-wide metrics.
             </p>
           </div>
@@ -204,26 +205,26 @@ export default function AdminOverviewPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04 }}
             >
-              <div className="p-4 rounded-xl bg-[#0F172A] border border-[#1E293B] shadow-sm hover:border-slate-700 transition-all duration-150 flex flex-col justify-between h-32">
+              <Card padding="md" hover className="flex flex-col justify-between h-32 bg-surface border-border/80 hover:border-sky-400/40 transition-all">
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-slate-400 text-[11px] font-semibold uppercase tracking-wider mb-1">
+                    <p className="text-foreground-muted text-[11px] font-bold uppercase tracking-wider mb-1">
                       {stat.label}
                     </p>
-                    <h3 className="text-2xl font-bold text-white tracking-tight">
+                    <h3 className="text-2xl font-extrabold text-foreground tracking-tight">
                       {stat.value}
                     </h3>
                   </div>
-                  <div className="w-9 h-9 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center shrink-0">
-                    <Icon className="w-4 h-4" />
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${stat.bg} ${stat.color}`}>
+                    <Icon className="w-5 h-5" />
                   </div>
                 </div>
                 <div className="flex items-center gap-2 mt-2">
-                  <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                  <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
                     <TrendingUp className="w-3 h-3" /> {stat.change}
                   </span>
                 </div>
-              </div>
+              </Card>
             </motion.div>
           );
         })}
@@ -237,19 +238,19 @@ export default function AdminOverviewPage() {
             <Link
               key={link.href}
               href={link.href}
-              className="p-3.5 rounded-xl bg-[#0C1222] border border-[#1E293B] hover:border-blue-500/50 hover:bg-[#0F172A] transition-all group flex flex-col justify-between shadow-sm"
+              className="p-3.5 rounded-xl bg-surface border border-border hover:border-sky-400/50 hover:bg-surface-elevated transition-all group flex flex-col justify-between shadow-sm"
             >
               <div className="flex items-center justify-between mb-2">
-                <div className="w-8 h-8 rounded-lg bg-blue-600/10 text-blue-400 border border-blue-500/20 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center border ${link.bg} ${link.color} group-hover:scale-105 transition-transform`}>
                   <Icon className="w-4 h-4" />
                 </div>
-                <ArrowUpRight className="w-4 h-4 text-slate-500 group-hover:text-blue-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+                <ArrowUpRight className="w-4 h-4 text-foreground-muted group-hover:text-sky-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
               </div>
               <div>
-                <h4 className="text-xs font-bold text-white group-hover:text-blue-300 transition-colors">
+                <h4 className="text-xs font-bold text-foreground group-hover:text-sky-400 transition-colors">
                   {link.label}
                 </h4>
-                <p className="text-[10px] text-slate-400 line-clamp-1 mt-0.5">{link.desc}</p>
+                <p className="text-[10px] text-foreground-muted line-clamp-1 mt-0.5">{link.desc}</p>
               </div>
             </Link>
           );
@@ -261,10 +262,10 @@ export default function AdminOverviewPage() {
         {/* Left Column: Container Pool & System Services */}
         <div className="lg:col-span-7 space-y-6">
           {/* Active Container Sandboxes */}
-          <Card padding="lg" className="border border-border/60 bg-surface space-y-5 shadow-lg">
-            <div className="flex items-center justify-between border-b border-border/40 pb-4">
+          <Card padding="lg" className="border border-border bg-surface space-y-5 shadow-lg">
+            <div className="flex items-center justify-between border-b border-border pb-4">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                <div className="p-2 rounded-xl bg-sky-500/15 text-sky-400 border border-sky-500/30">
                   <Server className="w-4 h-4" />
                 </div>
                 <div>
@@ -273,7 +274,7 @@ export default function AdminOverviewPage() {
                 </div>
               </div>
               <Badge variant="success" size="sm" dot>
-                All Systems Operational
+                Operational
               </Badge>
             </div>
 
@@ -281,16 +282,16 @@ export default function AdminOverviewPage() {
               {containerStatus.map((c, i) => (
                 <div
                   key={i}
-                  className="p-3.5 rounded-xl bg-surface-elevated/40 border border-border/50 flex items-center justify-between hover:border-border transition-colors"
+                  className="p-3.5 rounded-xl bg-surface-elevated border border-border flex items-center justify-between hover:border-border-hover transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
                     <div>
                       <p className="text-xs font-bold text-foreground font-mono">{c.name}</p>
                       <p className="text-[11px] text-foreground-muted flex items-center gap-2">
                         <span>Port: {c.port || "3000/TCP"}</span>
                         <span>•</span>
-                        <span className="text-primary font-medium">{c.users} active learners</span>
+                        <span className="text-sky-400 font-semibold">{c.users} active learners</span>
                       </p>
                     </div>
                   </div>
@@ -300,7 +301,7 @@ export default function AdminOverviewPage() {
                       <p className="text-xs font-bold text-foreground font-mono">{c.cpu}</p>
                       <p className="text-[10px] text-foreground-muted font-mono">{c.memory}</p>
                     </div>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                       {c.status}
                     </span>
                   </div>
@@ -310,9 +311,9 @@ export default function AdminOverviewPage() {
           </Card>
 
           {/* Core System Infrastructure Services */}
-          <Card padding="lg" className="border border-border/60 bg-surface space-y-4 shadow-lg">
+          <Card padding="lg" className="border border-border bg-surface space-y-4 shadow-lg">
             <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-              <Radio className="w-4 h-4 text-accent" /> Core Microservices & Heartbeats
+              <Radio className="w-4 h-4 text-indigo-400" /> Core Microservices & Heartbeats
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {SYSTEM_SERVICES.map((srv, idx) => {
@@ -320,18 +321,18 @@ export default function AdminOverviewPage() {
                 return (
                   <div
                     key={idx}
-                    className="p-3 rounded-xl bg-surface-elevated/30 border border-border/40 flex items-center justify-between"
+                    className="p-3 rounded-xl bg-surface-elevated border border-border flex items-center justify-between hover:border-border-hover transition-colors"
                   >
                     <div className="flex items-center gap-2.5">
-                      <div className="p-2 rounded-lg bg-surface-elevated text-foreground">
-                        <Icon className="w-4 h-4 text-primary" />
+                      <div className={`p-2 rounded-lg bg-surface-bright ${srv.color}`}>
+                        <Icon className="w-4 h-4" />
                       </div>
                       <div>
                         <p className="text-xs font-bold text-foreground">{srv.name}</p>
                         <p className="text-[10px] text-foreground-muted font-mono">Ping: {srv.latency}</p>
                       </div>
                     </div>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-success/15 text-success border border-success/30">
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                       {srv.status}
                     </span>
                   </div>
@@ -344,16 +345,16 @@ export default function AdminOverviewPage() {
         {/* Right Column: Platform Resources & Activity Logs */}
         <div className="lg:col-span-5 space-y-6">
           {/* Cluster Resource Telemetry */}
-          <Card padding="lg" className="border border-border/60 bg-surface space-y-4 shadow-lg">
+          <Card padding="lg" className="border border-border bg-surface space-y-4 shadow-lg">
             <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-              <Cpu className="w-4 h-4 text-primary" /> Compute & Memory Capacity
+              <Cpu className="w-4 h-4 text-sky-400" /> Compute & Memory Capacity
             </h3>
 
             <div className="space-y-4 text-xs">
               <div className="space-y-1.5">
                 <div className="flex justify-between">
                   <span className="text-foreground-secondary flex items-center gap-1.5">
-                    <Cpu className="w-3.5 h-3.5" /> CPU Load Utilization
+                    <Cpu className="w-3.5 h-3.5 text-sky-400" /> CPU Load Utilization
                   </span>
                   <span className="font-mono font-bold text-foreground">{resources.cpu}%</span>
                 </div>
@@ -363,26 +364,26 @@ export default function AdminOverviewPage() {
               <div className="space-y-1.5">
                 <div className="flex justify-between">
                   <span className="text-foreground-secondary flex items-center gap-1.5">
-                    <Activity className="w-3.5 h-3.5" /> Memory (RAM) Allocation
+                    <Activity className="w-3.5 h-3.5 text-indigo-400" /> Memory (RAM) Allocation
                   </span>
                   <span className="font-mono font-bold text-foreground">{resources.ram}%</span>
                 </div>
-                <ProgressBar value={resources.ram} max={100} variant={resources.ram > 80 ? "warning" : "primary"} />
+                <ProgressBar value={resources.ram} max={100} variant={resources.ram > 80 ? "warning" : "gradient"} />
               </div>
 
               <div className="space-y-1.5">
                 <div className="flex justify-between">
                   <span className="text-foreground-secondary flex items-center gap-1.5">
-                    <HardDrive className="w-3.5 h-3.5" /> Persistent Storage
+                    <HardDrive className="w-3.5 h-3.5 text-emerald-400" /> Persistent Storage
                   </span>
                   <span className="font-mono font-bold text-foreground">{resources.storage}%</span>
                 </div>
                 <ProgressBar value={resources.storage} max={100} variant="success" />
               </div>
 
-              <div className="pt-2 border-t border-border/40 flex items-center justify-between text-[11px]">
+              <div className="pt-2 border-t border-border flex items-center justify-between text-[11px]">
                 <span className="text-foreground-muted flex items-center gap-1.5">
-                  <Database className="w-3.5 h-3.5 text-primary" /> Active DB Connections Pool:
+                  <Database className="w-3.5 h-3.5 text-sky-400" /> Active DB Connections Pool:
                 </span>
                 <span className="font-mono font-bold text-foreground">{resources.db_conn} / 50</span>
               </div>
@@ -390,12 +391,12 @@ export default function AdminOverviewPage() {
           </Card>
 
           {/* Recent System Activity Logs */}
-          <Card padding="lg" className="border border-border/60 bg-surface space-y-4 shadow-lg">
-            <div className="flex items-center justify-between border-b border-border/40 pb-3">
+          <Card padding="lg" className="border border-border bg-surface space-y-4 shadow-lg">
+            <div className="flex items-center justify-between border-b border-border pb-3">
               <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                <Clock className="w-4 h-4 text-warning" /> Operational Event Stream
+                <Clock className="w-4 h-4 text-amber-400" /> Operational Event Stream
               </h3>
-              <span className="text-[10px] font-mono text-foreground-muted">Live Stream</span>
+              <span className="text-[10px] font-mono text-emerald-400 font-semibold">● Active Stream</span>
             </div>
 
             <div className="space-y-2.5 max-h-[360px] overflow-y-auto pr-1 scrollbar-thin">
@@ -407,10 +408,10 @@ export default function AdminOverviewPage() {
                 recentLogs.map((log, idx) => (
                   <div
                     key={idx}
-                    className="p-3 rounded-xl bg-surface-elevated/30 border border-border/40 space-y-1 text-xs"
+                    className="p-3 rounded-xl bg-surface-elevated border border-border space-y-1 text-xs"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-primary font-mono text-[11px]">{log.source}</span>
+                      <span className="font-bold text-sky-400 font-mono text-[11px]">{log.source}</span>
                       <span className="text-[10px] text-foreground-muted">{log.time}</span>
                     </div>
                     <p className="text-foreground-secondary">{log.msg}</p>

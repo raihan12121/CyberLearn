@@ -154,10 +154,10 @@ export default function DashboardPage() {
   }, []);
 
   const statsRow = [
-    { label: "XP Earned", value: profile.xp.toLocaleString(), icon: Zap, color: "text-primary", bg: "bg-primary/10" },
-    { label: "Current Streak", value: `${profile.streak_days} Days`, icon: Flame, color: "text-warning", bg: "bg-warning/10" },
-    { label: "Labs Completed", value: `${profile.solved_labs_count}`, icon: Terminal, color: "text-accent", bg: "bg-accent/10" },
-    { label: "Rank", value: `#${profile.rank}`, icon: Trophy, color: "text-secondary-light", bg: "bg-secondary/10" },
+    { label: "XP Earned", value: profile.xp.toLocaleString(), icon: Zap, color: "text-amber-400", bg: "bg-amber-500/15 border border-amber-500/30 shadow-sm shadow-amber-500/10" },
+    { label: "Current Streak", value: `${profile.streak_days} Days`, icon: Flame, color: "text-rose-400", bg: "bg-rose-500/15 border border-rose-500/30 shadow-sm shadow-rose-500/10" },
+    { label: "Labs Completed", value: `${profile.solved_labs_count}`, icon: Terminal, color: "text-emerald-400", bg: "bg-emerald-500/15 border border-emerald-500/30 shadow-sm shadow-emerald-500/10" },
+    { label: "Platform Rank", value: `#${profile.rank}`, icon: Trophy, color: "text-sky-400", bg: "bg-sky-500/15 border border-sky-500/30 shadow-sm shadow-sky-500/10" },
   ];
 
   const recommended = [

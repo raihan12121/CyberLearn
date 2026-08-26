@@ -4,7 +4,7 @@ interface CardProps {
   children: React.ReactNode;
   className?: string;
   hover?: boolean;
-  glow?: "primary" | "secondary" | "accent" | "blue" | "purple" | "green" | false;
+  glow?: "primary" | "secondary" | "accent" | "cyan" | "success" | "warning" | "error" | "blue" | "purple" | "green" | false;
   padding?: "none" | "sm" | "md" | "lg";
   onClick?: () => void;
 }
@@ -27,15 +27,21 @@ export default function Card({
   const glowClass = glow
     ? glow === "primary" || glow === "blue"
       ? "glow-primary"
-      : glow === "secondary" || glow === "purple"
-      ? "glow-secondary"
-      : "glow-accent"
+      : glow === "accent" || glow === "purple" || glow === "secondary"
+      ? "glow-accent"
+      : glow === "cyan"
+      ? "shadow-[0_0_24px_rgba(6,182,212,0.25)]"
+      : glow === "success" || glow === "green"
+      ? "glow-success"
+      : glow === "warning"
+      ? "glow-warning"
+      : "glow-error"
     : "";
 
   return (
     <div
       className={`
-        bg-surface-elevated rounded-[var(--radius-lg)] border border-border
+        bg-surface rounded-[var(--radius-lg)] border border-border/80 shadow-sm
         ${paddingClasses[padding]}
         ${hover ? "card-hover cursor-pointer" : ""}
         ${glowClass}

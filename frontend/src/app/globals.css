@@ -1,79 +1,88 @@
 @import "tailwindcss";
 
 /* ==========================================================================
-   CyberLearn Design System - Deep Space Enterprise Modern UI
-   Inspired by Stitch MCP "Deep Space Security" & Modern Developer SaaS (Linear / Vercel / GitHub)
+   CyberLearn Design System - Vibrant, Lightweight & Colorful Modern Cyber UI
+   Palette: Luminous Electric Cyan, Cyber Violet, Vivid Emerald & Neon Amber
    ========================================================================== */
 
 /* Dark Mode (Default) */
 :root,
 .dark,
 [data-theme="dark"] {
-  /* Canvas & Surfaces */
-  --background: #090D16;
-  --surface: #0F172A;
-  --surface-elevated: #131B2E;
-  --surface-bright: #1E293B;
+  /* Lightweight, Clean & Luminous Canvas */
+  --background: #0B0F19;
+  --surface: #111827;
+  --surface-elevated: #162032;
+  --surface-bright: #1F2E47;
   
-  /* High-Contrast Foreground / Typography */
-  --foreground: #F8FAFC;
+  /* High-Contrast Foreground & Typography */
+  --foreground: #F9FAFB;
   --foreground-secondary: #94A3B8;
   --foreground-muted: #64748B;
   
-  /* Primary Action - Modern Electric Blue (#2563EB / #3B82F6) */
-  --primary: #2563EB;
-  --primary-hover: #1D4ED8;
-  --primary-dim: #1E40AF;
-  --primary-light: #3B82F6;
-  --primary-glow: rgba(37, 99, 235, 0.25);
+  /* Primary Action - Vibrant Electric Sky Cyan / Blue */
+  --primary: #38BDF8;
+  --primary-hover: #0EA5E9;
+  --primary-dim: #0284C7;
+  --primary-light: #7DD3FC;
+  --primary-glow: rgba(56, 189, 248, 0.3);
   
-  /* Secondary - Slate Neutral Accent */
-  --secondary: #334155;
-  --secondary-hover: #475569;
-  --secondary-light: #64748B;
+  /* Accent - Luminous Cyber Violet */
+  --accent: #818CF8;
+  --accent-hover: #6366F1;
+  --accent-light: #A5B4FC;
+  --accent-glow: rgba(129, 140, 248, 0.3);
+
+  /* Secondary - Clean Slate Accent */
+  --secondary: #1E293B;
+  --secondary-hover: #334155;
+  --secondary-light: #475569;
   
-  /* Status Semantics */
+  /* Status Semantics - Vibrant & Colorful */
   --success: #10B981;
   --success-hover: #059669;
   --success-light: #34D399;
+  --success-glow: rgba(16, 185, 129, 0.25);
   
   --warning: #F59E0B;
   --warning-hover: #D97706;
   --warning-light: #FBBF24;
+  --warning-glow: rgba(245, 158, 11, 0.25);
   
   --error: #F43F5E;
   --error-hover: #E11D48;
   --error-light: #FDA4AF;
+  --error-glow: rgba(244, 63, 94, 0.25);
   
-  --info: #3B82F6;
+  --info: #38BDF8;
   
-  /* Structural 1px Borders */
+  /* Modern Crisp Borders with Lightweight Glow */
   --border: rgba(255, 255, 255, 0.08);
-  --border-hover: rgba(255, 255, 255, 0.16);
-  --border-focus: rgba(37, 99, 235, 0.5);
+  --border-hover: rgba(56, 189, 248, 0.3);
+  --border-focus: rgba(56, 189, 248, 0.6);
   
   /* Radii */
-  --radius-sm: 4px;
-  --radius: 6px;
-  --radius-md: 8px;
-  --radius-lg: 10px;
-  --radius-xl: 14px;
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
   --radius-full: 9999px;
   
-  /* Elevation Shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 20px rgba(37, 99, 235, 0.15);
+  /* Modern Luminous Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 12px 30px rgba(0, 0, 0, 0.45);
+  --shadow-glow: 0 0 24px rgba(56, 189, 248, 0.18);
   
   /* Technical Terminal Shell */
-  --terminal-bg: #0C0E16;
+  --terminal-bg: #070A12;
   --terminal-text: #38BDF8;
   
   /* Glass & Scrollbar */
-  --glass-bg: rgba(15, 23, 42, 0.85);
-  --scrollbar-thumb: rgba(255, 255, 255, 0.12);
-  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.24);
+  --glass-bg: rgba(17, 24, 39, 0.82);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.14);
+  --scrollbar-thumb-hover: rgba(56, 189, 248, 0.4);
 
   /* Transitions */
   --transition-fast: 150ms ease-out;
@@ -89,23 +98,29 @@
 .light,
 [data-theme="light"] {
   /* Canvas & Surfaces */
-  --background: #F8FAFC;
+  --background: #F4F7FC;
   --surface: #FFFFFF;
-  --surface-elevated: #F1F5F9;
-  --surface-bright: #E2E8F0;
+  --surface-elevated: #F8FAFC;
+  --surface-bright: #EDF2F7;
   
   /* Foreground / Typography */
   --foreground: #0F172A;
   --foreground-secondary: #475569;
-  --foreground-muted: #94A3B8;
+  --foreground-muted: #64748B;
   
   /* Primary Action */
-  --primary: #2563EB;
-  --primary-hover: #1D4ED8;
-  --primary-dim: #1E40AF;
-  --primary-light: #3B82F6;
-  --primary-glow: rgba(37, 99, 235, 0.2);
+  --primary: #0284C7;
+  --primary-hover: #0369A1;
+  --primary-dim: #075985;
+  --primary-light: #38BDF8;
+  --primary-glow: rgba(2, 132, 199, 0.2);
   
+  /* Accent */
+  --accent: #6366F1;
+  --accent-hover: #4F46E5;
+  --accent-light: #818CF8;
+  --accent-glow: rgba(99, 102, 241, 0.2);
+
   /* Secondary */
   --secondary: #E2E8F0;
   --secondary-hover: #CBD5E1;
@@ -115,27 +130,27 @@
   --success: #059669;
   --warning: #D97706;
   --error: #E11D48;
-  --info: #2563EB;
+  --info: #0284C7;
   
   /* Borders */
   --border: rgba(15, 23, 42, 0.08);
-  --border-hover: rgba(15, 23, 42, 0.16);
-  --border-focus: rgba(37, 99, 235, 0.5);
+  --border-hover: rgba(2, 132, 199, 0.3);
+  --border-focus: rgba(2, 132, 199, 0.5);
   
   /* Shadows */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
-  --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.08);
-  --shadow-glow: 0 0 20px rgba(37, 99, 235, 0.12);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.08);
+  --shadow-glow: 0 0 24px rgba(2, 132, 199, 0.12);
   
   /* Terminal */
   --terminal-bg: #0F172A;
   --terminal-text: #38BDF8;
   
   /* Glass & Scrollbar */
-  --glass-bg: rgba(255, 255, 255, 0.9);
-  --scrollbar-thumb: rgba(15, 23, 42, 0.15);
-  --scrollbar-thumb-hover: rgba(15, 23, 42, 0.28);
+  --glass-bg: rgba(255, 255, 255, 0.88);
+  --scrollbar-thumb: rgba(15, 23, 42, 0.16);
+  --scrollbar-thumb-hover: rgba(15, 23, 42, 0.3);
 }
 
 @theme inline {
@@ -150,6 +165,10 @@
   --color-primary-hover: var(--primary-hover);
   --color-primary-light: var(--primary-light);
   --color-primary-glow: var(--primary-glow);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-light: var(--accent-light);
+  --color-accent-glow: var(--accent-glow);
   --color-secondary: var(--secondary);
   --color-secondary-hover: var(--secondary-hover);
   --color-secondary-light: var(--secondary-light);
@@ -176,8 +195,8 @@
 }
 
 *::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 
 *::-webkit-scrollbar-track {
@@ -186,7 +205,7 @@
 
 *::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
-  border-radius: 4px;
+  border-radius: 6px;
 }
 
 *::-webkit-scrollbar-thumb:hover {
@@ -209,7 +228,7 @@ body {
 }
 
 ::selection {
-  background: rgba(37, 99, 235, 0.35);
+  background: rgba(56, 189, 248, 0.35);
   color: #FFFFFF;
 }
 
@@ -222,16 +241,28 @@ body {
 /* Utility Classes */
 .glass {
   background: var(--glass-bg);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
   border: 1px solid var(--border);
 }
 
 .glow-primary {
-  box-shadow: 0 0 20px var(--primary-glow), 0 0 40px rgba(37, 99, 235, 0.08);
+  box-shadow: 0 0 24px var(--primary-glow), 0 0 48px rgba(56, 189, 248, 0.1);
+}
+
+.glow-accent {
+  box-shadow: 0 0 24px var(--accent-glow), 0 0 48px rgba(129, 140, 248, 0.1);
 }
 
 .glow-success {
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.2), 0 0 40px rgba(16, 185, 129, 0.06);
+  box-shadow: 0 0 24px rgba(16, 185, 129, 0.25), 0 0 48px rgba(16, 185, 129, 0.08);
+}
+
+.glow-warning {
+  box-shadow: 0 0 24px rgba(245, 158, 11, 0.25), 0 0 48px rgba(245, 158, 11, 0.08);
+}
+
+.glow-error {
+  box-shadow: 0 0 24px rgba(244, 63, 94, 0.25), 0 0 48px rgba(244, 63, 94, 0.08);
 }
 
 .card-hover {
@@ -239,9 +270,29 @@ body {
 }
 
 .card-hover:hover {
-  border-color: rgba(255, 255, 255, 0.16);
-  transform: translateY(-1px);
+  border-color: var(--border-hover);
+  transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
+}
+
+.gradient-primary {
+  background: linear-gradient(135deg, #0284C7, #6366F1);
+}
+
+.gradient-cyber {
+  background: linear-gradient(135deg, #06B6D4, #3B82F6, #8B5CF6);
+}
+
+.gradient-accent {
+  background: linear-gradient(135deg, #8B5CF6, #EC4899);
+}
+
+.gradient-success {
+  background: linear-gradient(135deg, #10B981, #06B6D4);
+}
+
+.gradient-amber {
+  background: linear-gradient(135deg, #F59E0B, #F43F5E);
 }
 
 .badge-pulse {

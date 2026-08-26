@@ -9,13 +9,11 @@ import {
   Edit,
   Trash2,
   ListOrdered,
-  PlayCircle,
   Clock,
   DollarSign,
   Shield,
   RefreshCw,
   X,
-  FileText,
 } from "lucide-react";
 import { Card, Badge, Button } from "@/components/ui";
 import { api } from "@/lib/api";
@@ -196,15 +194,15 @@ export default function AdminCoursesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[500px]">
-        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 border-4 border-sky-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   if (unauthorized) {
     return (
-      <div className="max-w-md mx-auto my-20 p-6 bg-surface border border-error/30 rounded-2xl text-center space-y-4 shadow-xl">
-        <div className="w-12 h-12 rounded-full bg-error/10 text-error flex items-center justify-center mx-auto">
+      <div className="max-w-md mx-auto my-20 p-6 bg-surface border border-rose-500/30 rounded-2xl text-center space-y-4 shadow-xl">
+        <div className="w-12 h-12 rounded-full bg-rose-500/15 text-rose-400 flex items-center justify-center mx-auto border border-rose-500/30">
           <Shield className="w-6 h-6" />
         </div>
         <h2 className="text-xl font-bold text-foreground">Access Denied</h2>
@@ -221,19 +219,19 @@ export default function AdminCoursesPage() {
   return (
     <div className="max-w-[1400px] mx-auto space-y-6 pb-16">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#1E293B] pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
         <div className="flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-blue-600/15 text-blue-400 border border-blue-500/25 flex items-center justify-center shadow-sm shadow-blue-500/10">
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-indigo-500/20 to-sky-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center shadow-sm shadow-indigo-500/10">
             <BookOpen className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2.5">
-              <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Courses & Curriculum</h1>
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-500/10 text-blue-400 border border-blue-500/20">
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Courses & Curriculum</h1>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-500/15 text-indigo-400 border border-indigo-500/30">
                 {coursesList.length} Tracks
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-foreground-muted mt-0.5">
               Author offensive and defensive cybersecurity training courses, structured syllabus modules, and video lessons.
             </p>
           </div>
@@ -261,18 +259,19 @@ export default function AdminCoursesPage() {
           <Card
             key={c.id}
             padding="lg"
-            className="border border-[#1E293B] bg-[#0F172A] flex flex-col justify-between hover:border-slate-700 transition-all duration-150 group shadow-md"
+            hover
+            className="flex flex-col justify-between bg-surface border-border hover:border-indigo-400/50 shadow-md group"
           >
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-500/15 text-indigo-400 border border-indigo-500/30">
                   {c.category}
                 </span>
                 <span
-                  className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${
+                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
                     c.is_published
-                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                      : "bg-slate-800 text-slate-400 border-slate-700"
+                      ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                      : "bg-surface-bright text-foreground-muted border-border"
                   }`}
                 >
                   {c.is_published ? "Published" : "Draft"}
@@ -280,26 +279,26 @@ export default function AdminCoursesPage() {
               </div>
 
               <div>
-                <h3 className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">
+                <h3 className="text-sm font-bold text-foreground group-hover:text-indigo-400 transition-colors">
                   {c.title}
                 </h3>
-                <p className="text-xs text-slate-400 line-clamp-2 mt-1">{c.description}</p>
+                <p className="text-xs text-foreground-muted line-clamp-2 mt-1 leading-relaxed">{c.description}</p>
               </div>
 
-              <div className="flex items-center gap-3 text-xs text-slate-400 pt-2 border-t border-[#1E293B]">
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5 text-blue-400" /> {c.estimated_duration} mins
+              <div className="flex items-center gap-3 text-xs text-foreground-muted pt-2 border-t border-border">
+                <span className="flex items-center gap-1 font-medium">
+                  <Clock className="w-3.5 h-3.5 text-sky-400" /> {c.estimated_duration} mins
                 </span>
                 <span>•</span>
                 <span className="flex items-center gap-1 font-mono font-bold text-emerald-400">
                   <DollarSign className="w-3.5 h-3.5" /> {c.price > 0 ? `$${c.price}` : "Free"}
                 </span>
                 <span>•</span>
-                <span className="text-slate-300 font-semibold">{c.difficulty}</span>
+                <span className="text-foreground-secondary font-semibold">{c.difficulty}</span>
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-4 mt-4 border-t border-[#1E293B]">
+            <div className="flex items-center justify-between pt-4 mt-4 border-t border-border">
               <Button
                 size="sm"
                 variant="outline"
@@ -313,13 +312,13 @@ export default function AdminCoursesPage() {
                   size="sm"
                   variant="ghost"
                   onClick={() => setEditingCourse({ ...c })}
-                  icon={<Edit className="w-3.5 h-3.5 text-slate-400 hover:text-white" />}
+                  icon={<Edit className="w-3.5 h-3.5 text-foreground-muted hover:text-indigo-400" />}
                 />
                 <Button
                   size="sm"
                   variant="ghost"
                   onClick={() => handleDeleteCourse(c.id, c.title)}
-                  className="hover:bg-red-500/10 text-red-400"
+                  className="hover:bg-rose-500/10 text-rose-400"
                   icon={<Trash2 className="w-3.5 h-3.5" />}
                 />
               </div>
@@ -336,56 +335,56 @@ export default function AdminCoursesPage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-lg bg-[#0F172A] rounded-2xl p-6 border border-[#1E293B] shadow-2xl space-y-4"
+              className="w-full max-w-lg bg-surface rounded-2xl p-6 border border-border shadow-2xl space-y-4"
             >
-              <div className="flex items-center justify-between border-b border-[#1E293B] pb-3">
-                <h3 className="text-base font-bold text-white">Create New Course Track</h3>
-                <button onClick={() => setShowAddCourseModal(false)} className="text-slate-400 hover:text-white">
+              <div className="flex items-center justify-between border-b border-border pb-3">
+                <h3 className="text-base font-bold text-foreground">Create New Course Track</h3>
+                <button onClick={() => setShowAddCourseModal(false)} className="text-foreground-muted hover:text-foreground cursor-pointer">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               <form onSubmit={handleCreateCourse} className="space-y-3.5 text-xs">
                 <div className="space-y-1">
-                  <label className="font-semibold text-white">Course Identifier Slug *</label>
+                  <label className="font-semibold text-foreground">Course Identifier Slug *</label>
                   <input
                     required
                     type="text"
                     value={newCourseForm.id}
                     onChange={(e) => setNewCourseForm({ ...newCourseForm, id: e.target.value.toLowerCase().replace(/\s+/g, "-") })}
-                    className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-blue-500"
+                    className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground font-mono focus:outline-none focus:border-sky-400"
                     placeholder="e.g. advanced-network-pentest"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-semibold text-white">Course Title *</label>
+                  <label className="font-semibold text-foreground">Course Title *</label>
                   <input
                     required
                     type="text"
                     value={newCourseForm.title}
                     onChange={(e) => setNewCourseForm({ ...newCourseForm, title: e.target.value })}
-                    className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                    className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-sky-400"
                     placeholder="e.g. Advanced Network Penetration Testing"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="font-semibold text-white">Category</label>
+                    <label className="font-semibold text-foreground">Category</label>
                     <input
                       type="text"
                       value={newCourseForm.category}
                       onChange={(e) => setNewCourseForm({ ...newCourseForm, category: e.target.value })}
-                      className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white focus:outline-none"
+                      className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="font-semibold text-white">Difficulty</label>
+                    <label className="font-semibold text-foreground">Difficulty</label>
                     <select
                       value={newCourseForm.difficulty}
                       onChange={(e) => setNewCourseForm({ ...newCourseForm, difficulty: e.target.value })}
-                      className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white focus:outline-none"
+                      className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none font-medium"
                     >
                       <option value="Beginner">Beginner</option>
                       <option value="Intermediate">Intermediate</option>
@@ -397,38 +396,38 @@ export default function AdminCoursesPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="font-semibold text-white">Price ($ USD)</label>
+                    <label className="font-semibold text-foreground">Price ($ USD)</label>
                     <input
                       type="number"
                       step="0.01"
                       value={newCourseForm.price}
                       onChange={(e) => setNewCourseForm({ ...newCourseForm, price: parseFloat(e.target.value) || 0 })}
-                      className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white focus:outline-none font-mono"
+                      className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none font-mono"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="font-semibold text-white">Duration (Minutes)</label>
+                    <label className="font-semibold text-foreground">Duration (Minutes)</label>
                     <input
                       type="number"
                       value={newCourseForm.estimated_duration}
                       onChange={(e) => setNewCourseForm({ ...newCourseForm, estimated_duration: parseInt(e.target.value) || 0 })}
-                      className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white focus:outline-none font-mono"
+                      className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none font-mono"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-semibold text-white">Course Summary Description</label>
+                  <label className="font-semibold text-foreground">Course Summary Description</label>
                   <textarea
                     rows={3}
                     value={newCourseForm.description}
                     onChange={(e) => setNewCourseForm({ ...newCourseForm, description: e.target.value })}
-                    className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white focus:outline-none"
+                    className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none"
                     placeholder="Comprehensive practical curriculum on..."
                   />
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#1E293B]">
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
                   <Button type="button" variant="outline" size="sm" onClick={() => setShowAddCourseModal(false)}>
                     Cancel
                   </Button>
@@ -450,42 +449,42 @@ export default function AdminCoursesPage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-lg bg-[#0F172A] rounded-2xl p-6 border border-[#1E293B] shadow-2xl space-y-4"
+              className="w-full max-w-lg bg-surface rounded-2xl p-6 border border-border shadow-2xl space-y-4"
             >
-              <div className="flex items-center justify-between border-b border-[#1E293B] pb-3">
-                <h3 className="text-base font-bold text-white">Edit Course Track: {editingCourse.title}</h3>
-                <button onClick={() => setEditingCourse(null)} className="text-slate-400 hover:text-white">
+              <div className="flex items-center justify-between border-b border-border pb-3">
+                <h3 className="text-base font-bold text-foreground">Edit Course: {editingCourse.title}</h3>
+                <button onClick={() => setEditingCourse(null)} className="text-foreground-muted hover:text-foreground cursor-pointer">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               <form onSubmit={handleUpdateCourse} className="space-y-3.5 text-xs">
                 <div className="space-y-1">
-                  <label className="font-semibold text-white">Course Title</label>
+                  <label className="font-semibold text-foreground">Course Title</label>
                   <input
                     type="text"
                     value={editingCourse.title}
                     onChange={(e) => setEditingCourse({ ...editingCourse, title: e.target.value })}
-                    className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white focus:outline-none"
+                    className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="font-semibold text-white">Category</label>
+                    <label className="font-semibold text-foreground">Category</label>
                     <input
                       type="text"
                       value={editingCourse.category}
                       onChange={(e) => setEditingCourse({ ...editingCourse, category: e.target.value })}
-                      className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white focus:outline-none"
+                      className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="font-semibold text-white">Difficulty</label>
+                    <label className="font-semibold text-foreground">Difficulty</label>
                     <select
                       value={editingCourse.difficulty}
                       onChange={(e) => setEditingCourse({ ...editingCourse, difficulty: e.target.value })}
-                      className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white focus:outline-none"
+                      className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none font-medium"
                     >
                       <option value="Beginner">Beginner</option>
                       <option value="Intermediate">Intermediate</option>
@@ -497,37 +496,37 @@ export default function AdminCoursesPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="font-semibold text-white">Price ($ USD)</label>
+                    <label className="font-semibold text-foreground">Price ($ USD)</label>
                     <input
                       type="number"
                       step="0.01"
                       value={editingCourse.price}
                       onChange={(e) => setEditingCourse({ ...editingCourse, price: parseFloat(e.target.value) || 0 })}
-                      className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white focus:outline-none font-mono"
+                      className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none font-mono"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="font-semibold text-white">Duration (Mins)</label>
+                    <label className="font-semibold text-foreground">Duration (Mins)</label>
                     <input
                       type="number"
                       value={editingCourse.estimated_duration}
                       onChange={(e) => setEditingCourse({ ...editingCourse, estimated_duration: parseInt(e.target.value) || 0 })}
-                      className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white focus:outline-none font-mono"
+                      className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none font-mono"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-semibold text-white">Description</label>
+                  <label className="font-semibold text-foreground">Description</label>
                   <textarea
                     rows={3}
                     value={editingCourse.description || ""}
                     onChange={(e) => setEditingCourse({ ...editingCourse, description: e.target.value })}
-                    className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white focus:outline-none"
+                    className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none"
                   />
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#1E293B]">
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
                   <Button type="button" variant="outline" size="sm" onClick={() => setEditingCourse(null)}>
                     Cancel
                   </Button>
@@ -549,22 +548,22 @@ export default function AdminCoursesPage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-3xl bg-[#0F172A] rounded-2xl p-6 border border-[#1E293B] shadow-2xl space-y-4 max-h-[85vh] flex flex-col"
+              className="w-full max-w-3xl bg-surface rounded-2xl p-6 border border-border shadow-2xl space-y-4 max-h-[85vh] flex flex-col"
             >
-              <div className="flex items-center justify-between border-b border-[#1E293B] pb-3">
+              <div className="flex items-center justify-between border-b border-border pb-3">
                 <div>
-                  <h3 className="text-base font-bold text-white">
+                  <h3 className="text-base font-bold text-foreground">
                     Syllabus: {activeCourseLessons.course.title}
                   </h3>
-                  <p className="text-xs text-slate-400 font-mono">{activeCourseLessons.course.id}</p>
+                  <p className="text-xs text-foreground-muted font-mono">{activeCourseLessons.course.id}</p>
                 </div>
-                <button onClick={() => setActiveCourseLessons(null)} className="text-slate-400 hover:text-white">
+                <button onClick={() => setActiveCourseLessons(null)} className="text-foreground-muted hover:text-foreground cursor-pointer">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">
+                <span className="text-xs text-foreground-muted font-bold uppercase tracking-wider">
                   Lessons ({activeCourseLessons.lessons.length})
                 </span>
                 <Button size="sm" onClick={() => setShowAddLessonModal(true)} icon={<Plus className="w-3.5 h-3.5" />}>
@@ -574,32 +573,32 @@ export default function AdminCoursesPage() {
 
               <div className="flex-1 overflow-y-auto space-y-2 pr-1 scrollbar-thin">
                 {activeCourseLessons.lessons.length === 0 ? (
-                  <div className="py-12 text-center text-xs text-slate-400">
+                  <div className="py-12 text-center text-xs text-foreground-muted">
                     No lessons created for this course yet. Click &quot;Add Lesson&quot; to build the syllabus.
                   </div>
                 ) : (
                   activeCourseLessons.lessons.map((lesson) => (
                     <div
                       key={lesson.id}
-                      className="p-3.5 rounded-xl bg-[#0C1222] border border-[#1E293B] flex items-center justify-between hover:border-slate-700 transition-colors"
+                      className="p-3.5 rounded-xl bg-surface-elevated border border-border flex items-center justify-between hover:border-border-hover transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center font-mono text-xs font-bold">
+                        <div className="w-7 h-7 rounded-lg bg-sky-500/15 text-sky-400 border border-sky-500/30 flex items-center justify-center font-mono text-xs font-bold">
                           {lesson.sort_order}
                         </div>
                         <div>
-                          <p className="text-xs font-bold text-white flex items-center gap-2">
+                          <p className="text-xs font-bold text-foreground flex items-center gap-2">
                             {lesson.title}
-                            <span className="px-1.5 py-0.2 rounded text-[9px] uppercase font-bold bg-slate-800 text-slate-400">
+                            <span className="px-1.5 py-0.2 rounded text-[9px] uppercase font-bold bg-surface-bright text-foreground-muted">
                               {lesson.content_type}
                             </span>
                           </p>
-                          <p className="text-[11px] text-slate-400 flex items-center gap-2">
-                            <Clock className="w-3 h-3 text-slate-500" /> {lesson.duration} mins
+                          <p className="text-[11px] text-foreground-muted flex items-center gap-2">
+                            <Clock className="w-3 h-3 text-sky-400" /> {lesson.duration} mins
                             {lesson.video_url && (
                               <>
                                 <span>•</span>
-                                <span className="text-blue-400 font-mono">{lesson.video_url}</span>
+                                <span className="text-sky-400 font-mono">{lesson.video_url}</span>
                               </>
                             )}
                           </p>
@@ -611,13 +610,13 @@ export default function AdminCoursesPage() {
                           size="sm"
                           variant="ghost"
                           onClick={() => setEditingLesson({ ...lesson })}
-                          icon={<Edit className="w-3.5 h-3.5 text-slate-400 hover:text-white" />}
+                          icon={<Edit className="w-3.5 h-3.5 text-foreground-muted hover:text-sky-400" />}
                         />
                         <Button
                           size="sm"
                           variant="ghost"
                           onClick={() => handleDeleteLesson(lesson.id)}
-                          className="hover:bg-red-500/10 text-red-400"
+                          className="hover:bg-rose-500/10 text-rose-400"
                           icon={<Trash2 className="w-3.5 h-3.5" />}
                         />
                       </div>
@@ -638,47 +637,47 @@ export default function AdminCoursesPage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-lg bg-[#0F172A] rounded-2xl p-6 border border-[#1E293B] shadow-2xl space-y-4"
+              className="w-full max-w-lg bg-surface rounded-2xl p-6 border border-border shadow-2xl space-y-4"
             >
-              <div className="flex items-center justify-between border-b border-[#1E293B] pb-3">
-                <h3 className="text-base font-bold text-white">Add Module Lesson</h3>
-                <button onClick={() => setShowAddLessonModal(false)} className="text-slate-400 hover:text-white">
+              <div className="flex items-center justify-between border-b border-border pb-3">
+                <h3 className="text-base font-bold text-foreground">Add Module Lesson</h3>
+                <button onClick={() => setShowAddLessonModal(false)} className="text-foreground-muted hover:text-foreground cursor-pointer">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               <form onSubmit={handleCreateLesson} className="space-y-3.5 text-xs">
                 <div className="space-y-1">
-                  <label className="font-semibold text-white">Lesson Unique ID (Slug) *</label>
+                  <label className="font-semibold text-foreground">Lesson Unique ID (Slug) *</label>
                   <input
                     required
                     type="text"
                     value={newLessonForm.id}
                     onChange={(e) => setNewLessonForm({ ...newLessonForm, id: e.target.value.toLowerCase().replace(/\s+/g, "-") })}
-                    className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white font-mono focus:outline-none"
+                    className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground font-mono focus:outline-none"
                     placeholder="e.g. recon-nmap-scripting"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-semibold text-white">Lesson Title *</label>
+                  <label className="font-semibold text-foreground">Lesson Title *</label>
                   <input
                     required
                     type="text"
                     value={newLessonForm.title}
                     onChange={(e) => setNewLessonForm({ ...newLessonForm, title: e.target.value })}
-                    className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white focus:outline-none"
+                    className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none"
                     placeholder="e.g. Automated NSE Script Scanning"
                   />
                 </div>
 
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-1">
-                    <label className="font-semibold text-white">Type</label>
+                    <label className="font-semibold text-foreground">Type</label>
                     <select
                       value={newLessonForm.content_type}
                       onChange={(e) => setNewLessonForm({ ...newLessonForm, content_type: e.target.value })}
-                      className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white focus:outline-none"
+                      className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none font-medium"
                     >
                       <option value="video">Video</option>
                       <option value="article">Article / Text</option>
@@ -686,48 +685,48 @@ export default function AdminCoursesPage() {
                     </select>
                   </div>
                   <div className="space-y-1">
-                    <label className="font-semibold text-white">Duration (Mins)</label>
+                    <label className="font-semibold text-foreground">Duration (Mins)</label>
                     <input
                       type="number"
                       value={newLessonForm.duration}
                       onChange={(e) => setNewLessonForm({ ...newLessonForm, duration: parseInt(e.target.value) || 0 })}
-                      className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white focus:outline-none font-mono"
+                      className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none font-mono"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="font-semibold text-white">Sort Order</label>
+                    <label className="font-semibold text-foreground">Sort Order</label>
                     <input
                       type="number"
                       value={newLessonForm.sort_order}
                       onChange={(e) => setNewLessonForm({ ...newLessonForm, sort_order: parseInt(e.target.value) || 1 })}
-                      className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white focus:outline-none font-mono"
+                      className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none font-mono"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-semibold text-white">Video Stream URL / Embed Link</label>
+                  <label className="font-semibold text-foreground">Video Stream URL</label>
                   <input
                     type="url"
                     value={newLessonForm.video_url}
                     onChange={(e) => setNewLessonForm({ ...newLessonForm, video_url: e.target.value })}
-                    className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white font-mono focus:outline-none"
+                    className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground font-mono focus:outline-none"
                     placeholder="https://..."
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-semibold text-white">Lesson Notes & Markdown Content</label>
+                  <label className="font-semibold text-foreground">Lesson Notes & Markdown Content</label>
                   <textarea
                     rows={4}
                     value={newLessonForm.content}
                     onChange={(e) => setNewLessonForm({ ...newLessonForm, content: e.target.value })}
-                    className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white font-mono focus:outline-none"
+                    className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground font-mono focus:outline-none"
                     placeholder="## Objective\nIn this lesson we cover..."
                   />
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#1E293B]">
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
                   <Button type="button" variant="outline" size="sm" onClick={() => setShowAddLessonModal(false)}>
                     Cancel
                   </Button>
@@ -749,68 +748,68 @@ export default function AdminCoursesPage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-lg bg-[#0F172A] rounded-2xl p-6 border border-[#1E293B] shadow-2xl space-y-4"
+              className="w-full max-w-lg bg-surface rounded-2xl p-6 border border-border shadow-2xl space-y-4"
             >
-              <div className="flex items-center justify-between border-b border-[#1E293B] pb-3">
-                <h3 className="text-base font-bold text-white">Edit Lesson: {editingLesson.title}</h3>
-                <button onClick={() => setEditingLesson(null)} className="text-slate-400 hover:text-white">
+              <div className="flex items-center justify-between border-b border-border pb-3">
+                <h3 className="text-base font-bold text-foreground">Edit Lesson: {editingLesson.title}</h3>
+                <button onClick={() => setEditingLesson(null)} className="text-foreground-muted hover:text-foreground cursor-pointer">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               <form onSubmit={handleUpdateLesson} className="space-y-3.5 text-xs">
                 <div className="space-y-1">
-                  <label className="font-semibold text-white">Lesson Title</label>
+                  <label className="font-semibold text-foreground">Lesson Title</label>
                   <input
                     type="text"
                     value={editingLesson.title}
                     onChange={(e) => setEditingLesson({ ...editingLesson, title: e.target.value })}
-                    className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white focus:outline-none"
+                    className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="font-semibold text-white">Duration (Mins)</label>
+                    <label className="font-semibold text-foreground">Duration (Mins)</label>
                     <input
                       type="number"
                       value={editingLesson.duration}
                       onChange={(e) => setEditingLesson({ ...editingLesson, duration: parseInt(e.target.value) || 0 })}
-                      className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white focus:outline-none font-mono"
+                      className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none font-mono"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="font-semibold text-white">Order Index</label>
+                    <label className="font-semibold text-foreground">Order Index</label>
                     <input
                       type="number"
                       value={editingLesson.sort_order}
                       onChange={(e) => setEditingLesson({ ...editingLesson, sort_order: parseInt(e.target.value) || 1 })}
-                      className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white focus:outline-none font-mono"
+                      className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none font-mono"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-semibold text-white">Video Stream URL</label>
+                  <label className="font-semibold text-foreground">Video Stream URL</label>
                   <input
                     type="url"
                     value={editingLesson.video_url || ""}
                     onChange={(e) => setEditingLesson({ ...editingLesson, video_url: e.target.value })}
-                    className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white font-mono focus:outline-none"
+                    className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground font-mono focus:outline-none"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-semibold text-white">Lesson Content</label>
+                  <label className="font-semibold text-foreground">Lesson Content</label>
                   <textarea
                     rows={4}
                     value={editingLesson.content || ""}
                     onChange={(e) => setEditingLesson({ ...editingLesson, content: e.target.value })}
-                    className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white font-mono focus:outline-none"
+                    className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground font-mono focus:outline-none"
                   />
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#1E293B]">
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
                   <Button type="button" variant="outline" size="sm" onClick={() => setEditingLesson(null)}>
                     Cancel
                   </Button>

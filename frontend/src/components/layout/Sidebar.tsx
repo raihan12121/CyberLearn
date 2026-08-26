@@ -135,29 +135,29 @@ function SidebarNavContent({
 
       <aside
         className={`
-          fixed top-0 left-0 h-screen bg-[#0F172A] border-r border-[#1E293B] z-50
+          fixed top-0 left-0 h-screen bg-surface border-r border-border z-50
           flex flex-col transition-all duration-200 ease-out
           ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
           ${collapsed ? "w-[68px]" : "w-[240px]"}
         `}
       >
         {/* Logo Header */}
-        <div className="flex items-center justify-between px-4 h-16 border-b border-[#1E293B] shrink-0 bg-[#0C1222]">
+        <div className="flex items-center justify-between px-4 h-16 border-b border-border shrink-0 bg-surface-elevated/60 backdrop-blur-sm">
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-8 h-8 rounded-lg bg-blue-600/15 text-blue-400 border border-blue-500/25 flex items-center justify-center shrink-0 shadow-sm shadow-blue-500/10">
-              <Shield className="w-4 h-4 text-blue-400" />
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-sky-500/20 to-indigo-500/20 text-sky-400 border border-sky-500/30 flex items-center justify-center shrink-0 shadow-sm shadow-sky-500/10">
+              <Shield className="w-4 h-4 text-sky-400" />
             </div>
             {!collapsed && (
               <div className="flex items-center gap-2 min-w-0">
-                <span className="text-base font-bold text-white tracking-tight truncate">
-                  CyberLearn
+                <span className="text-base font-bold text-foreground tracking-tight truncate">
+                  Cyber<span className="text-sky-400">Learn</span>
                 </span>
                 {isAdmin ? (
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-blue-500/15 text-blue-400 border border-blue-500/30">
+                  <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-indigo-500/15 text-indigo-400 border border-indigo-500/30">
                     Admin
                   </span>
                 ) : (
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider bg-slate-800 text-slate-400 border border-slate-700/50">
+                  <span className="px-1.5 py-0.5 rounded-md text-[9px] font-semibold uppercase tracking-wider bg-sky-500/10 text-sky-400 border border-sky-500/20">
                     PRO
                   </span>
                 )}
@@ -167,7 +167,7 @@ function SidebarNavContent({
           {/* Mobile Close Button */}
           <button
             onClick={() => setMobileOpen?.(false)}
-            className="lg:hidden p-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
+            className="lg:hidden p-1.5 rounded-md text-foreground-muted hover:text-foreground hover:bg-surface-elevated cursor-pointer"
             aria-label="Close sidebar"
           >
             <X className="w-4 h-4" />
@@ -179,7 +179,7 @@ function SidebarNavContent({
           {sectionsToRender.map((section) => (
             <div key={section.title}>
               {!collapsed && (
-                <h3 className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">
+                <h3 className="px-3 text-[10px] font-bold text-foreground-muted uppercase tracking-widest mb-2">
                   {section.title}
                 </h3>
               )}
@@ -201,18 +201,18 @@ function SidebarNavContent({
                         href={item.href}
                         onClick={handleLinkClick}
                         className={`
-                          flex items-center gap-2.5 px-3 py-2 rounded-md
+                          flex items-center gap-2.5 px-3 py-2 rounded-lg
                           text-xs font-medium transition-all duration-150
                           ${
                             isActive
-                              ? "bg-blue-600/15 text-blue-400 font-semibold border-l-2 border-blue-500 pl-2.5 shadow-sm"
-                              : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60"
+                              ? "bg-gradient-to-r from-sky-500/15 to-indigo-500/10 text-sky-400 font-semibold border-l-2 border-sky-400 pl-2.5 shadow-sm"
+                              : "text-foreground-secondary hover:text-foreground hover:bg-surface-elevated/70"
                           }
                           ${collapsed ? "justify-center px-0 pl-0 border-l-0" : ""}
                         `}
                         title={collapsed ? item.label : undefined}
                       >
-                        <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-blue-400" : "text-slate-400"}`} />
+                        <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-sky-400" : "text-foreground-muted"}`} />
                         {!collapsed && <span className="truncate">{item.label}</span>}
                       </Link>
                     </li>
@@ -224,22 +224,22 @@ function SidebarNavContent({
         </nav>
 
         {/* Bottom Bar */}
-        <div className="border-t border-[#1E293B] p-2.5 shrink-0 space-y-1 bg-[#0C1222]">
+        <div className="border-t border-border p-2.5 shrink-0 space-y-1 bg-surface-elevated/50">
           <button
             onClick={toggleTheme}
             className={`
-              w-full flex items-center gap-2.5 px-3 py-1.5 rounded-md
-              text-xs font-medium text-slate-400
-              hover:text-slate-200 hover:bg-slate-800/60 transition-all duration-150 cursor-pointer
+              w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg
+              text-xs font-medium text-foreground-secondary
+              hover:text-foreground hover:bg-surface-elevated transition-all duration-150 cursor-pointer
               ${collapsed ? "justify-center px-0" : ""}
             `}
             title={resolvedTheme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
             aria-label="Toggle Theme"
           >
             {resolvedTheme === "dark" ? (
-              <Sun className="w-4 h-4 shrink-0 text-slate-400" />
+              <Sun className="w-4 h-4 shrink-0 text-amber-400" />
             ) : (
-              <Moon className="w-4 h-4 shrink-0 text-slate-400" />
+              <Moon className="w-4 h-4 shrink-0 text-indigo-400" />
             )}
             {!collapsed && <span>{resolvedTheme === "dark" ? "Light Theme" : "Dark Theme"}</span>}
           </button>
@@ -248,27 +248,27 @@ function SidebarNavContent({
             href="/settings"
             onClick={handleLinkClick}
             className={`
-              flex items-center gap-2.5 px-3 py-1.5 rounded-md
-              text-xs font-medium text-slate-400
-              hover:text-slate-200 hover:bg-slate-800/60 transition-all duration-150
+              flex items-center gap-2.5 px-3 py-1.5 rounded-lg
+              text-xs font-medium text-foreground-secondary
+              hover:text-foreground hover:bg-surface-elevated transition-all duration-150
               ${collapsed ? "justify-center px-0" : ""}
             `}
             title={collapsed ? "Settings" : undefined}
           >
-            <Settings className="w-4 h-4 shrink-0 text-slate-400" />
+            <Settings className="w-4 h-4 shrink-0 text-foreground-muted" />
             {!collapsed && <span>Settings</span>}
           </Link>
 
           {/* Collapse Button (desktop) */}
           <button
             onClick={() => setCollapsed?.(!collapsed)}
-            className="hidden lg:flex items-center justify-center w-full py-1.5 mt-0.5 rounded-md text-slate-500 hover:text-slate-200 hover:bg-slate-800/60 transition-all duration-150 cursor-pointer"
+            className="hidden lg:flex items-center justify-center w-full py-1.5 mt-0.5 rounded-lg text-foreground-muted hover:text-foreground hover:bg-surface-elevated transition-all duration-150 cursor-pointer"
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {collapsed ? (
               <ChevronRight className="w-4 h-4" />
             ) : (
-              <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-medium">
+              <div className="flex items-center gap-1.5 text-[11px] text-foreground-muted font-medium">
                 <ChevronLeft className="w-3.5 h-3.5" />
                 <span>Collapse</span>
               </div>
@@ -286,7 +286,7 @@ export default function Sidebar(props: SidebarProps) {
   const setCollapsed = props.setCollapsed || setInternalCollapsed;
 
   return (
-    <Suspense fallback={<div className="w-[240px] h-screen bg-[#0F172A]" />}>
+    <Suspense fallback={<div className="w-[240px] h-screen bg-surface" />}>
       <SidebarNavContent
         {...props}
         collapsed={collapsed}

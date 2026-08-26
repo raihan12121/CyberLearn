@@ -10,12 +10,13 @@ import {
   Trash2,
   Users,
   Calendar,
-  ExternalLink,
+  Clock,
+  Video,
   Shield,
   RefreshCw,
   X,
-  Clock,
-  BookOpen,
+  Mail,
+  UserPlus,
 } from "lucide-react";
 import { Card, Badge, Button } from "@/components/ui";
 import { api } from "@/lib/api";
@@ -32,22 +33,22 @@ export default function AdminBatchesPage() {
   const [showAddBatchModal, setShowAddBatchModal] = useState(false);
   const [editingBatch, setEditingBatch] = useState<any | null>(null);
   const [newBatchForm, setNewBatchForm] = useState({
-    name: "",
-    batch_code: "",
-    description: "",
-    instructor_id: "",
+    id: "",
+    title: "",
     course_id: "",
-    start_date: "",
-    end_date: "",
-    max_students: 50,
-    meeting_link: "",
-    schedule_details: "",
+    instructor_name: "Lead Security Researcher",
+    max_seats: 30,
+    enrolled_count: 0,
+    start_date: new Date().toISOString().split("T")[0],
+    end_date: new Date(Date.now() + 60 * 86400000).toISOString().split("T")[0],
+    schedule_text: "Mon & Wed • 7:00 PM EST",
+    live_meeting_url: "https://meet.cyberlearn.io/live",
     is_active: true,
   });
 
   // Batch Roster State
-  const [activeBatchStudents, setActiveBatchStudents] = useState<{ batch: any; students: any[] } | null>(null);
-  const [enrollStudentEmail, setEnrollStudentEmail] = useState("");
+  const [activeRoster, setActiveRoster] = useState<{ batch: any; students: any[] } | null>(null);
+  const [enrollEmail, setEnrollEmail] = useState("");
 
   const loadBatchesAndCourses = async () => {
     setRefreshing(true);
@@ -89,19 +90,19 @@ export default function AdminBatchesPage() {
       setBatchesList((prev) => [created, ...prev]);
       setShowAddBatchModal(false);
       setNewBatchForm({
-        name: "",
-        batch_code: "",
-        description: "",
-        instructor_id: "",
+        id: "",
+        title: "",
         course_id: "",
-        start_date: "",
-        end_date: "",
-        max_students: 50,
-        meeting_link: "",
-        schedule_details: "",
+        instructor_name: "Lead Security Researcher",
+        max_seats: 30,
+        enrolled_count: 0,
+        start_date: new Date().toISOString().split("T")[0],
+        end_date: new Date(Date.now() + 60 * 86400000).toISOString().split("T")[0],
+        schedule_text: "Mon & Wed • 7:00 PM EST",
+        live_meeting_url: "https://meet.cyberlearn.io/live",
         is_active: true,
       });
-      alert(`Batch "${created.name}" created with code ${created.batch_code}.`);
+      alert(`Batch "${created.title}" created successfully.`);
     } catch (e: any) {
       alert(`Error: ${e.message}`);
     }
@@ -120,52 +121,61 @@ export default function AdminBatchesPage() {
     }
   };
 
-  const handleDeleteBatch = async (batchId: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete batch "${name}"?`)) return;
+  const handleDeleteBatch = async (batchId: string, title: string) => {
+    if (!confirm(`Are you sure you want to delete cohort "${title}"?`)) return;
     try {
       await api.deleteAdminBatch(batchId);
       setBatchesList((prev) => prev.filter((b) => b.id !== batchId));
-      if (activeBatchStudents?.batch.id === batchId) {
-        setActiveBatchStudents(null);
+      if (activeRoster?.batch.id === batchId) {
+        setActiveRoster(null);
       }
-      alert("Batch deleted.");
+      alert("Cohort batch deleted.");
     } catch (e: any) {
       alert(`Error: ${e.message}`);
     }
   };
 
-  const handleOpenBatchStudents = async (batch: any) => {
+  const handleOpenRoster = async (batch: any) => {
     try {
       const students = await api.getAdminBatchStudents(batch.id);
-      setActiveBatchStudents({ batch, students: students || [] });
+      setActiveRoster({ batch, students: students || [] });
     } catch (e: any) {
-      alert(`Failed to load students: ${e.message}`);
+      alert(`Failed to load roster: ${e.message}`);
     }
   };
 
-  const handleEnrollBatchStudent = async (e: React.FormEvent) => {
+  const handleEnrollStudent = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeBatchStudents || !enrollStudentEmail.trim()) return;
+    if (!activeRoster || !enrollEmail.trim()) return;
     try {
-      const res = await api.enrollAdminBatchStudent(activeBatchStudents.batch.id, { email: enrollStudentEmail.trim() });
-      alert(res.message || "Student enrolled successfully.");
-      const updatedStudents = await api.getAdminBatchStudents(activeBatchStudents.batch.id);
-      setActiveBatchStudents((prev) => (prev ? { ...prev, students: updatedStudents } : null));
-      setEnrollStudentEmail("");
+      const res = await api.enrollAdminBatchStudent(activeRoster.batch.id, { email: enrollEmail.trim() });
+      setActiveRoster((prev) => (prev ? { ...prev, students: [res.student, ...prev.students] } : null));
+      setBatchesList((prev) =>
+        prev.map((b) =>
+          b.id === activeRoster.batch.id ? { ...b, enrolled_count: (b.enrolled_count || 0) + 1 } : b
+        )
+      );
+      setEnrollEmail("");
+      alert(`Student enrolled successfully.`);
     } catch (e: any) {
       alert(`Error: ${e.message}`);
     }
   };
 
-  const handleRemoveBatchStudent = async (userId: string) => {
-    if (!confirm("Are you sure you want to remove this student from the batch?")) return;
-    if (!activeBatchStudents) return;
+  const handleRemoveStudent = async (userId: string) => {
+    if (!activeRoster) return;
+    if (!confirm("Are you sure you want to unenroll this student?")) return;
     try {
-      await api.removeAdminBatchStudent(activeBatchStudents.batch.id, userId);
-      setActiveBatchStudents((prev) =>
-        prev ? { ...prev, students: prev.students.filter((s) => s.user_id !== userId) } : null
+      await api.removeAdminBatchStudent(activeRoster.batch.id, userId);
+      setActiveRoster((prev) =>
+        prev ? { ...prev, students: prev.students.filter((s) => s.id !== userId) } : null
       );
-      alert("Student removed from batch.");
+      setBatchesList((prev) =>
+        prev.map((b) =>
+          b.id === activeRoster.batch.id ? { ...b, enrolled_count: Math.max(0, (b.enrolled_count || 1) - 1) } : b
+        )
+      );
+      alert("Student unenrolled.");
     } catch (e: any) {
       alert(`Error: ${e.message}`);
     }
@@ -174,20 +184,20 @@ export default function AdminBatchesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[500px]">
-        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 border-4 border-sky-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   if (unauthorized) {
     return (
-      <div className="max-w-md mx-auto my-20 p-6 bg-surface border border-error/30 rounded-2xl text-center space-y-4 shadow-xl">
-        <div className="w-12 h-12 rounded-full bg-error/10 text-error flex items-center justify-center mx-auto">
+      <div className="max-w-md mx-auto my-20 p-6 bg-surface border border-rose-500/30 rounded-2xl text-center space-y-4 shadow-xl">
+        <div className="w-12 h-12 rounded-full bg-rose-500/15 text-rose-400 flex items-center justify-center mx-auto border border-rose-500/30">
           <Shield className="w-6 h-6" />
         </div>
         <h2 className="text-xl font-bold text-foreground">Access Denied</h2>
         <p className="text-sm text-foreground-muted">
-          Administrative privileges required to access Live Cohorts management.
+          Administrative privileges required to access Cohort & Batch schedules.
         </p>
         <Button onClick={() => router.push("/dashboard")} className="w-full">
           Return to Dashboard
@@ -199,20 +209,20 @@ export default function AdminBatchesPage() {
   return (
     <div className="max-w-[1400px] mx-auto space-y-6 pb-16">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#1E293B] pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
         <div className="flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-blue-600/15 text-blue-400 border border-blue-500/25 flex items-center justify-center shadow-sm shadow-blue-500/10">
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-cyan-500/20 to-sky-500/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center shadow-sm shadow-cyan-500/10">
             <GraduationCap className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2.5">
-              <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Cohorts & Live Batches</h1>
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                {batchesList.length} Active Batches
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Cohorts & Live Batches</h1>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-cyan-500/15 text-cyan-400 border border-cyan-500/30">
+                {batchesList.length} Cohorts
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Manage instructor-led cohorts, schedule live bootcamps, and govern enrolled student rosters.
+            <p className="text-xs text-foreground-muted mt-0.5">
+              Manage instructor-led cohorts, live video sync schedules, seat capacities, and student rosters.
             </p>
           </div>
         </div>
@@ -228,7 +238,7 @@ export default function AdminBatchesPage() {
             {refreshing ? "Syncing..." : "Sync Batches"}
           </Button>
           <Button size="sm" onClick={() => setShowAddBatchModal(true)} icon={<Plus className="w-3.5 h-3.5" />}>
-            Create Batch
+            Create Cohort
           </Button>
         </div>
       </div>
@@ -239,78 +249,80 @@ export default function AdminBatchesPage() {
           <Card
             key={b.id}
             padding="lg"
-            className="border border-[#1E293B] bg-[#0F172A] flex flex-col justify-between hover:border-slate-700 transition-all duration-150 group shadow-md"
+            hover
+            className="flex flex-col justify-between bg-surface border-border hover:border-cyan-400/50 shadow-md group"
           >
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="font-mono text-[10px] font-bold uppercase bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20">
-                  {b.batch_code}
+                <span className="font-mono text-[10px] font-bold uppercase text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-full border border-cyan-500/20">
+                  {b.id}
                 </span>
                 <span
-                  className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${
+                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
                     b.is_active
-                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                      : "bg-slate-800 text-slate-400 border-slate-700"
+                      ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                      : "bg-surface-bright text-foreground-muted border-border"
                   }`}
                 >
-                  {b.is_active ? "Active" : "Archived"}
+                  {b.is_active ? "Enrolling" : "Closed"}
                 </span>
               </div>
 
               <div>
-                <h3 className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">
-                  {b.name}
+                <h3 className="text-sm font-bold text-foreground group-hover:text-cyan-400 transition-colors">
+                  {b.title}
                 </h3>
-                <p className="text-xs text-slate-400 line-clamp-2 mt-1">{b.description || "No description provided."}</p>
+                <p className="text-xs text-foreground-muted mt-0.5 font-medium">Instructor: {b.instructor_name}</p>
               </div>
 
-              <div className="space-y-1.5 pt-2 border-t border-[#1E293B] text-xs text-slate-400">
-                <p className="flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-blue-400" />
-                  <span>
-                    {b.start_date ? new Date(b.start_date).toLocaleDateString() : "TBD"} –{" "}
-                    {b.end_date ? new Date(b.end_date).toLocaleDateString() : "TBD"}
-                  </span>
+              <div className="space-y-1.5 pt-2 border-t border-border text-xs text-foreground-muted">
+                <p className="flex items-center gap-2">
+                  <Calendar className="w-3.5 h-3.5 text-sky-400" />
+                  <span>{b.start_date} → {b.end_date}</span>
                 </p>
-                {b.schedule_details && (
-                  <p className="flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-amber-400" /> {b.schedule_details}
+                <p className="flex items-center gap-2">
+                  <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                  <span className="font-semibold text-foreground-secondary">{b.schedule_text}</span>
+                </p>
+                {b.live_meeting_url && (
+                  <p className="flex items-center gap-2 truncate">
+                    <Video className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                    <span className="text-sky-400 font-mono text-[11px] truncate">{b.live_meeting_url}</span>
                   </p>
                 )}
-                {b.meeting_link && (
-                  <a
-                    href={b.meeting_link}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center gap-1.5 text-blue-400 hover:underline truncate"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5 shrink-0" /> {b.meeting_link}
-                  </a>
-                )}
+              </div>
+
+              <div className="pt-2 flex items-center justify-between text-xs">
+                <span className="text-foreground-muted flex items-center gap-1">
+                  <Users className="w-3.5 h-3.5 text-cyan-400" /> Roster Capacity:
+                </span>
+                <span className="font-mono font-bold text-foreground">
+                  {b.enrolled_count || 0} / {b.max_seats} Seats
+                </span>
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-4 mt-4 border-t border-[#1E293B]">
+            <div className="flex items-center justify-between pt-4 mt-4 border-t border-border">
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => handleOpenBatchStudents(b)}
+                onClick={() => handleOpenRoster(b)}
                 icon={<Users className="w-3.5 h-3.5" />}
               >
-                Roster ({b.enrolled_count || 0}/{b.max_students || 50})
+                Roster ({b.enrolled_count || 0})
               </Button>
               <div className="flex items-center gap-1">
                 <Button
                   size="sm"
                   variant="ghost"
                   onClick={() => setEditingBatch({ ...b })}
-                  icon={<Edit className="w-3.5 h-3.5 text-slate-400 hover:text-white" />}
+                  icon={<Edit className="w-3.5 h-3.5 text-foreground-muted hover:text-cyan-400" />}
                 />
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => handleDeleteBatch(b.id, b.name)}
-                  className="hover:bg-red-500/10 text-red-400"
+                  onClick={() => handleDeleteBatch(b.id, b.title)}
+                  className="hover:bg-rose-500/10 text-rose-400"
                   icon={<Trash2 className="w-3.5 h-3.5" />}
                 />
               </div>
@@ -327,47 +339,49 @@ export default function AdminBatchesPage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-lg bg-[#0F172A] rounded-2xl p-6 border border-[#1E293B] shadow-2xl space-y-4"
+              className="w-full max-w-lg bg-surface rounded-2xl p-6 border border-border shadow-2xl space-y-4"
             >
-              <div className="flex items-center justify-between border-b border-[#1E293B] pb-3">
-                <h3 className="text-base font-bold text-white">Create New Live Cohort</h3>
-                <button onClick={() => setShowAddBatchModal(false)} className="text-slate-400 hover:text-white">
+              <div className="flex items-center justify-between border-b border-border pb-3">
+                <h3 className="text-base font-bold text-foreground">Schedule Live Cohort Batch</h3>
+                <button onClick={() => setShowAddBatchModal(false)} className="text-foreground-muted hover:text-foreground cursor-pointer">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               <form onSubmit={handleCreateBatch} className="space-y-3.5 text-xs">
                 <div className="space-y-1">
-                  <label className="font-semibold text-white">Cohort Batch Name *</label>
+                  <label className="font-semibold text-foreground">Cohort Code / Slug *</label>
                   <input
                     required
                     type="text"
-                    value={newBatchForm.name}
-                    onChange={(e) => setNewBatchForm({ ...newBatchForm, name: e.target.value })}
-                    className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500"
-                    placeholder="e.g. Advanced Ethical Hacking Fall 2026"
+                    value={newBatchForm.id}
+                    onChange={(e) => setNewBatchForm({ ...newBatchForm, id: e.target.value.toUpperCase().replace(/\s+/g, "-") })}
+                    className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground font-mono focus:outline-none focus:border-cyan-400"
+                    placeholder="e.g. BATCH-2026-FALL"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-semibold text-foreground">Cohort Title *</label>
+                  <input
+                    required
+                    type="text"
+                    value={newBatchForm.title}
+                    onChange={(e) => setNewBatchForm({ ...newBatchForm, title: e.target.value })}
+                    className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-cyan-400"
+                    placeholder="e.g. Offensive Security Elite Cohort #4"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="font-semibold text-white">Batch Code (Optional)</label>
-                    <input
-                      type="text"
-                      value={newBatchForm.batch_code}
-                      onChange={(e) => setNewBatchForm({ ...newBatchForm, batch_code: e.target.value.toUpperCase() })}
-                      className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white font-mono focus:outline-none"
-                      placeholder="Auto-generated if empty"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="font-semibold text-white">Associated Course Track</label>
+                    <label className="font-semibold text-foreground">Track Course</label>
                     <select
                       value={newBatchForm.course_id}
                       onChange={(e) => setNewBatchForm({ ...newBatchForm, course_id: e.target.value })}
-                      className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white focus:outline-none"
+                      className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none font-medium"
                     >
-                      <option value="">None / Standalone Cohort</option>
+                      <option value="">Standalone Bootcamp</option>
                       {coursesList.map((c) => (
                         <option key={c.id} value={c.id}>
                           {c.title}
@@ -375,66 +389,77 @@ export default function AdminBatchesPage() {
                       ))}
                     </select>
                   </div>
+                  <div className="space-y-1">
+                    <label className="font-semibold text-foreground">Instructor Name</label>
+                    <input
+                      type="text"
+                      value={newBatchForm.instructor_name}
+                      onChange={(e) => setNewBatchForm({ ...newBatchForm, instructor_name: e.target.value })}
+                      className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none"
+                    />
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="font-semibold text-white">Start Date</label>
+                    <label className="font-semibold text-foreground">Start Date</label>
                     <input
                       type="date"
                       value={newBatchForm.start_date}
                       onChange={(e) => setNewBatchForm({ ...newBatchForm, start_date: e.target.value })}
-                      className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white focus:outline-none font-mono"
+                      className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none font-mono"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="font-semibold text-white">End Date</label>
+                    <label className="font-semibold text-foreground">End Date</label>
                     <input
                       type="date"
                       value={newBatchForm.end_date}
                       onChange={(e) => setNewBatchForm({ ...newBatchForm, end_date: e.target.value })}
-                      className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white focus:outline-none font-mono"
+                      className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="font-semibold text-foreground">Live Meeting Schedule</label>
+                    <input
+                      type="text"
+                      value={newBatchForm.schedule_text}
+                      onChange={(e) => setNewBatchForm({ ...newBatchForm, schedule_text: e.target.value })}
+                      className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none"
+                      placeholder="Tues & Thurs • 8 PM EST"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="font-semibold text-white">Max Capacity</label>
+                    <label className="font-semibold text-foreground">Max Seats</label>
                     <input
                       type="number"
-                      value={newBatchForm.max_students}
-                      onChange={(e) => setNewBatchForm({ ...newBatchForm, max_students: parseInt(e.target.value) || 50 })}
-                      className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white focus:outline-none font-mono"
+                      value={newBatchForm.max_seats}
+                      onChange={(e) => setNewBatchForm({ ...newBatchForm, max_seats: parseInt(e.target.value) || 20 })}
+                      className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none font-mono"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-semibold text-white">Live Meeting URL (Zoom / Meet / Discord)</label>
+                  <label className="font-semibold text-foreground">Live Meeting URL (Zoom/Meet/Discord)</label>
                   <input
                     type="url"
-                    value={newBatchForm.meeting_link}
-                    onChange={(e) => setNewBatchForm({ ...newBatchForm, meeting_link: e.target.value })}
-                    className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white font-mono focus:outline-none"
+                    value={newBatchForm.live_meeting_url}
+                    onChange={(e) => setNewBatchForm({ ...newBatchForm, live_meeting_url: e.target.value })}
+                    className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground font-mono focus:outline-none"
                     placeholder="https://meet.google.com/..."
                   />
                 </div>
 
-                <div className="space-y-1">
-                  <label className="font-semibold text-white">Schedule Times & Cadence</label>
-                  <input
-                    type="text"
-                    value={newBatchForm.schedule_details}
-                    onChange={(e) => setNewBatchForm({ ...newBatchForm, schedule_details: e.target.value })}
-                    className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white focus:outline-none"
-                    placeholder="e.g. Saturdays & Wednesdays @ 8:00 PM EST"
-                  />
-                </div>
-
-                <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#1E293B]">
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
                   <Button type="button" variant="outline" size="sm" onClick={() => setShowAddBatchModal(false)}>
                     Cancel
                   </Button>
                   <Button type="submit" size="sm">
-                    Create Cohort
+                    Schedule Batch
                   </Button>
                 </div>
               </form>
@@ -451,58 +476,68 @@ export default function AdminBatchesPage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-lg bg-[#0F172A] rounded-2xl p-6 border border-[#1E293B] shadow-2xl space-y-4"
+              className="w-full max-w-lg bg-surface rounded-2xl p-6 border border-border shadow-2xl space-y-4"
             >
-              <div className="flex items-center justify-between border-b border-[#1E293B] pb-3">
-                <h3 className="text-base font-bold text-white">Edit Cohort: {editingBatch.name}</h3>
-                <button onClick={() => setEditingBatch(null)} className="text-slate-400 hover:text-white">
+              <div className="flex items-center justify-between border-b border-border pb-3">
+                <h3 className="text-base font-bold text-foreground">Edit Cohort: {editingBatch.title}</h3>
+                <button onClick={() => setEditingBatch(null)} className="text-foreground-muted hover:text-foreground cursor-pointer">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               <form onSubmit={handleUpdateBatch} className="space-y-3.5 text-xs">
                 <div className="space-y-1">
-                  <label className="font-semibold text-white">Cohort Name</label>
+                  <label className="font-semibold text-foreground">Cohort Title</label>
                   <input
                     type="text"
-                    value={editingBatch.name}
-                    onChange={(e) => setEditingBatch({ ...editingBatch, name: e.target.value })}
-                    className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white focus:outline-none"
+                    value={editingBatch.title}
+                    onChange={(e) => setEditingBatch({ ...editingBatch, title: e.target.value })}
+                    className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="font-semibold text-white">Schedule Details</label>
+                    <label className="font-semibold text-foreground">Instructor</label>
                     <input
                       type="text"
-                      value={editingBatch.schedule_details || ""}
-                      onChange={(e) => setEditingBatch({ ...editingBatch, schedule_details: e.target.value })}
-                      className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white focus:outline-none"
+                      value={editingBatch.instructor_name}
+                      onChange={(e) => setEditingBatch({ ...editingBatch, instructor_name: e.target.value })}
+                      className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="font-semibold text-white">Max Capacity</label>
+                    <label className="font-semibold text-foreground">Max Seats</label>
                     <input
                       type="number"
-                      value={editingBatch.max_students || 50}
-                      onChange={(e) => setEditingBatch({ ...editingBatch, max_students: parseInt(e.target.value) || 50 })}
-                      className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white focus:outline-none font-mono"
+                      value={editingBatch.max_seats}
+                      onChange={(e) => setEditingBatch({ ...editingBatch, max_seats: parseInt(e.target.value) || 20 })}
+                      className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none font-mono"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-semibold text-white">Meeting URL</label>
+                  <label className="font-semibold text-foreground">Schedule Details</label>
                   <input
-                    type="url"
-                    value={editingBatch.meeting_link || ""}
-                    onChange={(e) => setEditingBatch({ ...editingBatch, meeting_link: e.target.value })}
-                    className="w-full bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-2 text-white font-mono focus:outline-none"
+                    type="text"
+                    value={editingBatch.schedule_text}
+                    onChange={(e) => setEditingBatch({ ...editingBatch, schedule_text: e.target.value })}
+                    className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none"
                   />
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#1E293B]">
+                <div className="space-y-1">
+                  <label className="font-semibold text-foreground">Meeting URL</label>
+                  <input
+                    type="url"
+                    value={editingBatch.live_meeting_url || ""}
+                    onChange={(e) => setEditingBatch({ ...editingBatch, live_meeting_url: e.target.value })}
+                    className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-foreground font-mono focus:outline-none"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
                   <Button type="button" variant="outline" size="sm" onClick={() => setEditingBatch(null)}>
                     Cancel
                   </Button>
@@ -516,65 +551,72 @@ export default function AdminBatchesPage() {
         )}
       </AnimatePresence>
 
-      {/* Enrolled Roster Modal */}
+      {/* Batch Roster Drawer / Modal */}
       <AnimatePresence>
-        {activeBatchStudents && (
+        {activeRoster && (
           <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-2xl bg-[#0F172A] rounded-2xl p-6 border border-[#1E293B] shadow-2xl space-y-4 max-h-[85vh] flex flex-col"
+              className="w-full max-w-2xl bg-surface rounded-2xl p-6 border border-border shadow-2xl space-y-4 max-h-[85vh] flex flex-col"
             >
-              <div className="flex items-center justify-between border-b border-[#1E293B] pb-3">
+              <div className="flex items-center justify-between border-b border-border pb-3">
                 <div>
-                  <h3 className="text-base font-bold text-white">
-                    Enrolled Roster: {activeBatchStudents.batch.name}
+                  <h3 className="text-base font-bold text-foreground">
+                    Enrolled Roster: {activeRoster.batch.title}
                   </h3>
-                  <p className="text-xs text-slate-400 font-mono">{activeBatchStudents.batch.batch_code}</p>
+                  <p className="text-xs text-foreground-muted font-mono">{activeRoster.batch.id}</p>
                 </div>
-                <button onClick={() => setActiveBatchStudents(null)} className="text-slate-400 hover:text-white">
+                <button onClick={() => setActiveRoster(null)} className="text-foreground-muted hover:text-foreground cursor-pointer">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              {/* Add Student Form */}
-              <form onSubmit={handleEnrollBatchStudent} className="flex items-center gap-2">
-                <input
-                  required
-                  type="email"
-                  placeholder="Enter student email to enroll..."
-                  value={enrollStudentEmail}
-                  onChange={(e) => setEnrollStudentEmail(e.target.value)}
-                  className="flex-1 bg-[#0C1222] border border-[#1E293B] rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none"
-                />
-                <Button size="sm" type="submit" icon={<Plus className="w-3.5 h-3.5" />}>
+              {/* Direct Student Enrollment Form */}
+              <form onSubmit={handleEnrollStudent} className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-foreground-muted" />
+                  <input
+                    required
+                    type="email"
+                    placeholder="Enter student email to enroll..."
+                    value={enrollEmail}
+                    onChange={(e) => setEnrollEmail(e.target.value)}
+                    className="w-full bg-surface-elevated border border-border rounded-xl pl-9 pr-4 py-2 text-xs text-foreground focus:outline-none focus:border-cyan-400"
+                  />
+                </div>
+                <Button type="submit" size="sm" icon={<UserPlus className="w-3.5 h-3.5" />}>
                   Enroll Student
                 </Button>
               </form>
 
+              {/* Enrolled Students Table */}
               <div className="flex-1 overflow-y-auto space-y-2 pr-1 scrollbar-thin">
-                {activeBatchStudents.students.length === 0 ? (
-                  <div className="py-10 text-center text-xs text-slate-400">
-                    No students enrolled in this batch yet.
+                {activeRoster.students.length === 0 ? (
+                  <div className="py-12 text-center text-xs text-foreground-muted">
+                    No students enrolled in this cohort yet. Enter an email above to grant instant access.
                   </div>
                 ) : (
-                  activeBatchStudents.students.map((s) => (
+                  activeRoster.students.map((student) => (
                     <div
-                      key={s.user_id}
-                      className="p-3 rounded-xl bg-[#0C1222] border border-[#1E293B] flex items-center justify-between text-xs hover:border-slate-700 transition-colors"
+                      key={student.id}
+                      className="p-3 rounded-xl bg-surface-elevated border border-border flex items-center justify-between hover:border-border-hover transition-colors"
                     >
                       <div>
-                        <p className="font-bold text-white">{s.full_name}</p>
-                        <p className="text-[11px] text-slate-400 font-mono">{s.email}</p>
+                        <p className="text-xs font-bold text-foreground">{student.full_name || student.username}</p>
+                        <p className="text-[11px] text-foreground-muted font-mono">{student.email}</p>
                       </div>
+
                       <div className="flex items-center gap-3">
-                        <span className="font-mono text-blue-400 font-bold">{s.xp} XP</span>
+                        <span className="text-[10px] font-mono text-cyan-400 font-bold bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+                          {student.xp || 0} XP
+                        </span>
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => handleRemoveBatchStudent(s.user_id)}
-                          className="text-red-400 hover:bg-red-500/10"
+                          onClick={() => handleRemoveStudent(student.id)}
+                          className="hover:bg-rose-500/10 text-rose-400"
                           icon={<Trash2 className="w-3.5 h-3.5" />}
                         />
                       </div>
