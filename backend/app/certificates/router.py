@@ -197,7 +197,9 @@ def get_user_certificates(
 
 @router.get("/verify/{token}")
 def verify_certificate_token(token: str, db: Session = Depends(get_db)):
-    cert = db.query(models.Certificate).filter(models.Certificate.verification_token == token).first()
+    cert = db.query(models.Certificate).filter(
+        (models.Certificate.verification_token == token) | (models.Certificate.id == token)
+    ).first()
     if not cert:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

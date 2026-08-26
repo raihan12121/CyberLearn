@@ -198,17 +198,17 @@ export default function AdminCertificatesPage() {
                 certsList.map((c) => (
                   <tr key={c.id} className="hover:bg-surface-elevated transition-colors">
                     <td className="py-3.5 px-4">
-                      <p className="font-bold text-foreground">{c.user_name || c.recipient_name || "Learner"}</p>
-                      <p className="text-[10px] text-foreground-muted font-mono">{c.user_email || c.recipient_email}</p>
+                      <p className="font-bold text-foreground">{c.student_name || c.user_name || c.recipient_name || "Learner"}</p>
+                      <p className="text-[10px] text-foreground-muted font-mono">{c.student_email || c.user_email || c.recipient_email || "N/A"}</p>
                     </td>
                     <td className="py-3.5 px-4">
-                      <p className="font-semibold text-foreground">{c.course_title || c.title || "Cyber Security Specialist"}</p>
-                      <span className="text-[10px] font-mono text-foreground-muted">{c.course_id || "standalone"}</span>
+                      <p className="font-semibold text-foreground">{c.title || c.course_title || "Cyber Security Specialist"}</p>
+                      <span className="text-[10px] font-mono text-foreground-muted">{c.course_id || c.exam_id || "standalone"}</span>
                     </td>
                     <td className="py-3.5 px-4">
                       <p className="font-mono text-sky-400 font-bold flex items-center gap-1">
                         <KeyRound className="w-3 h-3 text-sky-400" />
-                        {c.credential_id || c.certificate_number || c.id}
+                        {c.verification_token || c.credential_id || c.certificate_number || c.id}
                       </p>
                       {c.verification_hash && (
                         <p className="font-mono text-[9px] text-foreground-muted truncate max-w-[160px]">
@@ -222,21 +222,21 @@ export default function AdminCertificatesPage() {
                       </span>
                     </td>
                     <td className="py-3.5 px-4 font-mono text-foreground-muted text-[11px]">
-                      {new Date(c.issue_date || c.created_at || Date.now()).toLocaleDateString()}
+                      {new Date(c.issued_at || c.issue_date || c.created_at || Date.now()).toLocaleDateString()}
                     </td>
                     <td className="py-3.5 px-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => window.open(`/verify?id=${c.credential_id || c.id}`, "_blank")}
+                          onClick={() => window.open(c.verify_url || `/verify/${c.verification_token || c.id}`, "_blank")}
                           className="hover:text-sky-400"
                           icon={<ExternalLink className="w-3.5 h-3.5" />}
                         />
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => handleRevokeCertificate(c.id, c.user_name || c.user_email || "User")}
+                          onClick={() => handleRevokeCertificate(c.id, c.student_name || c.user_name || c.user_email || "User")}
                           className="hover:bg-rose-500/10 text-rose-400"
                           icon={<Trash2 className="w-3.5 h-3.5" />}
                         />
