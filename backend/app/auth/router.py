@@ -1,14 +1,17 @@
 from typing import Optional
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 import secrets
+import hmac
 import logging
 from ..database import get_db
 from .. import models, schemas
+from ..config import settings
 from .utils import get_password_hash, verify_password, create_access_token
 from .dependencies import get_current_user, has_active_subscription
-from .email import send_verification_email
+from .email import send_verification_email, send_otp_verification_email
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +20,7 @@ router = APIRouter(
     tags=["Authentication"]
 )
 
-@router.post("/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=schemas.RegisterResponse, status_code=status.HTTP_201_CREATED)
 def register_user(
     user_in: schemas.UserCreate,
     background_tasks: BackgroundTasks,
@@ -25,51 +28,162 @@ def register_user(
 ):
     # Check if user already exists
     existing_user = db.query(models.User).filter(models.User.email == user_in.email).first()
-    if existing_user:
+    if existing_user and existing_user.is_verified:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="A user with this email address is already registered."
+            detail="A verified account with this email address is already registered."
         )
     
-    # Create user with verification token
+    # Generate cryptographically secure 6-digit OTP
+    otp_code = str(secrets.randbelow(900000) + 100000)
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
     hashed_password = get_password_hash(user_in.password)
     username = user_in.username or user_in.email.split("@")[0]
     token = secrets.token_urlsafe(32)
-    
-    db_user = models.User(
-        email=user_in.email,
-        username=username,
-        password_hash=hashed_password,
-        full_name=user_in.full_name,
-        role="student",
-        is_verified=False,
-        verification_token=token,
-        is_onboarded=True,
-        xp=0,
-        streak_days=0
-    )
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
 
-    # Dispatch verification email non-blockingly via FastAPI BackgroundTasks
-    background_tasks.add_task(send_verification_email, db_user.email, token, db_user.full_name or "Learner")
-    return db_user
+    if existing_user and not existing_user.is_verified:
+        # Update existing unverified user with new credentials and fresh OTP
+        existing_user.password_hash = hashed_password
+        existing_user.full_name = user_in.full_name or existing_user.full_name
+        existing_user.verification_code = otp_code
+        existing_user.verification_code_expires_at = expires_at
+        existing_user.verification_token = token
+        db.commit()
+        db_user = existing_user
+    else:
+        # Create fresh unverified student user
+        db_user = models.User(
+            email=user_in.email,
+            username=username,
+            password_hash=hashed_password,
+            full_name=user_in.full_name,
+            role="student",
+            is_verified=False,
+            verification_token=token,
+            verification_code=otp_code,
+            verification_code_expires_at=expires_at,
+            is_onboarded=False,
+            xp=0,
+            streak_days=0
+        )
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+
+    # Dispatch 6-digit OTP verification email via Brevo
+    background_tasks.add_task(send_otp_verification_email, db_user.email, otp_code, db_user.full_name or "Learner")
+
+    dev_code = otp_code if (not settings.BREVO_API_KEY and not settings.SMTP_USER) else None
+    return schemas.RegisterResponse(
+        status="success",
+        message="Registration initiated. 6-digit verification code dispatched.",
+        email=db_user.email,
+        requires_verification=True,
+        dev_code=dev_code
+    )
+
+def _is_code_expired(expires_at: Optional[datetime]) -> bool:
+    if not expires_at:
+        return True
+    if expires_at.tzinfo is None:
+        return expires_at < datetime.utcnow()
+    return expires_at < datetime.now(timezone.utc)
+
+@router.post("/verify-code", response_model=schemas.Token)
+def verify_signup_code(req: schemas.VerifyCodeRequest, db: Session = Depends(get_db)):
+    """
+    Validate 6-digit OTP code and instantly activate user session with JWT access token.
+    """
+    user = db.query(models.User).filter(models.User.email == req.email.strip().lower()).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No account found associated with this email address."
+        )
+
+    if user.is_verified:
+        # Already verified: generate session token directly
+        access_token = create_access_token(data={"sub": user.email, "role": user.role})
+        return {"access_token": access_token, "token_type": "bearer"}
+
+    # Expiry validation
+    if _is_code_expired(user.verification_code_expires_at):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Verification code has expired. Please click 'Resend Code'."
+        )
+
+    # Code match validation (constant-time comparison)
+    submitted_code = req.code.strip()
+    if not user.verification_code or not hmac.compare_digest(user.verification_code, submitted_code):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid 6-digit verification code. Please check your email."
+        )
+
+    # Activate account & purge single-use OTP
+    user.is_verified = True
+    user.verification_code = None
+    user.verification_code_expires_at = None
+    user.verification_token = None
+    db.commit()
+
+    # Instant JWT issuance for seamless auto-login
+    access_token = create_access_token(data={"sub": user.email, "role": user.role})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@router.post("/resend-code")
+def resend_otp_code(
+    req: schemas.ResendCodeRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
+    """
+    Generate and dispatch a fresh 6-digit verification code.
+    """
+    user = db.query(models.User).filter(models.User.email == req.email.strip().lower()).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No account registered with this email address."
+        )
+
+    if user.is_verified:
+        return {"status": "already_verified", "message": "Account is already verified. Please sign in."}
+
+    # Generate fresh OTP
+    otp_code = str(secrets.randbelow(900000) + 100000)
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
+
+    user.verification_code = otp_code
+    user.verification_code_expires_at = expires_at
+    db.commit()
+
+    background_tasks.add_task(send_otp_verification_email, user.email, otp_code, user.full_name or "Learner")
+
+    dev_code = otp_code if (not settings.BREVO_API_KEY and not settings.SMTP_USER) else None
+    return {
+        "status": "success",
+        "message": "A fresh 6-digit verification code has been dispatched to your email.",
+        "dev_code": dev_code
+    }
 
 @router.get("/verify-email")
 def verify_email(token: str, db: Session = Depends(get_db)):
     """
-    Verify user email via activation token link.
+    Legacy token link email verification.
     """
     user = db.query(models.User).filter(models.User.verification_token == token).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired verification token."
+            detail="Invalid or expired verification link."
         )
     
     user.is_verified = True
     user.verification_token = None
+    user.verification_code = None
+    user.verification_code_expires_at = None
     db.commit()
     
     return {

@@ -72,6 +72,20 @@ class SubscriptionStatusResponse(BaseModel):
 class VerifyEmailRequest(BaseModel):
     token: str
 
+class VerifyCodeRequest(BaseModel):
+    email: EmailStr
+    code: str
+
+class ResendCodeRequest(BaseModel):
+    email: EmailStr
+
+class RegisterResponse(BaseModel):
+    status: str
+    message: str
+    email: str
+    requires_verification: bool = True
+    dev_code: Optional[str] = None
+
 class ResendVerificationRequest(BaseModel):
     email: EmailStr
 

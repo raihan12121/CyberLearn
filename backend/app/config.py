@@ -29,8 +29,9 @@ class Settings(BaseSettings):
     # Database URL: defaults to local SQLite file for ease of developer setup
     DATABASE_URL: str = "sqlite:///./cyberlearn.db"
 
-    # SMTP / Email Service Configuration
-    SMTP_HOST: str = "smtp.gmail.com"
+    # SMTP / Email Service Configuration (Brevo, Gmail, or Custom SMTP)
+    BREVO_API_KEY: str = ""
+    SMTP_HOST: str = "smtp-relay.brevo.com"
     SMTP_PORT: int = 587
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""

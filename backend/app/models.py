@@ -21,6 +21,8 @@ class User(Base):
     role = Column(String(20), default="student", index=True) # student, instructor, admin
     is_verified = Column(Boolean, default=False)
     verification_token = Column(String(255), nullable=True, index=True)
+    verification_code = Column(String(10), nullable=True, index=True)
+    verification_code_expires_at = Column(DateTime(timezone=True), nullable=True)
     xp = Column(Integer, default=0, index=True)
     streak_days = Column(Integer, default=0)
     avatar_url = Column(Text, nullable=True)
