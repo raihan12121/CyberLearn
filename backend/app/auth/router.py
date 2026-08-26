@@ -168,6 +168,45 @@ def resend_otp_code(
         "dev_code": dev_code
     }
 
+@router.get("/email-diagnostic")
+def email_diagnostic():
+    """
+    Check the live configuration and connectivity of Brevo / SMTP on the backend.
+    """
+    brevo_key = (settings.BREVO_API_KEY or "").strip()
+    key_type = "none"
+    if brevo_key.startswith("xkeysib-"):
+        key_type = "brevo_rest_api_key (xkeysib-...)"
+    elif brevo_key.startswith("xsmtpsib-"):
+        key_type = "brevo_smtp_master_key (xsmtpsib-...)"
+    elif brevo_key:
+        key_type = f"custom_key_prefix_{brevo_key[:8]}"
+
+    verified_senders = []
+    brevo_api_status = "not_configured"
+    if brevo_key and not brevo_key.startswith("xsmtpsib-"):
+        try:
+            from .email import get_brevo_verified_senders
+            senders = get_brevo_verified_senders(brevo_key)
+            if senders:
+                verified_senders = [s.get("email") for s in senders if s.get("active")]
+                brevo_api_status = "connected_successfully"
+            else:
+                brevo_api_status = "connected_or_invalid_key"
+        except Exception as e:
+            brevo_api_status = f"error: {e}"
+
+    return {
+        "brevo_api_key_configured": bool(brevo_key),
+        "brevo_key_type": key_type,
+        "configured_sender_email": settings.EMAILS_FROM_EMAIL or "noreply@cyberlearn.io",
+        "configured_sender_name": settings.EMAILS_FROM_NAME or "CyberLearn Security",
+        "smtp_host": settings.SMTP_HOST,
+        "smtp_user_set": bool(settings.SMTP_USER),
+        "brevo_api_status": brevo_api_status,
+        "discovered_verified_senders": verified_senders,
+    }
+
 @router.get("/verify-email")
 def verify_email(token: str, db: Session = Depends(get_db)):
     """

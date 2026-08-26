@@ -145,22 +145,60 @@ def build_otp_html(full_name: str, otp_code: str) -> str:
 </html>
 """
 
+def get_brevo_verified_senders(api_key: str) -> list:
+    """
+    Fetch the list of verified senders on the Brevo account.
+    """
+    try:
+        url = "https://api.brevo.com/v3/senders"
+        headers = {
+            "accept": "application/json",
+            "api-key": api_key.strip()
+        }
+        with httpx.Client(timeout=8.0) as client:
+            res = client.get(url, headers=headers)
+            if res.status_code == 200:
+                return res.json().get("senders", [])
+    except Exception as e:
+        logger.warning(f"[BREVO] Could not fetch verified senders: {e}")
+    return []
+
 def send_otp_verification_email(recipient_email: str, otp_code: str, full_name: str = "Learner") -> bool:
     """
     Dispatches 6-digit OTP verification code via Brevo REST API, SMTP Relay, or Dev Console.
+    Includes automatic verified sender discovery and auto-detection of API Key vs SMTP Key.
     """
     html_content = build_otp_html(full_name, otp_code)
     subject = f"Your CyberLearn Verification Code: {otp_code}"
-    sender_email = settings.EMAILS_FROM_EMAIL or "noreply@cyberlearn.io"
-    sender_name = settings.EMAILS_FROM_NAME or "CyberLearn Security"
+    sender_email = (settings.EMAILS_FROM_EMAIL or "").strip()
+    sender_name = (settings.EMAILS_FROM_NAME or "CyberLearn Security").strip()
+    brevo_key = (settings.BREVO_API_KEY or "").strip()
 
-    # Method 1: Brevo REST API (Fastest & most reliable via HTTP)
-    if settings.BREVO_API_KEY:
+    print(f"\n========================================================")
+    print(f"[CYBERLEARN AUTH] DISPATCHING OTP FOR: {recipient_email}")
+    print(f"OTP CODE : [ {otp_code} ] (Expires in 10 minutes)")
+    print(f"========================================================\n")
+
+    # Method 1: Brevo REST API (when key starts with xkeysib- or is standard API key)
+    if brevo_key and not brevo_key.startswith("xsmtpsib-"):
         try:
+            # Check if current sender email is valid, otherwise auto-discover registered Brevo sender
+            if not sender_email or sender_email == "noreply@cyberlearn.io":
+                senders = get_brevo_verified_senders(brevo_key)
+                if senders:
+                    active_senders = [s for s in senders if s.get("active")]
+                    if active_senders:
+                        sender_email = active_senders[0]["email"]
+                        sender_name = active_senders[0].get("name") or sender_name
+                        print(f"[BREVO API] Auto-selected verified account sender: {sender_email}")
+            
+            if not sender_email:
+                sender_email = "noreply@cyberlearn.io"
+
             url = "https://api.brevo.com/v3/smtp/email"
             headers = {
                 "accept": "application/json",
-                "api-key": settings.BREVO_API_KEY.strip(),
+                "api-key": brevo_key,
                 "content-type": "application/json"
             }
             payload = {
@@ -169,41 +207,41 @@ def send_otp_verification_email(recipient_email: str, otp_code: str, full_name: 
                 "subject": subject,
                 "htmlContent": html_content
             }
-            with httpx.Client(timeout=10.0) as client:
+            with httpx.Client(timeout=12.0) as client:
                 res = client.post(url, json=payload, headers=headers)
                 if res.status_code in (200, 201, 202):
-                    logger.info(f"[BREVO API] Verification email sent successfully to {recipient_email}")
+                    print(f"[BREVO API SUCCESS] Email successfully dispatched to {recipient_email} (Msg ID: {res.json().get('messageId')})")
+                    logger.info(f"[BREVO API] Verification email sent to {recipient_email}")
                     return True
                 else:
-                    logger.warning(f"[BREVO API] API returned status {res.status_code}: {res.text}")
+                    print(f"[BREVO API ERROR] Status {res.status_code}: {res.text}")
+                    logger.warning(f"[BREVO API] Failed ({res.status_code}): {res.text}")
         except Exception as e:
-            logger.error(f"[BREVO API] Request error sending to {recipient_email}: {e}")
+            print(f"[BREVO API EXCEPTION] Request error: {e}")
+            logger.error(f"[BREVO API] Request error: {e}")
 
-    # Method 2: Standard SMTP Relay (Brevo SMTP or Custom SMTP)
-    if settings.SMTP_USER and settings.SMTP_PASSWORD:
+    # Method 2: Brevo SMTP Relay (if xsmtpsib- key is used or SMTP settings provided)
+    smtp_pass = brevo_key if brevo_key.startswith("xsmtpsib-") else settings.SMTP_PASSWORD
+    smtp_user = settings.SMTP_USER or sender_email
+    if smtp_user and smtp_pass:
         try:
             msg = MIMEMultipart("alternative")
             msg["Subject"] = subject
-            msg["From"] = f"{sender_name} <{sender_email}>"
+            msg["From"] = f"{sender_name} <{smtp_user}>"
             msg["To"] = recipient_email
             msg.attach(MIMEText(html_content, "html"))
 
-            with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as server:
+            with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=12) as server:
                 server.starttls()
-                server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-                server.sendmail(sender_email, [recipient_email], msg.as_string())
+                server.login(smtp_user, smtp_pass)
+                server.sendmail(smtp_user, [recipient_email], msg.as_string())
 
-            logger.info(f"[BREVO SMTP] Verification email dispatched successfully to {recipient_email}")
+            print(f"[BREVO SMTP SUCCESS] Verification email sent via SMTP to {recipient_email}")
             return True
         except Exception as e:
-            logger.error(f"[BREVO SMTP] Error sending email via SMTP: {e}")
+            print(f"[BREVO SMTP ERROR] Error sending email via SMTP: {e}")
+            logger.error(f"[BREVO SMTP] Error: {e}")
 
-    # Method 3: Development Terminal Log Fallback
-    print(f"\n========================================================")
-    print(f"[CYBERLEARN AUTH] OTP VERIFICATION CODE FOR: {recipient_email}")
-    print(f"OTP CODE : [ {otp_code} ] (Expires in 10 minutes)")
-    print(f"========================================================\n")
-    logger.info(f"[DEV EMAIL LOG] OTP for {recipient_email}: {otp_code}")
     return True
 
 
