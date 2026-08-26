@@ -10,6 +10,8 @@ type BadgeVariant =
   | "purple"
   | "accent"
   | "cyan"
+  | "teal"
+  | "cisco"
   | "outline";
 type BadgeSize = "sm" | "md";
 
@@ -23,10 +25,12 @@ interface BadgeProps {
 
 const variantClasses: Record<BadgeVariant, string> = {
   default: "bg-surface-bright text-foreground-secondary border border-border",
-  primary: "bg-sky-500/15 text-sky-400 border border-sky-500/30",
-  secondary: "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20",
-  success: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30",
-  warning: "bg-amber-500/15 text-amber-400 border border-amber-500/30",
+  primary: "bg-[#00BCEB]/15 text-[#00BCEB] border border-[#00BCEB]/30",
+  cisco: "bg-[#00BCEB]/20 text-[#00BCEB] border border-[#00BCEB]/40 font-bold",
+  secondary: "bg-[#6366F1]/10 text-[#818CF8] border border-[#6366F1]/20",
+  success: "bg-[#00C49F]/15 text-[#00C49F] border border-[#00C49F]/30",
+  teal: "bg-[#00C49F]/15 text-[#00C49F] border border-[#00C49F]/30",
+  warning: "bg-[#F5A623]/15 text-[#F5A623] border border-[#F5A623]/30",
   danger: "bg-rose-500/15 text-rose-400 border border-rose-500/30",
   purple: "bg-indigo-500/15 text-indigo-400 border border-indigo-500/30",
   accent: "bg-purple-500/15 text-purple-400 border border-purple-500/30",
@@ -58,17 +62,15 @@ export default function Badge({
       {dot && (
         <span
           className={`w-1.5 h-1.5 rounded-full animate-pulse ${
-            variant === "success"
-              ? "bg-emerald-400"
+            variant === "success" || variant === "teal"
+              ? "bg-[#00C49F]"
               : variant === "danger"
               ? "bg-rose-400"
               : variant === "warning"
-              ? "bg-amber-400"
+              ? "bg-[#F5A623]"
               : variant === "purple" || variant === "accent"
               ? "bg-indigo-400"
-              : variant === "cyan"
-              ? "bg-cyan-400"
-              : "bg-sky-400"
+              : "bg-[#00BCEB]"
           }`}
         />
       )}

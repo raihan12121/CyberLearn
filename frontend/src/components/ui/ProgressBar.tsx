@@ -3,7 +3,7 @@ import React from "react";
 interface ProgressBarProps {
   value: number; // 0-100
   max?: number;
-  variant?: "primary" | "gradient" | "success" | "warning" | "danger" | "cyber";
+  variant?: "primary" | "gradient" | "success" | "warning" | "danger" | "cyber" | "cisco";
   size?: "sm" | "md" | "lg";
   showLabel?: boolean;
   label?: string;
@@ -11,12 +11,13 @@ interface ProgressBarProps {
 }
 
 const variantBg: Record<string, string> = {
-  primary: "bg-gradient-to-r from-sky-400 to-blue-600 shadow-sm shadow-sky-500/30",
-  gradient: "bg-gradient-to-r from-sky-400 via-indigo-500 to-purple-500 shadow-sm shadow-indigo-500/30",
-  cyber: "bg-gradient-to-r from-cyan-400 via-sky-500 to-indigo-500 shadow-sm shadow-cyan-500/30",
-  success: "bg-gradient-to-r from-emerald-400 to-teal-500 shadow-sm shadow-emerald-500/30",
-  warning: "bg-gradient-to-r from-amber-400 to-orange-500 shadow-sm shadow-amber-500/30",
-  danger: "bg-gradient-to-r from-rose-400 to-pink-600 shadow-sm shadow-rose-500/30",
+  primary: "bg-gradient-to-r from-[#00BCEB] to-[#004BAF] shadow-sm shadow-[#00BCEB]/30",
+  cisco: "bg-gradient-to-r from-[#00BCEB] to-[#00C49F] shadow-sm shadow-[#00BCEB]/30",
+  gradient: "bg-gradient-to-r from-[#00BCEB] via-[#6366F1] to-[#818CF8] shadow-sm shadow-indigo-500/30",
+  cyber: "bg-gradient-to-r from-[#00BCEB] via-[#00C49F] to-[#6366F1] shadow-sm shadow-cyan-500/30",
+  success: "bg-gradient-to-r from-[#00C49F] to-[#10B981] shadow-sm shadow-[#00C49F]/30",
+  warning: "bg-gradient-to-r from-[#F5A623] to-[#D97706] shadow-sm shadow-amber-500/30",
+  danger: "bg-gradient-to-r from-[#F43F5E] to-[#E11D48] shadow-sm shadow-rose-500/30",
 };
 
 const sizeClasses: Record<string, string> = {

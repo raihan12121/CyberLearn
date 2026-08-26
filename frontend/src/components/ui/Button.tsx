@@ -1,6 +1,6 @@
 import React from "react";
 
-type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "danger" | "success" | "cyber";
+type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "danger" | "success" | "cyber" | "cisco";
 type ButtonSize = "sm" | "md" | "lg";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -13,19 +13,21 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "bg-gradient-to-r from-sky-500 to-blue-600 text-white hover:from-sky-400 hover:to-blue-500 shadow-sm hover:shadow-sky-500/20 border border-sky-400/30 focus:ring-2 focus:ring-sky-500/40 font-bold",
+    "bg-gradient-to-r from-[#00BCEB] to-[#004BAF] text-white hover:from-[#049FD9] hover:to-[#003680] shadow-sm hover:shadow-[#00BCEB]/25 border border-[#00BCEB]/40 focus:ring-2 focus:ring-[#00BCEB]/40 font-bold",
+  cisco:
+    "bg-gradient-to-r from-[#00BCEB] to-[#00C49F] text-slate-950 font-extrabold hover:opacity-95 shadow-md shadow-[#00BCEB]/20 border border-[#00BCEB]/50",
   cyber:
-    "bg-gradient-to-r from-cyan-500 via-sky-500 to-indigo-600 text-white hover:opacity-95 shadow-md shadow-sky-500/25 border border-cyan-400/40 font-bold",
+    "bg-gradient-to-r from-[#00BCEB] via-[#6366F1] to-[#EC4899] text-white hover:opacity-95 shadow-md shadow-[#00BCEB]/25 border border-[#00BCEB]/40 font-bold",
   secondary:
     "bg-surface-elevated text-foreground-secondary hover:text-foreground hover:bg-surface-bright border border-border shadow-sm",
   outline:
-    "bg-transparent text-foreground border border-border hover:border-sky-400/60 hover:text-sky-400 hover:bg-sky-500/10",
+    "bg-transparent text-foreground border border-border hover:border-[#00BCEB]/60 hover:text-[#00BCEB] hover:bg-[#00BCEB]/10",
   ghost:
     "bg-transparent text-foreground-secondary hover:text-foreground hover:bg-surface-elevated",
   danger:
     "bg-rose-500/15 text-rose-400 border border-rose-500/30 hover:bg-rose-500/25 font-bold",
   success:
-    "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 font-bold",
+    "bg-[#00C49F]/15 text-[#00C49F] border border-[#00C49F]/30 hover:bg-[#00C49F]/25 font-bold",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {

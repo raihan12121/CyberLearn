@@ -144,20 +144,20 @@ function SidebarNavContent({
         {/* Logo Header */}
         <div className="flex items-center justify-between px-4 h-16 border-b border-border shrink-0 bg-surface-elevated/60 backdrop-blur-sm">
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-sky-500/20 to-indigo-500/20 text-sky-400 border border-sky-500/30 flex items-center justify-center shrink-0 shadow-sm shadow-sky-500/10">
-              <Shield className="w-4 h-4 text-sky-400" />
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#00BCEB]/25 to-[#004BAF]/25 text-[#00BCEB] border border-[#00BCEB]/40 flex items-center justify-center shrink-0 shadow-sm shadow-[#00BCEB]/15">
+              <Shield className="w-4 h-4 text-[#00BCEB]" />
             </div>
             {!collapsed && (
               <div className="flex items-center gap-2 min-w-0">
                 <span className="text-base font-bold text-foreground tracking-tight truncate">
-                  Cyber<span className="text-sky-400">Learn</span>
+                  Cyber<span className="text-[#00BCEB]">Learn</span>
                 </span>
                 {isAdmin ? (
                   <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-indigo-500/15 text-indigo-400 border border-indigo-500/30">
                     Admin
                   </span>
                 ) : (
-                  <span className="px-1.5 py-0.5 rounded-md text-[9px] font-semibold uppercase tracking-wider bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                  <span className="px-1.5 py-0.5 rounded-md text-[9px] font-semibold uppercase tracking-wider bg-[#00BCEB]/15 text-[#00BCEB] border border-[#00BCEB]/30">
                     PRO
                   </span>
                 )}
@@ -205,14 +205,14 @@ function SidebarNavContent({
                           text-xs font-medium transition-all duration-150
                           ${
                             isActive
-                              ? "bg-gradient-to-r from-sky-500/15 to-indigo-500/10 text-sky-400 font-semibold border-l-2 border-sky-400 pl-2.5 shadow-sm"
+                              ? "bg-gradient-to-r from-[#00BCEB]/15 to-[#004BAF]/10 text-[#00BCEB] font-semibold border-l-2 border-[#00BCEB] pl-2.5 shadow-sm"
                               : "text-foreground-secondary hover:text-foreground hover:bg-surface-elevated/70"
                           }
                           ${collapsed ? "justify-center px-0 pl-0 border-l-0" : ""}
                         `}
                         title={collapsed ? item.label : undefined}
                       >
-                        <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-sky-400" : "text-foreground-muted"}`} />
+                        <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-[#00BCEB]" : "text-foreground-muted"}`} />
                         {!collapsed && <span className="truncate">{item.label}</span>}
                       </Link>
                     </li>

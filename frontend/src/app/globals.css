@@ -1,65 +1,67 @@
 @import "tailwindcss";
 
 /* ==========================================================================
-   CyberLearn Design System - Vibrant, Lightweight & Colorful Modern Cyber UI
-   Palette: Luminous Electric Cyan, Cyber Violet, Vivid Emerald & Neon Amber
+   CyberLearn Design System - Merged Cisco NetAcad & Cyber Security UI
+   Inspiration: Cisco Networking Academy (NetAcad) Design System
+   Key Accents: Cisco Blue (#00BCEB / #049FD9), Deep Cobalt (#004BAF), 
+                Academy Teal (#00C49F), Solar Gold (#F5A623), Cyber Violet (#6366F1)
    ========================================================================== */
 
 /* Dark Mode (Default) */
 :root,
 .dark,
 [data-theme="dark"] {
-  /* Lightweight, Clean & Luminous Canvas */
-  --background: #0B0F19;
-  --surface: #111827;
-  --surface-elevated: #162032;
-  --surface-bright: #1F2E47;
+  /* Cisco NetAcad Deep Tech Midnight Canvas */
+  --background: #0B1224;
+  --surface: #101B37;
+  --surface-elevated: #16264C;
+  --surface-bright: #1E3364;
   
   /* High-Contrast Foreground & Typography */
-  --foreground: #F9FAFB;
+  --foreground: #F8FAFC;
   --foreground-secondary: #94A3B8;
   --foreground-muted: #64748B;
   
-  /* Primary Action - Vibrant Electric Sky Cyan / Blue */
-  --primary: #38BDF8;
-  --primary-hover: #0EA5E9;
-  --primary-dim: #0284C7;
-  --primary-light: #7DD3FC;
-  --primary-glow: rgba(56, 189, 248, 0.3);
+  /* Primary Action - Cisco Signature Electric Blue (#00BCEB) */
+  --primary: #00BCEB;
+  --primary-hover: #049FD9;
+  --primary-dim: #004BAF;
+  --primary-light: #67E8F9;
+  --primary-glow: rgba(0, 188, 235, 0.32);
   
-  /* Accent - Luminous Cyber Violet */
-  --accent: #818CF8;
-  --accent-hover: #6366F1;
-  --accent-light: #A5B4FC;
-  --accent-glow: rgba(129, 140, 248, 0.3);
+  /* Accent - NetAcad Cyber Indigo */
+  --accent: #6366F1;
+  --accent-hover: #4F46E5;
+  --accent-light: #818CF8;
+  --accent-glow: rgba(99, 102, 241, 0.32);
 
-  /* Secondary - Clean Slate Accent */
+  /* Secondary - Deep Academy Slate */
   --secondary: #1E293B;
   --secondary-hover: #334155;
   --secondary-light: #475569;
   
-  /* Status Semantics - Vibrant & Colorful */
-  --success: #10B981;
+  /* Status Semantics - NetAcad Learning Signals */
+  --success: #00C49F;
   --success-hover: #059669;
   --success-light: #34D399;
-  --success-glow: rgba(16, 185, 129, 0.25);
+  --success-glow: rgba(0, 196, 159, 0.28);
   
-  --warning: #F59E0B;
+  --warning: #F5A623;
   --warning-hover: #D97706;
   --warning-light: #FBBF24;
-  --warning-glow: rgba(245, 158, 11, 0.25);
+  --warning-glow: rgba(245, 166, 35, 0.28);
   
   --error: #F43F5E;
   --error-hover: #E11D48;
   --error-light: #FDA4AF;
-  --error-glow: rgba(244, 63, 94, 0.25);
+  --error-glow: rgba(244, 63, 94, 0.28);
   
-  --info: #38BDF8;
+  --info: #00BCEB;
   
   /* Modern Crisp Borders with Lightweight Glow */
   --border: rgba(255, 255, 255, 0.08);
-  --border-hover: rgba(56, 189, 248, 0.3);
-  --border-focus: rgba(56, 189, 248, 0.6);
+  --border-hover: rgba(0, 188, 235, 0.35);
+  --border-focus: rgba(0, 188, 235, 0.6);
   
   /* Radii */
   --radius-sm: 6px;
@@ -73,16 +75,16 @@
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
   --shadow-lg: 0 12px 30px rgba(0, 0, 0, 0.45);
-  --shadow-glow: 0 0 24px rgba(56, 189, 248, 0.18);
+  --shadow-glow: 0 0 24px rgba(0, 188, 235, 0.2);
   
   /* Technical Terminal Shell */
-  --terminal-bg: #070A12;
-  --terminal-text: #38BDF8;
+  --terminal-bg: #070D1A;
+  --terminal-text: #00BCEB;
   
   /* Glass & Scrollbar */
-  --glass-bg: rgba(17, 24, 39, 0.82);
+  --glass-bg: rgba(16, 27, 55, 0.85);
   --scrollbar-thumb: rgba(255, 255, 255, 0.14);
-  --scrollbar-thumb-hover: rgba(56, 189, 248, 0.4);
+  --scrollbar-thumb-hover: rgba(0, 188, 235, 0.4);
 
   /* Transitions */
   --transition-fast: 150ms ease-out;
@@ -94,32 +96,32 @@
   --sidebar-collapsed: 68px;
 }
 
-/* Light Mode */
+/* Light Mode (NetAcad High-Contrast Academy) */
 .light,
 [data-theme="light"] {
   /* Canvas & Surfaces */
-  --background: #F4F7FC;
+  --background: #F4F7FB;
   --surface: #FFFFFF;
-  --surface-elevated: #F8FAFC;
-  --surface-bright: #EDF2F7;
+  --surface-elevated: #EBF1F8;
+  --surface-bright: #DFE7F2;
   
   /* Foreground / Typography */
-  --foreground: #0F172A;
+  --foreground: #0B1224;
   --foreground-secondary: #475569;
   --foreground-muted: #64748B;
   
-  /* Primary Action */
-  --primary: #0284C7;
-  --primary-hover: #0369A1;
-  --primary-dim: #075985;
-  --primary-light: #38BDF8;
-  --primary-glow: rgba(2, 132, 199, 0.2);
+  /* Primary Action - Cisco Royal Blue (#049FD9 / #004BAF) */
+  --primary: #049FD9;
+  --primary-hover: #004BAF;
+  --primary-dim: #003680;
+  --primary-light: #00BCEB;
+  --primary-glow: rgba(4, 159, 217, 0.22);
   
   /* Accent */
-  --accent: #6366F1;
-  --accent-hover: #4F46E5;
-  --accent-light: #818CF8;
-  --accent-glow: rgba(99, 102, 241, 0.2);
+  --accent: #4F46E5;
+  --accent-hover: #4338CA;
+  --accent-light: #6366F1;
+  --accent-glow: rgba(79, 70, 229, 0.22);
 
   /* Secondary */
   --secondary: #E2E8F0;
@@ -127,30 +129,30 @@
   --secondary-light: #94A3B8;
   
   /* Status */
-  --success: #059669;
+  --success: #009E7F;
   --warning: #D97706;
   --error: #E11D48;
-  --info: #0284C7;
+  --info: #049FD9;
   
   /* Borders */
-  --border: rgba(15, 23, 42, 0.08);
-  --border-hover: rgba(2, 132, 199, 0.3);
-  --border-focus: rgba(2, 132, 199, 0.5);
+  --border: rgba(11, 18, 36, 0.08);
+  --border-hover: rgba(4, 159, 217, 0.35);
+  --border-focus: rgba(4, 159, 217, 0.5);
   
   /* Shadows */
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
   --shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.08);
-  --shadow-glow: 0 0 24px rgba(2, 132, 199, 0.12);
+  --shadow-glow: 0 0 24px rgba(4, 159, 217, 0.12);
   
   /* Terminal */
-  --terminal-bg: #0F172A;
-  --terminal-text: #38BDF8;
+  --terminal-bg: #0B1224;
+  --terminal-text: #00BCEB;
   
   /* Glass & Scrollbar */
-  --glass-bg: rgba(255, 255, 255, 0.88);
-  --scrollbar-thumb: rgba(15, 23, 42, 0.16);
-  --scrollbar-thumb-hover: rgba(15, 23, 42, 0.3);
+  --glass-bg: rgba(255, 255, 255, 0.9);
+  --scrollbar-thumb: rgba(11, 18, 36, 0.16);
+  --scrollbar-thumb-hover: rgba(4, 159, 217, 0.35);
 }
 
 @theme inline {
@@ -228,7 +230,7 @@ body {
 }
 
 ::selection {
-  background: rgba(56, 189, 248, 0.35);
+  background: rgba(0, 188, 235, 0.35);
   color: #FFFFFF;
 }
 
@@ -246,23 +248,23 @@ body {
 }
 
 .glow-primary {
-  box-shadow: 0 0 24px var(--primary-glow), 0 0 48px rgba(56, 189, 248, 0.1);
+  box-shadow: 0 0 24px var(--primary-glow), 0 0 48px rgba(0, 188, 235, 0.1);
 }
 
 .glow-accent {
-  box-shadow: 0 0 24px var(--accent-glow), 0 0 48px rgba(129, 140, 248, 0.1);
+  box-shadow: 0 0 24px var(--accent-glow), 0 0 48px rgba(99, 102, 241, 0.1);
 }
 
 .glow-success {
-  box-shadow: 0 0 24px rgba(16, 185, 129, 0.25), 0 0 48px rgba(16, 185, 129, 0.08);
+  box-shadow: 0 0 24px rgba(0, 196, 159, 0.28), 0 0 48px rgba(0, 196, 159, 0.08);
 }
 
 .glow-warning {
-  box-shadow: 0 0 24px rgba(245, 158, 11, 0.25), 0 0 48px rgba(245, 158, 11, 0.08);
+  box-shadow: 0 0 24px rgba(245, 166, 35, 0.28), 0 0 48px rgba(245, 166, 35, 0.08);
 }
 
 .glow-error {
-  box-shadow: 0 0 24px rgba(244, 63, 94, 0.25), 0 0 48px rgba(244, 63, 94, 0.08);
+  box-shadow: 0 0 24px rgba(244, 63, 94, 0.28), 0 0 48px rgba(244, 63, 94, 0.08);
 }
 
 .card-hover {
@@ -275,24 +277,29 @@ body {
   box-shadow: var(--shadow-lg);
 }
 
+/* Cisco NetAcad Inspired Gradients */
 .gradient-primary {
-  background: linear-gradient(135deg, #0284C7, #6366F1);
+  background: linear-gradient(135deg, #00BCEB, #004BAF);
+}
+
+.gradient-cisco {
+  background: linear-gradient(135deg, #00BCEB, #00C49F);
 }
 
 .gradient-cyber {
-  background: linear-gradient(135deg, #06B6D4, #3B82F6, #8B5CF6);
+  background: linear-gradient(135deg, #00BCEB, #00C49F, #6366F1);
 }
 
 .gradient-accent {
-  background: linear-gradient(135deg, #8B5CF6, #EC4899);
+  background: linear-gradient(135deg, #6366F1, #EC4899);
 }
 
 .gradient-success {
-  background: linear-gradient(135deg, #10B981, #06B6D4);
+  background: linear-gradient(135deg, #00C49F, #00BCEB);
 }
 
 .gradient-amber {
-  background: linear-gradient(135deg, #F59E0B, #F43F5E);
+  background: linear-gradient(135deg, #F5A623, #F43F5E);
 }
 
 .badge-pulse {
