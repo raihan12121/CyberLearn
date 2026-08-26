@@ -222,19 +222,20 @@ def send_otp_verification_email(recipient_email: str, otp_code: str, full_name: 
 
     # Method 2: Brevo SMTP Relay (if xsmtpsib- key is used or SMTP settings provided)
     smtp_pass = brevo_key if brevo_key.startswith("xsmtpsib-") else settings.SMTP_PASSWORD
-    smtp_user = settings.SMTP_USER or sender_email
-    if smtp_user and smtp_pass:
+    smtp_user = (settings.SMTP_USER or "").strip() or "b6d030001@smtp-brevo.com"
+    from_email = sender_email or "mdraihan2328@gmail.com"
+    if smtp_pass:
         try:
             msg = MIMEMultipart("alternative")
             msg["Subject"] = subject
-            msg["From"] = f"{sender_name} <{smtp_user}>"
+            msg["From"] = f"{sender_name} <{from_email}>"
             msg["To"] = recipient_email
             msg.attach(MIMEText(html_content, "html"))
 
             with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=12) as server:
                 server.starttls()
                 server.login(smtp_user, smtp_pass)
-                server.sendmail(smtp_user, [recipient_email], msg.as_string())
+                server.sendmail(from_email, [recipient_email], msg.as_string())
 
             print(f"[BREVO SMTP SUCCESS] Verification email sent via SMTP to {recipient_email}")
             return True

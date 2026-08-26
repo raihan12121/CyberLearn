@@ -35,8 +35,8 @@ class Settings(BaseSettings):
     SMTP_PORT: int = 587
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
-    EMAILS_FROM_EMAIL: str = "noreply@cyberlearn.io"
-    EMAILS_FROM_NAME: str = "CyberLearn Security Academy"
+    EMAILS_FROM_EMAIL: str = "mdraihan2328@gmail.com"
+    EMAILS_FROM_NAME: str = "Cyber Learn"
     FRONTEND_URL: str = "https://cyber-learn-three.vercel.app"
 
     # AI Coach LLM API Keys (Google Gemini / OpenAI)
