@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   BookOpen,
@@ -78,16 +78,16 @@ const adminNavSections: NavSection[] = [
   {
     title: "Admin Command Center",
     items: [
-      { label: "Overview & Health", href: "/admin?tab=overview", tabId: "overview", icon: Activity },
-      { label: "Users & Roles", href: "/admin?tab=users", tabId: "users", icon: Users },
-      { label: "Courses & Lessons", href: "/admin?tab=courses", tabId: "courses", icon: BookOpen },
-      { label: "Exams & Questions", href: "/admin?tab=exams", tabId: "exams", icon: FileCheck },
-      { label: "Live Cohorts", href: "/admin?tab=batches", tabId: "batches", icon: GraduationCap },
-      { label: "Labs & Sandboxes", href: "/admin?tab=labs", tabId: "labs", icon: Terminal },
-      { label: "Certificates Registry", href: "/admin?tab=certificates", tabId: "certificates", icon: Award },
-      { label: "KYC Verification", href: "/admin?tab=verifications", tabId: "verifications", icon: BadgeCheck },
-      { label: "Community Moderation", href: "/admin?tab=community", tabId: "community", icon: MessageSquare },
-      { label: "Financials & Billing", href: "/admin?tab=billing", tabId: "billing", icon: DollarSign },
+      { label: "Overview & Health", href: "/admin", icon: Activity },
+      { label: "Users & Roles", href: "/admin/users", icon: Users },
+      { label: "Courses & Lessons", href: "/admin/courses", icon: BookOpen },
+      { label: "Exams & Questions", href: "/admin/exams", icon: FileCheck },
+      { label: "Live Cohorts", href: "/admin/batches", icon: GraduationCap },
+      { label: "Labs & Sandboxes", href: "/admin/labs", icon: Terminal },
+      { label: "Certificates Registry", href: "/admin/certificates", icon: Award },
+      { label: "KYC Verification", href: "/admin/verifications", icon: BadgeCheck },
+      { label: "Community Moderation", href: "/admin/community", icon: MessageSquare },
+      { label: "Financials & Billing", href: "/admin/billing", icon: DollarSign },
     ],
   },
 ];
@@ -106,8 +106,6 @@ function SidebarNavContent({
   setCollapsed,
 }: SidebarProps) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const currentTab = searchParams?.get("tab") || "overview";
 
   const { user, fetchUser } = useAuthStore();
   const isAdmin = user?.role === "admin";
@@ -188,12 +186,12 @@ function SidebarNavContent({
               <ul className="space-y-1">
                 {section.items.map((item) => {
                   let isActive = false;
-                  if (pathname === "/admin" && item.tabId) {
-                    isActive = currentTab === item.tabId;
+                  if (item.href === "/admin") {
+                    isActive = pathname === "/admin";
+                  } else if (item.href === "/dashboard") {
+                    isActive = pathname === "/dashboard";
                   } else {
-                    isActive =
-                      pathname === item.href ||
-                      (item.href !== "/dashboard" && !item.href.includes("?") && pathname?.startsWith(item.href));
+                    isActive = pathname === item.href || (pathname ? pathname.startsWith(item.href) : false);
                   }
 
                   const Icon = item.icon;

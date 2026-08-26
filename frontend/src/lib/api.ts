@@ -355,6 +355,9 @@ export const api = {
 
   // Admin Community Moderation
   getAdminPosts: () => apiFetch("/admin/posts"),
+  deleteAdminPost: (postId: string) => apiFetch(`/admin/posts/${postId}`, {
+    method: "DELETE",
+  }),
   deleteAdminComment: (commentId: string) => apiFetch(`/admin/comments/${commentId}`, {
     method: "DELETE",
   }),
