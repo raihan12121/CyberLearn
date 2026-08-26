@@ -284,11 +284,13 @@ class NidVerificationResponse(BaseModel):
     full_name: Optional[str]
     email: str
     nid_number: Optional[str]
-    nid_front_image: Optional[str]
-    nid_back_image: Optional[str]
+    nid_front_image: Optional[str] = None
+    nid_back_image: Optional[str] = None
+    nid_front_url: Optional[str] = None
+    nid_back_url: Optional[str] = None
     verification_status: str
-    verification_notes: Optional[str]
-    verified_at: Optional[datetime]
+    verification_notes: Optional[str] = None
+    verified_at: Optional[datetime] = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

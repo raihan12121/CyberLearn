@@ -277,14 +277,15 @@ export default function AdminVerificationsPage() {
                     </span>
                     <div
                       onClick={() =>
-                        selectedVerification.nid_front_url && setZoomedImage(selectedVerification.nid_front_url)
+                        (selectedVerification.nid_front_image || selectedVerification.nid_front_url) &&
+                        setZoomedImage(selectedVerification.nid_front_image || selectedVerification.nid_front_url)
                       }
                       className="h-44 rounded-xl bg-surface-elevated border border-border flex items-center justify-center overflow-hidden cursor-pointer group relative"
                     >
-                      {selectedVerification.nid_front_url ? (
+                      {selectedVerification.nid_front_image || selectedVerification.nid_front_url ? (
                         /* eslint-disable-next-line @next/next/no-img-element */
                         <img
-                          src={selectedVerification.nid_front_url}
+                          src={selectedVerification.nid_front_image || selectedVerification.nid_front_url}
                           alt="NID Front"
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                         />
@@ -294,7 +295,7 @@ export default function AdminVerificationsPage() {
                           No front photo attached
                         </div>
                       )}
-                      {selectedVerification.nid_front_url && (
+                      {(selectedVerification.nid_front_image || selectedVerification.nid_front_url) && (
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold gap-1 transition-opacity">
                           <ZoomIn className="w-4 h-4" /> Click to Zoom
                         </div>
@@ -308,14 +309,15 @@ export default function AdminVerificationsPage() {
                     </span>
                     <div
                       onClick={() =>
-                        selectedVerification.nid_back_url && setZoomedImage(selectedVerification.nid_back_url)
+                        (selectedVerification.nid_back_image || selectedVerification.nid_back_url) &&
+                        setZoomedImage(selectedVerification.nid_back_image || selectedVerification.nid_back_url)
                       }
                       className="h-44 rounded-xl bg-surface-elevated border border-border flex items-center justify-center overflow-hidden cursor-pointer group relative"
                     >
-                      {selectedVerification.nid_back_url ? (
+                      {selectedVerification.nid_back_image || selectedVerification.nid_back_url ? (
                         /* eslint-disable-next-line @next/next/no-img-element */
                         <img
-                          src={selectedVerification.nid_back_url}
+                          src={selectedVerification.nid_back_image || selectedVerification.nid_back_url}
                           alt="NID Back"
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                         />
@@ -325,7 +327,7 @@ export default function AdminVerificationsPage() {
                           No back photo attached
                         </div>
                       )}
-                      {selectedVerification.nid_back_url && (
+                      {(selectedVerification.nid_back_image || selectedVerification.nid_back_url) && (
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold gap-1 transition-opacity">
                           <ZoomIn className="w-4 h-4" /> Click to Zoom
                         </div>
