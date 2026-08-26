@@ -29,12 +29,14 @@ def create_test_user(role: str = "student", xp: int = 500) -> tuple:
     })
     assert reg_res.status_code == 201
 
-    # Verify and set role/xp in DB
+    # Verify and set role/xp/subscription in DB
     db = SessionLocal()
     user = db.query(models.User).filter(models.User.email == email).first()
     user.is_verified = True
     user.role = role
     user.xp = xp
+    user.subscription_status = "active"
+    user.subscription_tier = "pro"
     db.commit()
     user_id = user.id
     db.close()

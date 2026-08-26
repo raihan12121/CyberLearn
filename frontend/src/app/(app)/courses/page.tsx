@@ -179,9 +179,11 @@ export default function CoursesPage() {
   }, []);
 
   const filtered = courseList.filter((c) => {
-    const matchCategory = activeCategory === "All" || c.category === activeCategory;
-    const matchSearch = c.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                        c.desc.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchCategory = activeCategory === "All" || (c.category || "").toLowerCase() === activeCategory.toLowerCase();
+    const courseTitle = (c.title || "").toLowerCase();
+    const courseDesc = (c.desc || (c as any).description || "").toLowerCase();
+    const q = searchQuery.toLowerCase().trim();
+    const matchSearch = !q || courseTitle.includes(q) || courseDesc.includes(q);
     return matchCategory && matchSearch;
   });
 

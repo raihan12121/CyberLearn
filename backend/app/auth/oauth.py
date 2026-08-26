@@ -38,15 +38,18 @@ async def exchange_code_for_user_info(provider: str, code: str, redirect_uri: Op
     cb_uri = redirect_uri or f"{settings.FRONTEND_URL}/auth/callback"
     provider = provider.lower()
 
-    # If code is a demo token or OAuth keys are missing, return demo profile
-    if code.startswith("demo_") or (provider == "google" and not settings.GOOGLE_CLIENT_SECRET) or (provider == "github" and not settings.GITHUB_CLIENT_SECRET):
-        logger.info(f"Using demo OAuth flow for provider: {provider}")
+    # Support local development demo OAuth callback only for explicit demo tokens
+    if code in ["demo_google_code_123", "demo_github_code_123"]:
+        logger.info(f"Using local development demo OAuth flow for provider: {provider}")
         return {
             "email": f"{provider}_user@cyberlearn.io",
             "full_name": f"{provider.capitalize()} Student",
             "avatar_url": f"https://api.dicebear.com/7.x/avataaars/svg?seed={provider}",
             "provider": provider
         }
+
+    if (provider == "google" and not settings.GOOGLE_CLIENT_SECRET) or (provider == "github" and not settings.GITHUB_CLIENT_SECRET):
+        raise ValueError(f"OAuth credentials for {provider} are not configured on this server.")
 
     async with httpx.AsyncClient() as client:
         if provider == "google":

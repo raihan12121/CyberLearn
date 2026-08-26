@@ -586,11 +586,11 @@ export default function AICoachPage() {
 
   // Filtered Sessions
   const filteredSessions = useMemo(() => {
-    if (!searchQuery.trim()) return sessions;
-    const q = searchQuery.toLowerCase();
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return sessions;
     return sessions.filter(
       (s) =>
-        s.title.toLowerCase().includes(q) ||
+        (s.title || "").toLowerCase().includes(q) ||
         (s.system_prompt && s.system_prompt.toLowerCase().includes(q))
     );
   }, [sessions, searchQuery]);

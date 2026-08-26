@@ -136,8 +136,25 @@ def run_tests():
     }, headers=headers)
     assert nid_res.status_code == 200
     nid_data = nid_res.json()
-    assert nid_data["verification_status"] == "verified"
-    print("  -> SUCCESS: Government ID verified successfully!")
+    assert nid_data["verification_status"] == "pending"
+
+    # Admin reviews and approves NID verification
+    admin_email = f"admin_review_{uid}@cyberlearn.io"
+    client.post("/auth/register", json={"email": admin_email, "password": "AdminPassword123!", "full_name": "Admin Reviewer"})
+    db = SessionLocal()
+    adm = db.query(models.User).filter(models.User.email == admin_email).first()
+    if adm:
+        adm.role = "admin"
+        adm.is_verified = True
+        db.commit()
+    db.close()
+    adm_token = client.post("/auth/login", json={"email": admin_email, "password": "AdminPassword123!"}).json()["access_token"]
+    adm_headers = {"Authorization": f"Bearer {adm_token}"}
+
+    rev_res = client.post(f"/admin/verifications/{user_id}/review", json={"status": "verified", "notes": "Approved ID"}, headers=adm_headers)
+    assert rev_res.status_code == 200
+    assert rev_res.json()["verification_status"] == "verified"
+    print("  -> SUCCESS: Government ID verified and approved by admin successfully!")
 
     # Step D: Verify that all pending certificates are now unlocked and minted!
     certs_unlocked_res = client.get("/certificates", headers=headers)

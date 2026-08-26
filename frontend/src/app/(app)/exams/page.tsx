@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -179,6 +179,30 @@ export default function ExamsPage() {
     loadExams();
   }, []);
 
+  const handleSubmitExam = useCallback(async () => {
+    if (!activeExam) return;
+    setIsSubmitting(true);
+
+    const payloadAnswers = Object.entries(selectedAnswers).map(([qid, ans]) => ({
+      question_id: qid,
+      selected_answer: ans,
+    }));
+
+    try {
+      const result = await api.submitExam(activeExam.id, payloadAnswers);
+      setExamResult(result);
+      loadExams(); // Refresh submissions & certificates
+    } catch (err: any) {
+      alert(err.message || "Failed to evaluate exam submission.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [activeExam, selectedAnswers]);
+
+  const handleAutoSubmit = useCallback(() => {
+    handleSubmitExam();
+  }, [handleSubmitExam]);
+
   // Timer Countdown
   useEffect(() => {
     if (!activeExam || examResult || timeRemaining <= 0) return;
@@ -195,7 +219,7 @@ export default function ExamsPage() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [activeExam, examResult, timeRemaining]);
+  }, [activeExam, examResult, timeRemaining, handleAutoSubmit]);
 
   const handleStartExam = async (exam: ExamItem) => {
     setExamLoading(true);
@@ -219,30 +243,6 @@ export default function ExamsPage() {
       ...prev,
       [questionId]: optionIndexStr,
     }));
-  };
-
-  const handleAutoSubmit = () => {
-    handleSubmitExam();
-  };
-
-  const handleSubmitExam = async () => {
-    if (!activeExam) return;
-    setIsSubmitting(true);
-
-    const payloadAnswers = Object.entries(selectedAnswers).map(([qid, ans]) => ({
-      question_id: qid,
-      selected_answer: ans,
-    }));
-
-    try {
-      const result = await api.submitExam(activeExam.id, payloadAnswers);
-      setExamResult(result);
-      loadExams(); // Refresh submissions & certificates
-    } catch (err: any) {
-      alert(err.message || "Failed to evaluate exam submission.");
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   const formatTime = (seconds: number) => {

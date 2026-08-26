@@ -1,6 +1,7 @@
 import hmac
 import hashlib
 import json
+import secrets
 from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, status, WebSocket
 from sqlalchemy.orm import Session
@@ -224,7 +225,7 @@ def start_lab_session(
     new_session = models.LabSession(
         user_id=current_user.id,
         lab_id=lab.id,
-        container_id=f"sandbox-container-{current_user.id[:8]}-{lab.id[:8]}",
+        container_id=f"sandbox-container-{current_user.id[:8]}-{lab.id[:8]}-{secrets.token_hex(3)}",
         status="running",
         started_at=datetime.now(timezone.utc),
         expires_at=expires_at

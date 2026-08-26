@@ -201,6 +201,9 @@ def run_all_tests():
         u = d.query(models.User).filter(models.User.email == email).first()
         if u:
             u.is_verified = True
+            u.verification_status = "verified"
+            u.subscription_status = "active"
+            u.subscription_tier = "pro"
             u.role = role
             d.commit()
             uid = u.id
@@ -215,6 +218,16 @@ def run_all_tests():
     try:
         st_id, st_headers = get_auth_client("student")
         adm_id, adm_headers = get_auth_client("admin")
+
+        # Reset student to unverified so submission transitions from unverified to pending
+        d = SessionLocal()
+        stu = d.query(models.User).filter(models.User.id == st_id).first()
+        if stu:
+            stu.verification_status = "unverified"
+            stu.is_verified = False
+            stu.verified_at = None
+            d.commit()
+        d.close()
 
         # Student submits NID
         res_sub = client.post("/users/me/verify-nid", json={

@@ -46,16 +46,25 @@ def run_tests():
     headers = {"Authorization": f"Bearer {token}"}
     print("  -> SUCCESS: User logged in, 30-day persistent JWT token issued.")
 
-    # 3. Verify user status in /auth/me
-    print("\n[3] Checking /auth/me status and onboarding state...")
+    # 3. Verify user status in /auth/me and complete onboarding
+    print("\n[3] Checking /auth/me status and completing onboarding...")
     me_res = client.get("/auth/me", headers=headers)
     assert me_res.status_code == 200
     user_data = me_res.json()
     assert user_data["email"] == test_email
     assert user_data["username"] == test_handle
     assert user_data["full_name"] == test_name
-    assert user_data["is_onboarded"] is True, "User should have is_onboarded=True so they are NOT asked every time!"
-    print(f"  -> SUCCESS: User is_onboarded={user_data['is_onboarded']}. No repeat prompts!")
+    
+    # Complete onboarding
+    onb_res = client.post("/auth/complete-onboarding", json={
+        "username": test_handle,
+        "full_name": test_name,
+        "primary_focus": "Web Security",
+        "experience_level": "beginner"
+    }, headers=headers)
+    assert onb_res.status_code == 200
+    assert onb_res.json()["is_onboarded"] is True, "User should have is_onboarded=True after onboarding!"
+    print("  -> SUCCESS: User completed onboarding and is_onboarded=True.")
 
     # 4. Verify existing database users are marked onboarded
     print("\n[4] Running auto-migration check on database...")

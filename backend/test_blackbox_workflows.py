@@ -25,6 +25,9 @@ def create_authenticated_user(email: str, role: str = "student") -> tuple:
     user_id = user.id if user else None
     if user:
         user.is_verified = True
+        user.verification_status = "verified"
+        user.subscription_status = "active"
+        user.subscription_tier = "pro"
         user.role = role
         db.commit()
     db.close()
@@ -46,6 +49,16 @@ def test_blackbox_nid_verification_flow():
 
     student_id, student_headers = create_authenticated_user(student_email, role="student")
     admin_id, admin_headers = create_authenticated_user(admin_email, role="admin")
+
+    # Reset student to unverified so submission transitions from unverified to pending
+    from app.database import SessionLocal
+    db = SessionLocal()
+    st_u = db.query(models.User).filter(models.User.id == student_id).first()
+    st_u.verification_status = "unverified"
+    st_u.is_verified = False
+    st_u.verified_at = None
+    db.commit()
+    db.close()
 
     # 1. Student submits NID
     nid_payload = {
@@ -173,10 +186,16 @@ def test_blackbox_exam_and_certification_flow():
     questions = exam_data["questions"]
     assert len(questions) > 0
 
-    # 2. Submit Exam Answers
+    # 2. Submit Exam Answers with valid passing answers
+    from app.database import SessionLocal
+    db = SessionLocal()
+    db_questions = {q.id: q.correct_answer for q in db.query(models.ExamQuestion).filter(models.ExamQuestion.exam_id == exam_id).all()}
+    db.close()
+
     answers = []
-    for idx, q in enumerate(questions):
-        answers.append({"question_id": q["id"], "selected_answer": "0" if idx == 0 else "1"})
+    for q in questions:
+        c_ans = db_questions.get(q["id"], "0")
+        answers.append({"question_id": q["id"], "selected_answer": c_ans})
 
     submit_res = client.post(f"/exams/{exam_id}/submit", json={"answers": answers}, headers=student_headers)
     assert submit_res.status_code == 200

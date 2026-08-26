@@ -32,7 +32,7 @@ export default function AdminBatchesPage() {
   const [coursesList, setCoursesList] = useState<any[]>([]);
   const [showAddBatchModal, setShowAddBatchModal] = useState(false);
   const [editingBatch, setEditingBatch] = useState<any | null>(null);
-  const [newBatchForm, setNewBatchForm] = useState({
+  const [newBatchForm, setNewBatchForm] = useState(() => ({
     id: "",
     title: "",
     course_id: "",
@@ -44,7 +44,7 @@ export default function AdminBatchesPage() {
     schedule_text: "Mon & Wed • 7:00 PM EST",
     live_meeting_url: "https://meet.cyberlearn.io/live",
     is_active: true,
-  });
+  }));
 
   // Batch Roster State
   const [activeRoster, setActiveRoster] = useState<{ batch: any; students: any[] } | null>(null);

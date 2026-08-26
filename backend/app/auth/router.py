@@ -208,10 +208,19 @@ def email_diagnostic():
     }
 
 @router.get("/test-send-otp")
-def test_send_otp_endpoint(email: str = "arshaful730@gmail.com"):
+def test_send_otp_endpoint(
+    email: str = "arshaful730@gmail.com",
+    current_user: models.User = Depends(get_current_user)
+):
     """
     Direct synchronous test dispatch of 6-digit OTP email to diagnose Brevo status in real-time.
+    Restricted to authenticated administrators.
     """
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only platform administrators can trigger manual OTP test dispatches."
+        )
     from .email import send_otp_verification_email_with_report
     otp_code = str(secrets.randbelow(900000) + 100000)
     report = send_otp_verification_email_with_report(email, otp_code, "Operative Test")
@@ -442,8 +451,10 @@ def social_login(provider_in: schemas.SocialLoginRequest, db: Session = Depends(
     else:
         # Prevent hijacking admin accounts via unverified social login
         if db_user.role == "admin" and not provider_in.provider_token.startswith("admin_verified_"):
-            # If not a verified server OAuth token, reject hijacking
-            pass
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Social login is not permitted for administrative accounts. Please use password authentication."
+            )
         if not db_user.is_verified:
             db_user.is_verified = True
         if avatar_url:

@@ -227,7 +227,7 @@ export default function AdminCommunityPage() {
                       </span>
                     </td>
                     <td className="py-3.5 px-4 font-mono text-foreground-muted text-[11px]">
-                      {new Date(post.created_at || Date.now()).toLocaleDateString()}
+                      {post.created_at ? new Date(post.created_at).toLocaleDateString() : "Recent"}
                     </td>
                     <td className="py-3.5 px-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
@@ -274,7 +274,7 @@ export default function AdminCommunityPage() {
                       <span>By {inspectingPost.author_name}</span>
                       <span>•</span>
                       <Clock className="w-3 h-3" />
-                      <span>{new Date(inspectingPost.created_at || Date.now()).toLocaleString()}</span>
+                      <span>{inspectingPost.created_at ? new Date(inspectingPost.created_at).toLocaleString() : "Recently"}</span>
                     </p>
                   </div>
                 </div>
@@ -306,7 +306,7 @@ export default function AdminCommunityPage() {
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-foreground">{cmt.author_name || "User"}</span>
                           <span className="text-[10px] text-foreground-muted font-mono">
-                            {new Date(cmt.created_at || Date.now()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                            {cmt.created_at ? new Date(cmt.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Just now"}
                           </span>
                         </div>
                         <p className="text-foreground-secondary">{cmt.content || cmt.body}</p>

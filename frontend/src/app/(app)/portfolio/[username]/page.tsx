@@ -315,7 +315,7 @@ export default function VerifiedPortfolioPage() {
   }, [fetchUser]);
 
   useEffect(() => {
-    let targetUsername = rawParamUsername;
+    const targetUsername = rawParamUsername;
     if (targetUsername === "me") {
       api.getProfileDetails()
         .then((data) => {
@@ -392,16 +392,16 @@ export default function VerifiedPortfolioPage() {
         ];
 
     return labsList.filter((lab) => {
-      const matchQuery =
-        !labSearchQuery ||
-        lab.title.toLowerCase().includes(labSearchQuery.toLowerCase()) ||
-        lab.category.toLowerCase().includes(labSearchQuery.toLowerCase());
+      const titleStr = (lab.title || "").toLowerCase();
+      const catStr = (lab.category || "").toLowerCase();
+      const q = (labSearchQuery || "").toLowerCase().trim();
+      const matchQuery = !q || titleStr.includes(q) || catStr.includes(q);
       const matchCat =
         selectedLabCategory === "all" ||
-        lab.category.toLowerCase() === selectedLabCategory.toLowerCase();
+        catStr === selectedLabCategory.toLowerCase();
       return matchQuery && matchCat;
     });
-  }, [profile?.solved_labs, labSearchQuery, selectedLabCategory]);
+  }, [profile, labSearchQuery, selectedLabCategory]);
 
   const handleShare = () => {
     const shareUrl = typeof window !== "undefined"

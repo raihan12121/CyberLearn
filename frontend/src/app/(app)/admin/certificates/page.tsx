@@ -222,7 +222,7 @@ export default function AdminCertificatesPage() {
                       </span>
                     </td>
                     <td className="py-3.5 px-4 font-mono text-foreground-muted text-[11px]">
-                      {new Date(c.issued_at || c.issue_date || c.created_at || Date.now()).toLocaleDateString()}
+                      {c.issued_at || c.issue_date || c.created_at ? new Date(c.issued_at || c.issue_date || c.created_at).toLocaleDateString() : "Active"}
                     </td>
                     <td className="py-3.5 px-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">

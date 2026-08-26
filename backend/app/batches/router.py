@@ -6,28 +6,13 @@ from fastapi import APIRouter, Depends, HTTPException, status, Header
 from sqlalchemy.orm import Session
 from ..database import get_db
 from .. import models, schemas
-from ..auth.dependencies import get_current_user
-from jose import jwt
+from ..auth.dependencies import get_current_user, get_optional_user
 from ..config import settings
 
 router = APIRouter(
     prefix="/batches",
     tags=["Batches & Cohorts"]
 )
-
-def get_optional_user(authorization: Optional[str] = Header(None), db: Session = Depends(get_db)) -> Optional[models.User]:
-    if not authorization or not authorization.startswith("Bearer "):
-        return None
-    token = authorization.split(" ")[1]
-    try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        email: str = payload.get("sub")
-        if email is None:
-            return None
-        user = db.query(models.User).filter(models.User.email == email).first()
-        return user
-    except Exception:
-        return None
 
 def generate_batch_code() -> str:
     chars = string.ascii_uppercase + string.digits
@@ -323,14 +308,22 @@ def join_batch(
             detail="This batch has reached its maximum student capacity."
         )
 
-    enrollment = models.BatchEnrollment(
-        batch_id=batch.id,
-        user_id=current_user.id,
-        status="enrolled",
-        enrolled_at=datetime.now(timezone.utc)
-    )
-    db.add(enrollment)
-    db.commit()
+    try:
+        enrollment = models.BatchEnrollment(
+            batch_id=batch.id,
+            user_id=current_user.id,
+            status="enrolled",
+            enrolled_at=datetime.now(timezone.utc)
+        )
+        db.add(enrollment)
+        db.commit()
+    except Exception:
+        db.rollback()
+        return {
+            "status": "already_enrolled",
+            "message": "You are already enrolled in this batch!",
+            "batch_code": batch.batch_code
+        }
 
     return {
         "status": "success",

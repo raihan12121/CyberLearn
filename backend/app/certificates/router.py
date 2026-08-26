@@ -226,7 +226,7 @@ def verify_certificate_token(token: str, db: Session = Depends(get_db)):
         "valid": True,
         "status": "valid",
         "token": cert.verification_token,
-        "student_name": user.full_name or user.username if user else "Verified Student",
+        "student_name": (user.full_name or user.username) if user else "Verified Student",
         "course_title": title,
         "category": category,
         "score_pct": float(cert.score_pct) if cert.score_pct is not None else 100.0,

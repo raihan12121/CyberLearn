@@ -325,7 +325,7 @@ export default function AdminLabsPage() {
                     <td className="py-3 px-4 font-mono font-bold text-sky-400">:{ses.port || "3000"}</td>
                     <td className="py-3 px-4 font-mono text-[10px] text-foreground-muted">{ses.container_id?.slice(0, 12) || "mock-c-98a2"}</td>
                     <td className="py-3 px-4 font-mono text-foreground-muted text-[11px]">
-                      {new Date(ses.created_at || Date.now()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      {ses.created_at ? new Date(ses.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Running"}
                     </td>
                     <td className="py-3 px-4 text-right">
                       <Button

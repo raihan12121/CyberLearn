@@ -387,12 +387,12 @@ class ExamBase(BaseModel):
     is_published: Optional[bool] = True
 
 class ExamCreate(ExamBase):
-    course_id: str
+    course_id: Optional[str] = None
     questions: Optional[List[ExamQuestionCreate]] = []
 
 class ExamResponse(ExamBase):
     id: str
-    course_id: str
+    course_id: Optional[str] = None
     question_count: int = 0
     created_at: datetime
 

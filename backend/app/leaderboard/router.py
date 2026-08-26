@@ -5,9 +5,8 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 from ..database import get_db
 from .. import models
-from ..auth.dependencies import get_current_user
+from ..auth.dependencies import get_current_user, get_optional_user
 from ..auth.utils import create_access_token, get_password_hash
-from jose import JWTError, jwt
 from ..config import settings
 from sqlalchemy import func
 
@@ -23,19 +22,39 @@ _leaderboard_cache: Dict[str, Any] = {
 }
 LEADERBOARD_CACHE_TTL = 30  # 30 seconds
 
-def get_optional_user(authorization: Optional[str] = Header(None), db: Session = Depends(get_db)) -> Optional[models.User]:
-    if not authorization or not authorization.startswith("Bearer "):
-        return None
-    token = authorization.split(" ")[1]
-    try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        email: str = payload.get("sub")
-        if email is None:
-            return None
-        user = db.query(models.User).filter(models.User.email == email).first()
-        return user
-    except Exception:
-        return None
+def _format_leaderboard_response(
+    base_entries: List[Dict[str, Any]],
+    current_user: Optional[models.User],
+    db: Session
+) -> List[Dict[str, Any]]:
+    response_entries = []
+    user_in_top = False
+    for entry in base_entries:
+        e = dict(entry)
+        is_cur = True if (current_user and e.get("user_id") == current_user.id) else False
+        if is_cur:
+            user_in_top = True
+        e["current"] = is_cur
+        response_entries.append(e)
+
+    # If current user is authenticated but not in the top sliced entries, append their rank card
+    if current_user and not user_in_top:
+        higher_count = db.query(func.count(models.User.id)).filter(models.User.xp > current_user.xp).scalar() or 0
+        user_solved = db.query(models.LabSession).filter(
+            models.LabSession.user_id == current_user.id,
+            models.LabSession.status == "completed"
+        ).count()
+        response_entries.append({
+            "rank": higher_count + 1,
+            "user_id": current_user.id,
+            "name": current_user.full_name or current_user.username or current_user.email.split("@")[0],
+            "xp": current_user.xp,
+            "solved": user_solved,
+            "activeDays": current_user.streak_days,
+            "current": True
+        })
+
+    return response_entries
 
 @router.get("")
 def get_leaderboard(
@@ -47,14 +66,7 @@ def get_leaderboard(
     
     # Check in-memory cache
     if _leaderboard_cache["data"] is not None and (now - _leaderboard_cache["timestamp"] < LEADERBOARD_CACHE_TTL):
-        base_entries = _leaderboard_cache["data"]
-        # Customize "current" flag per requesting user
-        result = []
-        for entry in base_entries:
-            e = dict(entry)
-            e["current"] = True if current_user and e.get("user_id") == current_user.id else False
-            result.append(e)
-        return result
+        return _format_leaderboard_response(_leaderboard_cache["data"], current_user, db)
 
     # Pre-seed some mock active competitors if db is essentially empty
     user_count = db.query(models.User).count()
@@ -126,12 +138,5 @@ def get_leaderboard(
     _leaderboard_cache["data"] = base_entries
     _leaderboard_cache["timestamp"] = now
 
-    # Customize "current" flag for the response
-    response_entries = []
-    for entry in base_entries:
-        e = dict(entry)
-        e["current"] = True if current_user and e.get("user_id") == current_user.id else False
-        response_entries.append(e)
-        
-    return response_entries
+    return _format_leaderboard_response(base_entries, current_user, db)
 

@@ -457,64 +457,9 @@ def submit_nid_verification(
     if nid_in.nid_back_image:
         current_user.nid_back_image = nid_in.nid_back_image
 
-    current_user.verification_status = "verified"
-    current_user.verification_notes = "Official government ID verified successfully."
-    current_user.verified_at = datetime.now(timezone.utc)
-
-    # Retroactively issue certificates for all completed courses and passed exams
-    import uuid
-    all_courses = db.query(models.Course).all()
-    for course in all_courses:
-        lessons = db.query(models.Lesson).filter(models.Lesson.course_id == course.id).all()
-        if lessons:
-            comp_count = db.query(models.Progress).filter(
-                models.Progress.user_id == current_user.id,
-                models.Progress.course_id == course.id,
-                models.Progress.status == "completed"
-            ).count()
-            if comp_count >= len(lessons):
-                existing_cert = db.query(models.Certificate).filter(
-                    models.Certificate.user_id == current_user.id,
-                    models.Certificate.course_id == course.id
-                ).first()
-                if not existing_cert:
-                    course_code = "".join([w[0] for w in course.title.split() if w.isalpha()]).upper()[:6]
-                    token = f"CERT-{course_code}-{uuid.uuid4().hex[:8].upper()}"
-                    new_cert = models.Certificate(
-                        user_id=current_user.id,
-                        course_id=course.id,
-                        score_pct=100.0,
-                        certificate_type="course_completion",
-                        verification_token=token,
-                        issued_at=datetime.now(timezone.utc)
-                    )
-                    db.add(new_cert)
-
-    passed_subs = db.query(models.ExamSubmission).filter(
-        models.ExamSubmission.user_id == current_user.id,
-        models.ExamSubmission.passed == True
-    ).all()
-    for sub in passed_subs:
-        existing_cert = db.query(models.Certificate).filter(
-            models.Certificate.user_id == current_user.id,
-            models.Certificate.exam_id == sub.exam_id
-        ).first()
-        if not existing_cert:
-            exam = db.query(models.Exam).filter(models.Exam.id == sub.exam_id).first()
-            exam_title = exam.title if exam else "EXAM"
-            code_prefix = "".join([w[0] for w in exam_title.split() if w.isalpha()]).upper()[:6]
-            token = f"CERT-{code_prefix}-{uuid.uuid4().hex[:8].upper()}"
-            new_cert = models.Certificate(
-                user_id=current_user.id,
-                course_id=exam.course_id if exam else None,
-                exam_id=sub.exam_id,
-                score_pct=float(sub.score_pct or 100.0),
-                certificate_type="exam_certified",
-                verification_token=token,
-                issued_at=datetime.now(timezone.utc)
-            )
-            db.add(new_cert)
-            sub.certificate_token = token
+    current_user.verification_status = "pending"
+    current_user.verification_notes = "Official government ID submitted. Pending administrative verification review."
+    current_user.verified_at = None
 
     db.commit()
     db.refresh(current_user)

@@ -928,7 +928,7 @@ export default function CourseDetailPage() {
                   </div>
                   <h3 className="text-2xl font-bold text-foreground">Course Content Locked</h3>
                   <p className="text-xs md:text-sm text-foreground-secondary leading-relaxed">
-                    Full video lectures, interactive reading guides, quizzes, and verifiable completion certificates for <span className="text-foreground font-semibold">"{course.title}"</span> are unlocked via Lifetime Course Access or an All-Access Subscription.
+                    Full video lectures, interactive reading guides, quizzes, and verifiable completion certificates for <span className="text-foreground font-semibold">&quot;{course.title}&quot;</span> are unlocked via Lifetime Course Access or an All-Access Subscription.
                   </p>
                 </div>
 

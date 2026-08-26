@@ -300,7 +300,7 @@ export default function AdminBillingPage() {
                       </span>
                     </td>
                     <td className="py-3.5 px-4 font-mono text-foreground-muted text-[11px]">
-                      {new Date(inv.created_at || Date.now()).toLocaleDateString()}
+                      {inv.created_at ? new Date(inv.created_at).toLocaleDateString() : "—"}
                     </td>
                     <td className="py-3.5 px-4 text-right">
                       <Button

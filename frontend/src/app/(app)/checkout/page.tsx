@@ -384,7 +384,7 @@ function CheckoutContent() {
             <div>
               <span className="text-foreground-muted block">Date</span>
               <span className="font-bold text-foreground">
-                {new Date(inv.created_at || Date.now()).toLocaleDateString()}
+                {inv.created_at ? new Date(inv.created_at).toLocaleDateString() : "Today"}
               </span>
             </div>
           </div>

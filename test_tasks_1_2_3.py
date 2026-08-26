@@ -109,6 +109,15 @@ def run_tests():
             "nid_front_image": "data:image/png;base64,iVBORw0KGgo=",
             "nid_back_image": "data:image/png;base64,iVBORw0KGgo="
         }, headers=headers)
+        
+        # Approve verification in DB for test user
+        user = db.query(models.User).filter(models.User.email == test_email).first()
+        if user:
+            user.is_verified = True
+            user.verification_status = "verified"
+            user.subscription_status = "active"
+            user.subscription_tier = "pro"
+            db.commit()
 
         # TEST 8: Take and Submit CCNA Security Exam
         print("\n[TEST 8] Take and submit CCNA Security Exam with passing answers...")

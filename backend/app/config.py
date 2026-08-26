@@ -54,8 +54,7 @@ class Settings(BaseSettings):
     BACKEND_CORS_ORIGINS: Union[list[str], str] = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "https://*.vercel.app",
-        "*",
+        "https://cyber-learn-three.vercel.app",
     ]
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
@@ -64,7 +63,7 @@ class Settings(BaseSettings):
         if isinstance(v, str):
             v_str = v.strip()
             if not v_str:
-                return ["*"]
+                return ["http://localhost:3000", "http://127.0.0.1:3000"]
             if v_str.startswith("[") and v_str.endswith("]"):
                 try:
                     parsed = json.loads(v_str)
@@ -75,7 +74,7 @@ class Settings(BaseSettings):
             return [item.strip() for item in v_str.split(",") if item.strip()]
         elif isinstance(v, list):
             return [str(item).strip() for item in v]
-        return ["*"]
+        return ["http://localhost:3000", "http://127.0.0.1:3000"]
 
     model_config = SettingsConfigDict(
         case_sensitive=True,

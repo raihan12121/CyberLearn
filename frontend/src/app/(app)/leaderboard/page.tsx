@@ -41,9 +41,11 @@ export default function LeaderboardPage() {
       .catch((err) => console.log("Using cached leaderboard stand-ins:", err));
   }, []);
 
-  const filtered = leaderboardData.filter((user) =>
-    user.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filtered = leaderboardData.filter((user) => {
+    const nameStr = (user.name || (user as any).username || "").toLowerCase();
+    const q = searchQuery.toLowerCase().trim();
+    return !q || nameStr.includes(q);
+  });
 
   const topThree = leaderboardData.filter((u) => u.rank <= 3);
   const others = filtered.filter((u) => u.rank > 3);

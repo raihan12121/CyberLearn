@@ -184,9 +184,11 @@ export default function LabsCatalogPage() {
   }, []);
 
   const filtered = labList.filter((l) => {
-    const matchCategory = activeCategory === "All" || l.category === activeCategory;
-    const matchSearch = l.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        l.desc.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchCategory = activeCategory === "All" || (l.category || "").toLowerCase() === activeCategory.toLowerCase();
+    const labTitle = (l.title || "").toLowerCase();
+    const labDesc = (l.desc || (l as any).description || "").toLowerCase();
+    const q = searchQuery.toLowerCase().trim();
+    const matchSearch = !q || labTitle.includes(q) || labDesc.includes(q);
     return matchCategory && matchSearch;
   });
 

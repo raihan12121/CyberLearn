@@ -52,17 +52,18 @@ def test_endpoints():
     assert unauth_r.status_code == 403, f"Expected 403 Forbidden for student, got {unauth_r.status_code}"
     print("Unauthorized access check OK (received 403).")
 
-    # Promote user to admin in the local SQLite database
-    import sqlite3
-    import os
-    db_path = os.path.join(os.path.dirname(__file__), "cyberlearn.db")
-    if os.path.exists(db_path):
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        cursor.execute("UPDATE users SET role = 'admin' WHERE email = ?", (email,))
-        conn.commit()
-        conn.close()
-        print("Promoted test user to admin in local SQLite DB.")
+    # Promote user to admin and active subscriber using app database session
+    from app.database import SessionLocal
+    from app import models
+    db = SessionLocal()
+    db_u = db.query(models.User).filter(models.User.email == email).first()
+    if db_u:
+        db_u.role = 'admin'
+        db_u.subscription_status = 'active'
+        db_u.subscription_tier = 'pro'
+        db.commit()
+    db.close()
+    print("Promoted test user to admin in DB session.")
 
     # 4. Get current user (me)
     print("\n[4] Testing GET /auth/me...")

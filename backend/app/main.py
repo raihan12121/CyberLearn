@@ -80,6 +80,12 @@ async def rate_limiting_middleware(request: Request, call_next):
         timestamps = _rate_limit_records[key]
         _rate_limit_records[key] = [t for t in timestamps if now - t < window_seconds]
         
+        # Periodic sweep of stale keys to prevent unbounded memory growth
+        if len(_rate_limit_records) > 2000:
+            stale_keys = [k for k, v in _rate_limit_records.items() if not v or (now - v[-1] > 300)]
+            for k in stale_keys:
+                del _rate_limit_records[k]
+        
         if len(_rate_limit_records[key]) >= max_requests:
             return JSONResponse(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
