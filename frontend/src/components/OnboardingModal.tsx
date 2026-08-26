@@ -165,8 +165,8 @@ export function OnboardingModal() {
     return () => clearTimeout(timer);
   }, [username, checkUsername]);
 
-  // Only render if user is authenticated and not yet onboarded
-  if (!user || user.is_onboarded) {
+  // Only render if user is authenticated, is a student/learner, and not yet onboarded (Admins never onboard)
+  if (!user || user.role === "admin" || user.is_onboarded) {
     return null;
   }
 

@@ -113,6 +113,11 @@ def login_user(user_in: schemas.UserLogin, db: Session = Depends(get_db)):
             headers={"WWW-Authenticate": "Bearer"},
         )
     
+    # Admins do not require onboarding
+    if db_user.role == "admin" and not db_user.is_onboarded:
+        db_user.is_onboarded = True
+        db.commit()
+    
     # Create access token
     access_token = create_access_token(data={"sub": db_user.email, "role": db_user.role})
     return {"access_token": access_token, "token_type": "bearer"}

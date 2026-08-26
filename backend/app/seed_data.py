@@ -341,10 +341,16 @@ def seed_database():
                 password_hash=get_password_hash("admin123"),
                 role="admin",
                 is_verified=True,
+                is_onboarded=True,
                 xp=5000,
                 streak_days=14,
             )
             db.add(admin_user)
+        else:
+            admin_user.is_onboarded = True
+
+        # Ensure all existing admins are marked as onboarded
+        db.query(User).filter(User.role == "admin").update({"is_onboarded": True})
 
         student_user = db.query(User).filter(User.email == "learner@cyberlearn.io").first()
         if not student_user:
@@ -357,6 +363,7 @@ def seed_database():
                 password_hash=get_password_hash("learner123"),
                 role="student",
                 is_verified=True,
+                is_onboarded=True,
                 xp=1250,
                 streak_days=5,
             )
