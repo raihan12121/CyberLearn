@@ -19,13 +19,13 @@ import { useAuthStore, isUserSubscribed } from "@/lib/authStore";
 import SubscriptionBanner from "@/components/subscription/SubscriptionBanner";
 import SubscriptionPaywallModal from "@/components/subscription/SubscriptionPaywallModal";
 
-const categories = ["All", "Linux basics", "Web Security", "Networking", "Privilege Escalation", "AI Security"];
+const categories = ["All", "Linux", "Web Security", "Networking", "Privilege Escalation", "Crypto", "CTF & OSINT"];
 
 const labs = [
   {
     id: "linux-navigation",
     title: "Linux Command Navigation",
-    category: "Linux basics",
+    category: "Linux",
     difficulty: "Easy",
     timeLimit: "30 mins",
     xp: 100,
@@ -184,7 +184,31 @@ export default function LabsCatalogPage() {
   }, []);
 
   const filtered = labList.filter((l) => {
-    const matchCategory = activeCategory === "All" || (l.category || "").toLowerCase() === activeCategory.toLowerCase();
+    let matchCategory = false;
+    if (activeCategory === "All") {
+      matchCategory = true;
+    } else {
+      const cat = (l.category || "").toLowerCase();
+      const act = activeCategory.toLowerCase();
+      const labId = (l.id || "").toLowerCase();
+
+      if (act.includes("linux")) {
+        matchCategory = cat.includes("linux") || labId.includes("linux");
+      } else if (act.includes("privilege") || act.includes("privesc")) {
+        matchCategory = cat.includes("priv") || cat.includes("escalation") || labId.includes("privesc") || labId.includes("root-access");
+      } else if (act.includes("web")) {
+        matchCategory = cat.includes("web") || labId.includes("sql") || labId.includes("xss") || labId.includes("bug");
+      } else if (act.includes("network")) {
+        matchCategory = cat.includes("network") || labId.includes("sniffer") || labId.includes("wireshark");
+      } else if (act.includes("crypto")) {
+        matchCategory = cat.includes("crypto") || labId.includes("crypto");
+      } else if (act.includes("ctf") || act.includes("osint")) {
+        matchCategory = cat.includes("ctf") || cat.includes("osint") || labId.includes("ctf") || labId.includes("recon");
+      } else {
+        matchCategory = cat === act || cat.includes(act) || act.includes(cat);
+      }
+    }
+
     const labTitle = (l.title || "").toLowerCase();
     const labDesc = (l.desc || (l as any).description || "").toLowerCase();
     const q = searchQuery.toLowerCase().trim();

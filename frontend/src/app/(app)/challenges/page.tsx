@@ -171,8 +171,11 @@ export default function ChallengesPage() {
   }, []);
 
   const filtered = challenges.filter((c) => {
-    const matchCategory = activeCategory === "All" || c.category.toLowerCase().includes(activeCategory.toLowerCase());
-    const matchSearch = c.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const catStr = (c.category || "").toLowerCase();
+    const actStr = activeCategory.toLowerCase();
+    const matchCategory = activeCategory === "All" || catStr.includes(actStr) || actStr.includes(catStr);
+    const q = searchQuery.toLowerCase().trim();
+    const matchSearch = !q || (c.title || "").toLowerCase().includes(q) || (c.desc || "").toLowerCase().includes(q);
     return matchCategory && matchSearch;
   });
 

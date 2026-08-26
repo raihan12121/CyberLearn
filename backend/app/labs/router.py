@@ -43,7 +43,7 @@ SEED_LABS = [
     {
         "id": "linux-navigation",
         "title": "Linux Command Navigation",
-        "category": "Linux basics",
+        "category": "Linux",
         "difficulty": "Easy",
         "time_limit": 1800,
         "xp_reward": 100,
@@ -163,34 +163,29 @@ SEED_LABS = [
 ]
 
 def seed_labs_if_empty(db: Session):
-    # Check if all seed labs exist
-    seed_lab_ids = [l["id"] for l in SEED_LABS]
-    existing_labs_count = db.query(models.Lab).filter(models.Lab.id.in_(seed_lab_ids)).count()
-    
-    if existing_labs_count < len(SEED_LABS):
-        for l in SEED_LABS:
-            db_lab = db.query(models.Lab).filter(models.Lab.id == l["id"]).first()
-            if not db_lab:
-                db_lab = models.Lab(
-                    id=l["id"],
-                    title=l["title"],
-                    type=l["category"],
-                    difficulty=l["difficulty"],
-                    time_limit=l["time_limit"],
-                    xp_reward=l["xp_reward"],
-                    description=l["description"],
-                    container_template=l["container_template"]
-                )
-                db.add(db_lab)
-            else:
-                db_lab.title = l["title"]
-                db_lab.type = l["category"]
-                db_lab.difficulty = l["difficulty"]
-                db_lab.time_limit = l["time_limit"]
-                db_lab.xp_reward = l["xp_reward"]
-                db_lab.description = l["description"]
-                db_lab.container_template = l["container_template"]
-        db.commit()
+    for l in SEED_LABS:
+        db_lab = db.query(models.Lab).filter(models.Lab.id == l["id"]).first()
+        if not db_lab:
+            db_lab = models.Lab(
+                id=l["id"],
+                title=l["title"],
+                type=l["category"],
+                difficulty=l["difficulty"],
+                time_limit=l["time_limit"],
+                xp_reward=l["xp_reward"],
+                description=l["description"],
+                container_template=l["container_template"]
+            )
+            db.add(db_lab)
+        else:
+            db_lab.title = l["title"]
+            db_lab.type = l["category"]
+            db_lab.difficulty = l["difficulty"]
+            db_lab.time_limit = l["time_limit"]
+            db_lab.xp_reward = l["xp_reward"]
+            db_lab.description = l["description"]
+            db_lab.container_template = l["container_template"]
+    db.commit()
 
 @router.get("", response_model=List[schemas.LabResponse])
 def get_labs(db: Session = Depends(get_db)):
