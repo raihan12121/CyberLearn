@@ -166,7 +166,7 @@ export default function BatchesPage() {
               Learning Batches & Cohorts
             </h1>
             <p className="text-sm sm:text-base text-muted-foreground">
-              Join structured, instructor-led batches with live mentorship, weekly tactical sprints, private sandboxes, and shareable cohort links.
+              Join structured, instructor-led batches with live mentorship, weekly tactical sprints, interactive practice labs, and shareable cohort links.
             </p>
           </div>
 

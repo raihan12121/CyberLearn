@@ -149,7 +149,7 @@ const DEFAULT_PROJECTS: SecurityProject[] = [
     techStack: ["TypeScript", "Node.js", "JWT", "Express", "Burp Extender"],
     githubUrl: "https://github.com/example/auth-breaker",
     stars: 76,
-    highlight: "Identified 4 misconfigured token signature validation flaws in CTF sandboxes.",
+    highlight: "Identified 4 misconfigured token signature validation flaws in CTF challenges.",
   },
   {
     id: "proj-4",
@@ -168,7 +168,7 @@ const DEFAULT_WRITEUPS: VulnerabilityWriteup[] = [
   {
     id: "vuln-1",
     title: "SQL Injection to Remote Code Execution via PostgreSQL COPY TO PROGRAM",
-    target: "CyberLearn Enterprise Sandbox Lab #14",
+    target: "CyberLearn Enterprise Practice Lab #14",
     severity: "Critical",
     cvss: 9.8,
     cwe: "CWE-89: SQL Injection",
@@ -542,7 +542,7 @@ fingerprint: 4E91 C90A 7B12 8D4F 391A  8801 E762 9401 E672 94B2
         <div className="mt-6 pt-5 border-t border-border/70 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-xs text-foreground-secondary leading-relaxed">
           <p className="max-w-3xl">
             Passionate offensive security researcher and blue team incident responder with{" "}
-            <strong className="text-foreground">{displaySolvedLabs}+ hands-on sandbox labs solved</strong>. Specializing in OWASP Top 10 web exploitation, Linux privilege escalation, SIEM detection engineering, and cryptographic protocol analysis.
+            <strong className="text-foreground">{displaySolvedLabs}+ hands-on practice labs solved</strong>. Specializing in OWASP Top 10 web exploitation, Linux privilege escalation, SIEM detection engineering, and cryptographic protocol analysis.
           </p>
 
           <div className="flex items-center gap-3 shrink-0">
@@ -599,12 +599,12 @@ fingerprint: 4E91 C90A 7B12 8D4F 391A  8801 E762 9401 E672 94B2
 
         <div className="p-4 rounded-2xl bg-surface border border-border shadow-sm flex items-center gap-3.5">
           <div className="w-11 h-11 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent shrink-0">
-            <Terminal className="w-5 h-5" />
+            <Globe className="w-5 h-5" />
           </div>
           <div>
             <p className="text-[11px] font-semibold text-foreground-muted uppercase tracking-wider">Verified Lab Solves</p>
             <p className="text-xl font-extrabold text-foreground">{displaySolvedLabs}</p>
-            <span className="text-[10px] text-accent font-semibold font-mono">100% Sandbox Execution</span>
+            <span className="text-[10px] text-accent font-semibold font-mono">100% Verified Flag Solves</span>
           </div>
         </div>
 
@@ -792,7 +792,7 @@ fingerprint: 4E91 C90A 7B12 8D4F 391A  8801 E762 9401 E672 94B2
 
                 <div className="grid grid-cols-2 gap-2">
                   {(profile?.badges && profile.badges.length > 0 ? profile.badges : [
-                    { name: "50 Labs Master", icon: "🏆", desc: "50 sandboxes solved" },
+                    { name: "50 Labs Master", icon: "🏆", desc: "50 practice labs solved" },
                     { name: "Web Wizard", icon: "🧙", desc: "Top web exploit solver" },
                     { name: "First Blood", icon: "🎯", desc: "Sub-5m lab flag solve" },
                     { name: "Top 10% Rank", icon: "⭐", desc: "Global ranking index" },
@@ -1107,11 +1107,11 @@ fingerprint: 4E91 C90A 7B12 8D4F 391A  8801 E762 9401 E672 94B2
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-                  <Terminal className="w-5 h-5 text-primary" />
-                  Verified Sandbox Lab Executions ({filteredLabs.length})
+                  <Globe className="w-5 h-5 text-primary" />
+                  Verified Lab Flag Submissions ({filteredLabs.length})
                 </h3>
                 <p className="text-xs text-foreground-secondary mt-0.5">
-                  Hands-on Linux &amp; Web sandbox challenges solved with automated flag validation.
+                  Hands-on Linux, Network &amp; Web security challenges solved with automated flag validation.
                 </p>
               </div>
 

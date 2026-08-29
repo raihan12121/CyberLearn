@@ -101,7 +101,7 @@ export default function CertificateVerificationPage() {
                   {data?.student_name}
                 </h1>
                 <p className="text-sm text-foreground-secondary max-w-lg mx-auto leading-relaxed pt-2">
-                  has successfully completed all required interactive sandbox labs, vulnerability assessments, and technical examinations for
+                  has successfully completed all required interactive practice labs, vulnerability assessments, and technical examinations for
                 </p>
                 <h3 className="text-xl md:text-2xl font-bold text-primary pt-1">
                   {data?.course_title}

@@ -369,7 +369,7 @@ export function OnboardingModal() {
                 className="space-y-4"
               >
                 <p className="text-sm text-foreground-secondary">
-                  Choose your primary area of specialization. We will customize your recommended curriculum and hands-on sandbox labs.
+                  Choose your primary area of specialization. We will customize your recommended curriculum and hands-on practice labs.
                 </p>
 
                 <div className="grid grid-cols-1 gap-3">

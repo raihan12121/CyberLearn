@@ -19,7 +19,7 @@ import {
   TrendingUp,
   GraduationCap,
   Network,
-  Terminal,
+  Swords,
   Shield,
   Key,
   Fingerprint,
@@ -113,7 +113,7 @@ const EXAM_PRESETS: Record<string, { icon: any; tag: string; xp: number; certCod
     certCode: "SECPLUS",
   },
   "exam-ceh-associate": {
-    icon: Terminal,
+    icon: Swords,
     tag: "Offensive Security",
     xp: 3000,
     certCode: "CEH-ASSOC",

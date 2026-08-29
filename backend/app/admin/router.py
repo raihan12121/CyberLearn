@@ -57,15 +57,15 @@ def get_admin_metrics(
     ram_used = random.randint(58, 66)
 
     container_templates = [
-        {"name": "linux-navigation-sandbox", "users": db.query(models.LabSession).filter(models.LabSession.lab_id == "linux-navigation", models.LabSession.status == "running").count(), "status": "Healthy", "cpu": "12%", "memory": "1.2 GB"},
-        {"name": "sqli-bypass-sandbox", "users": db.query(models.LabSession).filter(models.LabSession.lab_id == "sql-injection-bypass", models.LabSession.status == "running").count(), "status": "Healthy", "cpu": "24%", "memory": "2.1 GB"},
-        {"name": "wireshark-sniffer-sandbox", "users": db.query(models.LabSession).filter(models.LabSession.lab_id == "packet-sniffer-recon", models.LabSession.status == "running").count(), "status": "Healthy", "cpu": "8%", "memory": "890 MB"},
-        {"name": "cron-privesc-sandbox", "users": 0, "status": "Healthy", "cpu": "2%", "memory": "250 MB"},
+        {"name": "web-security-proxy", "users": db.query(models.LabSession).filter(models.LabSession.lab_id == "sql-injection-bypass", models.LabSession.status == "running").count(), "status": "Healthy", "cpu": "24%", "memory": "2.1 GB"},
+        {"name": "network-topology-analyzer", "users": db.query(models.LabSession).filter(models.LabSession.lab_id == "packet-sniffer-recon", models.LabSession.status == "running").count(), "status": "Healthy", "cpu": "8%", "memory": "890 MB"},
+        {"name": "soc-log-workbench", "users": db.query(models.LabSession).filter(models.LabSession.lab_id == "linux-navigation", models.LabSession.status == "running").count(), "status": "Healthy", "cpu": "12%", "memory": "1.2 GB"},
+        {"name": "crypto-inspector", "users": 0, "status": "Healthy", "cpu": "2%", "memory": "250 MB"},
     ]
 
     recent_errors = [
         {"source": "FastAPI Engine", "msg": f"Total registered platform learners: {total_users}", "level": "Info", "time": "2m ago"},
-        {"source": "Docker Daemon", "msg": f"Active sandbox container instances running: {active_sandboxes}", "level": "Info", "time": "8m ago"},
+        {"source": "Security Engine", "msg": f"Active practice lab sessions running: {active_sandboxes}", "level": "Info", "time": "8m ago"},
         {"source": "Billing Gateway", "msg": f"Gross settled revenue: ${total_revenue:,.2f} USD ({len(paid_invoices)} invoices)", "level": "Info", "time": "15m ago"},
     ]
 
@@ -73,7 +73,7 @@ def get_admin_metrics(
         "stats": [
             { "label": "Total Users", "value": f"{total_users:,}", "change": "+12% this month", "color": "text-primary", "bg": "bg-primary/10" },
             { "label": "Total Revenue", "value": f"${total_revenue:,.2f}", "change": f"{active_subscriptions} active subs", "color": "text-success", "bg": "bg-success/10" },
-            { "label": "Active Sandboxes", "value": f"{active_sandboxes}", "change": f"{cpu_load}% CPU load", "color": "text-accent", "bg": "bg-accent/10" },
+            { "label": "Active Lab Sessions", "value": f"{active_sandboxes}", "change": f"{cpu_load}% CPU load", "color": "text-accent", "bg": "bg-accent/10" },
             { "label": "Issued Credentials", "value": f"{total_certs:,}", "change": f"{total_exams} active tracks", "color": "text-warning", "bg": "bg-warning/10" },
         ],
         "summary": {
@@ -81,6 +81,7 @@ def get_admin_metrics(
             "total_revenue": total_revenue,
             "active_subscriptions": active_subscriptions,
             "active_sandboxes": active_sandboxes,
+            "active_lab_sessions": active_sandboxes,
             "completed_labs": completed_labs,
             "total_courses": total_courses,
             "total_exams": total_exams,
@@ -1095,7 +1096,7 @@ def terminate_lab_session_by_admin(
     session.status = "stopped"
     session.completed_at = datetime.now(timezone.utc)
     db.commit()
-    return {"status": "success", "message": f"Sandbox session {session_id} terminated successfully."}
+    return {"status": "success", "message": f"Lab session {session_id} terminated successfully."}
 
 
 # ==========================================

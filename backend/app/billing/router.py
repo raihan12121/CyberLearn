@@ -462,7 +462,7 @@ def cancel_subscription(
     
     return {
         "status": "success",
-        "message": "Your subscription has been canceled. Courses and sandbox labs are now locked.",
+        "message": "Your subscription has been canceled. Courses and practice labs are now locked.",
         "subscription_status": "canceled",
         "user_role": current_user.role
     }

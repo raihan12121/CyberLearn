@@ -325,7 +325,7 @@ export const api = {
     method: "DELETE",
   }),
 
-  // Admin Labs & Sandboxes
+  // Admin Labs & Tooling
   getAdminLabs: () => apiFetch("/admin/labs"),
   createAdminLab: (data: Record<string, unknown>) => apiFetch("/admin/labs", {
     method: "POST",

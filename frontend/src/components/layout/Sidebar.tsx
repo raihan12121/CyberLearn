@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   BookOpen,
-  Terminal,
+  FlaskConical,
   Swords,
   Users,
   Award,
@@ -58,7 +58,7 @@ const studentNavSections: NavSection[] = [
     items: [
       { label: "Courses", href: "/courses", icon: BookOpen },
       { label: "Live Batches", href: "/batches", icon: GraduationCap },
-      { label: "Labs & Sandboxes", href: "/labs", icon: Terminal },
+      { label: "Practice Labs", href: "/labs", icon: FlaskConical },
     ],
   },
   {
@@ -83,7 +83,7 @@ const adminNavSections: NavSection[] = [
       { label: "Courses & Lessons", href: "/admin/courses", icon: BookOpen },
       { label: "Exams & Questions", href: "/admin/exams", icon: FileCheck },
       { label: "Live Cohorts", href: "/admin/batches", icon: GraduationCap },
-      { label: "Labs & Sandboxes", href: "/admin/labs", icon: Terminal },
+      { label: "Security Labs", href: "/admin/labs", icon: FlaskConical },
       { label: "Certificates Registry", href: "/admin/certificates", icon: Award },
       { label: "KYC Verification", href: "/admin/verifications", icon: BadgeCheck },
       { label: "Community Moderation", href: "/admin/community", icon: MessageSquare },

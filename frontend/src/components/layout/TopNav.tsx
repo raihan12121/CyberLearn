@@ -18,7 +18,7 @@ import {
   CheckCheck,
   Trash2,
   ExternalLink,
-  Terminal,
+  Globe,
   GraduationCap,
   Sparkles,
   ShieldCheck,
@@ -76,7 +76,7 @@ export default function TopNav({ onMenuClick }: TopNavProps) {
       {
         id: "notif-welcome-labs",
         title: "Hands-on Practice Labs Ready",
-        description: "Explore interactive CTF sandboxes, Linux command terminals, and Web Security Proxy.",
+        description: "Explore interactive CTF challenges, Web Security Proxy Inspector, and SOC Workbenches.",
         timestamp: "Just now",
         type: "lab",
         read: readIds.includes("notif-welcome-labs"),
@@ -221,7 +221,7 @@ export default function TopNav({ onMenuClick }: TopNavProps) {
       case "achievement":
         return <Zap className="w-4 h-4 text-amber-400" />;
       case "lab":
-        return <Terminal className="w-4 h-4 text-emerald-400" />;
+        return <Globe className="w-4 h-4 text-emerald-400" />;
       case "security":
         return <ShieldCheck className="w-4 h-4 text-primary" />;
       case "batch":

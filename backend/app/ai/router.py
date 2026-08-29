@@ -182,7 +182,7 @@ def _generate_fallback_response(query: str, user_name: str, system_prompt: Optio
             f"Hello {user_name}! Welcome to CyberLearn Academy. I am Coach Jarvis, your AI Security Mentor.{prompt_tag}\n\n"
             "Here is how we can accelerate your cybersecurity learning journey:\n\n"
             "### 🎯 Step-by-Step Learning Framework:\n"
-            "1. **Hands-on Sandboxes**: Practice in our live virtual labs to master Linux command line, networking protocols, and web exploitation.\n"
+            "1. **Interactive Labs**: Practice in our live virtual labs to master web security, networking protocols, and SOC telemetry.\n"
             "2. **Concept Deconstruction**: Ask me any concept (e.g. *Same-Origin Policy*, *Buffer Overflow*, *Kerberos*) and I will break it down with simple real-world analogies.\n"
             "3. **Exam & Cert Drills**: Practice scenario-based quizzes for CompTIA Security+, CEH, and CyberLearn Certified Defender exams.\n"
             "4. **CTF Challenges**: Get Socratic hints on live challenges without spoiling the final flag.\n\n"
@@ -249,7 +249,7 @@ def _generate_fallback_response(query: str, user_name: str, system_prompt: Optio
             f"Regarding your query on **\"{query[:60]}\"**:\n\n"
             "In practical cybersecurity defense and offensive operations, we analyze this by:\n"
             "1. **Threat Modeling**: Identifying assets, threat actors, and potential attack vectors.\n"
-            "2. **Hands-On Verification**: Testing behaviors inside our isolated sandbox labs.\n"
+            "2. **Hands-On Verification**: Testing behaviors inside our interactive practice labs.\n"
             "3. **Hardening**: Implementing least privilege, defense-in-depth, and automated monitoring.\n\n"
             "Feel free to ask me for a code example, lab walkthrough, or conceptual breakdown!"
         )

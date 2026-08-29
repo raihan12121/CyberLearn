@@ -6,7 +6,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   Users,
-  Terminal as TerminalIcon,
+  FlaskConical,
   DollarSign,
   Activity,
   Server,
@@ -32,20 +32,20 @@ import { api } from "@/lib/api";
 const DEFAULT_STATS = [
   { label: "Total Users", value: "10,245", change: "+12% this month", icon: Users, color: "text-sky-400", bg: "bg-sky-500/15 border-sky-500/30" },
   { label: "Total Revenue", value: "$4,850.00", change: "42 active subs", icon: DollarSign, color: "text-emerald-400", bg: "bg-emerald-500/15 border-emerald-500/30" },
-  { label: "Active Sandboxes", value: "84", change: "42% CPU load", icon: TerminalIcon, color: "text-indigo-400", bg: "bg-indigo-500/15 border-indigo-500/30" },
+  { label: "Active Lab Sessions", value: "84", change: "42% CPU load", icon: FlaskConical, color: "text-indigo-400", bg: "bg-indigo-500/15 border-indigo-500/30" },
   { label: "Issued Credentials", value: "189", change: "5 active tracks", icon: Award, color: "text-amber-400", bg: "bg-amber-500/15 border-amber-500/30" },
 ];
 
 const DEFAULT_CONTAINERS = [
-  { name: "linux-navigation-sandbox", users: 34, status: "Healthy", cpu: "12%", memory: "1.2 GB", port: "3001/TCP" },
-  { name: "sqli-bypass-sandbox", users: 28, status: "Healthy", cpu: "24%", memory: "2.1 GB", port: "3002/TCP" },
-  { name: "wireshark-sniffer-sandbox", users: 15, status: "Healthy", cpu: "8%", memory: "890 MB", port: "3003/TCP" },
-  { name: "cron-privesc-sandbox", users: 7, status: "Healthy", cpu: "65%", memory: "1.8 GB", port: "3004/TCP" },
+  { name: "web-security-proxy", users: 34, status: "Healthy", cpu: "12%", memory: "1.2 GB", port: "3001/TCP" },
+  { name: "sqli-injection-inspector", users: 28, status: "Healthy", cpu: "24%", memory: "2.1 GB", port: "3002/TCP" },
+  { name: "wireshark-log-workbench", users: 15, status: "Healthy", cpu: "8%", memory: "890 MB", port: "3003/TCP" },
+  { name: "network-topology-analyzer", users: 7, status: "Healthy", cpu: "15%", memory: "1.8 GB", port: "3004/TCP" },
 ];
 
 const SYSTEM_SERVICES = [
   { name: "FastAPI Core Engine", status: "Online", latency: "14ms", icon: Activity, color: "text-sky-400" },
-  { name: "Container Sandbox Pool", status: "Online", latency: "28ms", icon: TerminalIcon, color: "text-indigo-400" },
+  { name: "Security Tooling Engine", status: "Online", latency: "28ms", icon: FlaskConical, color: "text-indigo-400" },
   { name: "PostgreSQL Database", status: "Online", latency: "4ms", icon: Database, color: "text-emerald-400" },
   { name: "AI Tutor LLM Gateway", status: "Online", latency: "120ms", icon: Zap, color: "text-amber-400" },
 ];
@@ -55,7 +55,7 @@ const ADMIN_QUICK_LINKS = [
   { label: "Course Curriculum", href: "/admin/courses", icon: BookOpen, color: "text-indigo-400", bg: "bg-indigo-500/10 border-indigo-500/20", desc: "Edit courses, modules & lessons" },
   { label: "Exams & Banks", href: "/admin/exams", icon: FileCheck, color: "text-purple-400", bg: "bg-purple-500/10 border-purple-500/20", desc: "Question bank & pass/fail grades" },
   { label: "Live Cohorts", href: "/admin/batches", icon: GraduationCap, color: "text-cyan-400", bg: "bg-cyan-500/10 border-cyan-500/20", desc: "Batch schedules & rosters" },
-  { label: "Sandbox Pools", href: "/admin/labs", icon: TerminalIcon, color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20", desc: "Lab environments & container sessions" },
+  { label: "Security Labs", href: "/admin/labs", icon: FlaskConical, color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20", desc: "Lab environments & challenge sessions" },
   { label: "KYC Verification", href: "/admin/verifications", icon: BadgeCheck, color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20", desc: "NID identity review queue" },
   { label: "Issued Credentials", href: "/admin/certificates", icon: Award, color: "text-rose-400", bg: "bg-rose-500/10 border-rose-500/20", desc: "Credential registry & minting" },
   { label: "Financials & Billing", href: "/admin/billing", icon: DollarSign, color: "text-teal-400", bg: "bg-teal-500/10 border-teal-500/20", desc: "Settled invoices & promo codes" },
@@ -100,8 +100,8 @@ export default function AdminOverviewPage() {
             icon = DollarSign;
             color = "text-emerald-400";
             bg = "bg-emerald-500/15 border-emerald-500/30";
-          } else if (s.label === "Active Sandboxes") {
-            icon = TerminalIcon;
+          } else if (s.label === "Active Lab Sessions" || s.label === "Active Sandboxes") {
+            icon = FlaskConical;
             color = "text-indigo-400";
             bg = "bg-indigo-500/15 border-indigo-500/30";
           } else if (s.label === "Issued Credentials") {
@@ -261,7 +261,7 @@ export default function AdminOverviewPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Container Pool & System Services */}
         <div className="lg:col-span-7 space-y-6">
-          {/* Active Container Sandboxes */}
+          {/* Active Lab Sessions */}
           <Card padding="lg" className="border border-border bg-surface space-y-5 shadow-lg">
             <div className="flex items-center justify-between border-b border-border pb-4">
               <div className="flex items-center gap-2.5">
@@ -269,8 +269,8 @@ export default function AdminOverviewPage() {
                   <Server className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-foreground">Sandbox Container Cluster</h3>
-                  <p className="text-xs text-foreground-muted">Live ephemeral Docker environments & CPU load</p>
+                  <h3 className="text-sm font-bold text-foreground">Interactive Practice Lab Tooling</h3>
+                  <p className="text-xs text-foreground-muted">Live security challenge runners &amp; microservice metrics</p>
                 </div>
               </div>
               <Badge variant="success" size="sm" dot>

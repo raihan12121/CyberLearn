@@ -231,7 +231,7 @@ export default function SignupPage() {
           </div>
           <h2 className="text-2xl font-bold text-foreground mb-2">CyberLearn Platform</h2>
           <p className="text-sm text-foreground-secondary leading-relaxed">
-            Enterprise cyber defense training with interactive container sandboxes, real-time telemetry, and certified credentials.
+            Enterprise cyber defense training with interactive practice labs, real-time telemetry, and certified credentials.
           </p>
         </div>
       </div>

@@ -168,7 +168,7 @@ export default function SettingsPage() {
   };
 
   const handleCancelSub = async () => {
-    if (!confirm("Are you sure you want to cancel your subscription? Courses and sandbox labs will be locked.")) {
+    if (!confirm("Are you sure you want to cancel your subscription? Courses and interactive practice labs will be locked.")) {
       return;
     }
     setSubLoading(true);
@@ -759,7 +759,7 @@ export default function SettingsPage() {
               <div className="border-b border-border pb-4 flex items-center justify-between">
                 <div>
                   <h3 className="text-base font-bold text-foreground">Subscription &amp; Entitlements</h3>
-                  <p className="text-xs text-foreground-secondary">Manage your membership plan and access to courses &amp; sandbox labs.</p>
+                  <p className="text-xs text-foreground-secondary">Manage your membership plan and access to courses &amp; practice labs.</p>
                 </div>
                 <Badge
                   variant={isUserSubscribed(user) ? "success" : "warning"}
@@ -801,7 +801,7 @@ export default function SettingsPage() {
                   </div>
                   <div className="flex items-center gap-2 text-xs text-foreground-secondary">
                     <CheckCircle2 className={`w-4 h-4 ${isUserSubscribed(user) ? "text-success" : "text-foreground-muted"}`} />
-                    <span>Docker CTF Sandbox Labs: <strong>{isUserSubscribed(user) ? "Unlocked" : "Locked"}</strong></span>
+                    <span>Interactive CTF Practice Labs: <strong>{isUserSubscribed(user) ? "Unlocked" : "Locked"}</strong></span>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-foreground-secondary">
                     <CheckCircle2 className={`w-4 h-4 ${isUserSubscribed(user) ? "text-success" : "text-foreground-muted"}`} />
@@ -928,7 +928,7 @@ export default function SettingsPage() {
                 <div className="pt-4 border-t border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <p className="text-xs font-bold text-error">Cancel Subscription</p>
-                    <p className="text-[11px] text-foreground-muted">Revert account back to Free tier and lock course content &amp; sandbox labs.</p>
+                    <p className="text-[11px] text-foreground-muted">Revert account back to Free tier and lock course content &amp; practice labs.</p>
                   </div>
                   <Button
                     variant="outline"

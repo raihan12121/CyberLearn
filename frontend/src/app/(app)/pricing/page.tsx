@@ -17,7 +17,7 @@ import { useAuthStore } from "@/lib/authStore";
 const faqs = [
   { q: "Can I cancel my subscription anytime?", a: "Yes, you can cancel your subscription at any time from your settings page. You will retain access until the end of your billing cycle." },
   { q: "What's the difference between Pro and Premium?", a: "Pro gives you full unlimited access to all courses, labs, and the AI coach. Premium adds team analytics reports, custom learning pathways, and 1-on-1 monthly mentoring sessions." },
-  { q: "Are lab sandboxes safe to run?", a: "Absolutely. All labs run inside isolated Docker containers on our secure cloud server. They cannot interact with your local device or network." },
+  { q: "Are interactive practice labs safe to run?", a: "Absolutely. All security tools and attack scenarios run safely in simulated environments within your browser session and cannot interact with your local device or network." },
 ];
 
 import { useRouter } from "next/navigation";
@@ -64,7 +64,7 @@ export default function PricingPage() {
       name: "Pro",
       price: billingPeriod === "monthly" ? 12 : 10,
       desc: "For intermediate learners pursuing career readiness.",
-      features: ["Unlimited sandbox labs", "Full access to AI Coach", "Course completion certificates", "Advanced CTF challenges", "Priority discord support"],
+      features: ["Unlimited practice labs & tools", "Full access to AI Coach", "Course completion certificates", "Advanced CTF challenges", "Priority discord support"],
       badge: "Most Popular",
       variant: "primary" as const,
       glow: "primary" as const,
@@ -88,7 +88,7 @@ export default function PricingPage() {
         <Badge variant="primary" size="md">Pricing Plans</Badge>
         <h1 className="text-3xl md:text-4xl font-bold text-foreground">Flexible Plans for Every Stage</h1>
         <p className="text-foreground-secondary text-sm max-w-lg mx-auto leading-relaxed">
-          Upgrade to a Pro or Premium plan to unlock unlimited interactive sandbox labs, certificates, and personal coaching.
+          Upgrade to a Pro or Premium plan to unlock unlimited interactive practice labs, certificates, and personal coaching.
         </p>
 
         {activePlanMessage && (

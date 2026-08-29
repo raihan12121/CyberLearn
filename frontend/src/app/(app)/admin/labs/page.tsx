@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Terminal as TerminalIcon,
+  FlaskConical,
   Plus,
   Edit,
   Trash2,
@@ -45,7 +45,7 @@ export default function AdminLabsPage() {
     is_active: true,
   });
 
-  // Active Sandbox Sessions State
+  // Active Lab Sessions State
   const [sessionsList, setSessionsList] = useState<any[]>([]);
 
   const loadLabsAndSessions = async () => {
@@ -130,11 +130,11 @@ export default function AdminLabsPage() {
   };
 
   const handleTerminateSession = async (sessionId: string) => {
-    if (!confirm("Terminate this running Docker container instance immediately?")) return;
+    if (!confirm("Terminate this active lab session immediately?")) return;
     try {
       await api.terminateAdminLabSession(sessionId);
       setSessionsList((prev) => prev.filter((s) => s.id !== sessionId));
-      alert("Container sandbox session terminated.");
+      alert("Lab session terminated.");
     } catch (e: any) {
       alert(`Error: ${e.message}`);
     }
@@ -156,7 +156,7 @@ export default function AdminLabsPage() {
         </div>
         <h2 className="text-xl font-bold text-foreground">Access Denied</h2>
         <p className="text-sm text-foreground-muted">
-          Administrative privileges required to access Sandbox Pools.
+          Administrative privileges required to access Security Labs.
         </p>
         <Button onClick={() => router.push("/dashboard")} className="w-full">
           Return to Dashboard
@@ -171,17 +171,17 @@ export default function AdminLabsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
         <div className="flex items-center gap-3.5">
           <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-emerald-500/20 to-teal-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shadow-sm shadow-emerald-500/10">
-            <TerminalIcon className="w-5 h-5" />
+            <FlaskConical className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2.5">
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Labs & Ephemeral Sandboxes</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Security Labs &amp; Challenges</h1>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                 {labsList.length} Lab Templates
               </span>
             </div>
             <p className="text-xs text-foreground-muted mt-0.5">
-              Deploy isolated Docker CTF environments, manage dynamic capture flags, and monitor live container instances.
+              Configure hands-on security challenges, manage dynamic capture flags, and monitor live student sessions.
             </p>
           </div>
         </div>
@@ -194,7 +194,7 @@ export default function AdminLabsPage() {
             disabled={refreshing}
             icon={<RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />}
           >
-            {refreshing ? "Syncing..." : "Sync Sandboxes"}
+            {refreshing ? "Syncing..." : "Sync Labs"}
           </Button>
           <Button size="sm" onClick={() => setShowAddLabModal(true)} icon={<Plus className="w-3.5 h-3.5" />}>
             Deploy Lab
@@ -279,15 +279,15 @@ export default function AdminLabsPage() {
         ))}
       </div>
 
-      {/* Active Sandbox Sessions Monitor */}
+      {/* Active Lab Sessions Monitor */}
       <Card padding="none" className="border border-border bg-surface shadow-lg overflow-hidden space-y-0">
         <div className="p-4 border-b border-border bg-surface-elevated flex items-center justify-between">
           <div>
             <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-              <Activity className="w-4 h-4 text-emerald-400" /> Live Ephemeral Container Sandboxes
+              <Activity className="w-4 h-4 text-emerald-400" /> Live Practice Lab Sessions
             </h3>
             <p className="text-xs text-foreground-muted mt-0.5">
-              Real-time monitor of active user lab sessions, mapped ports, and immediate force termination controls.
+              Real-time monitor of active user lab sessions, mapped endpoints, and immediate force termination controls.
             </p>
           </div>
           <span className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-surface border border-border text-foreground-secondary">
@@ -301,8 +301,8 @@ export default function AdminLabsPage() {
               <tr>
                 <th className="py-3 px-4">Learner Account</th>
                 <th className="py-3 px-4">Lab Environment</th>
-                <th className="py-3 px-4">Mapped Port</th>
-                <th className="py-3 px-4">Container ID</th>
+                <th className="py-3 px-4">Session Target</th>
+                <th className="py-3 px-4">Session Token</th>
                 <th className="py-3 px-4">Started At</th>
                 <th className="py-3 px-4 text-right">Force Kill</th>
               </tr>
@@ -311,7 +311,7 @@ export default function AdminLabsPage() {
               {sessionsList.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-xs text-foreground-muted">
-                    No active student container sandboxes currently provisioned.
+                    No active student practice lab sessions currently open.
                   </td>
                 </tr>
               ) : (
@@ -323,7 +323,7 @@ export default function AdminLabsPage() {
                     </td>
                     <td className="py-3 px-4 font-semibold text-foreground font-mono">{ses.lab_title || ses.lab_id}</td>
                     <td className="py-3 px-4 font-mono font-bold text-sky-400">:{ses.port || "3000"}</td>
-                    <td className="py-3 px-4 font-mono text-[10px] text-foreground-muted">{ses.container_id?.slice(0, 12) || "mock-c-98a2"}</td>
+                    <td className="py-3 px-4 font-mono text-[10px] text-foreground-muted">{ses.container_id?.slice(0, 12) || "lab-sess-98a2"}</td>
                     <td className="py-3 px-4 font-mono text-foreground-muted text-[11px]">
                       {ses.created_at ? new Date(ses.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Running"}
                     </td>
@@ -357,7 +357,7 @@ export default function AdminLabsPage() {
               className="w-full max-w-lg bg-surface rounded-2xl p-6 border border-border shadow-2xl space-y-4"
             >
               <div className="flex items-center justify-between border-b border-border pb-3">
-                <h3 className="text-base font-bold text-foreground">Deploy Ephemeral Lab Sandbox</h3>
+                <h3 className="text-base font-bold text-foreground">Deploy Practice Lab Challenge</h3>
                 <button onClick={() => setShowAddLabModal(false)} className="text-foreground-muted hover:text-foreground cursor-pointer">
                   <X className="w-5 h-5" />
                 </button>

@@ -29,7 +29,7 @@ const mockSkillStats = [
 ];
 
 const mockAchievementsList = [
-  { name: "50 Labs Master", icon: "🏆", date: "June 14, 2026", desc: "Completed 50 sandbox practice labs." },
+  { name: "50 Labs Master", icon: "🏆", date: "June 14, 2026", desc: "Completed 50 hands-on practice labs." },
   { name: "Web Wizard", icon: "🧙", date: "June 12, 2026", desc: "Bypassed 10 web filter challenges." },
   { name: "Top 10% Rank", icon: "⭐", date: "June 08, 2026", desc: "Ranked among top 10% global active learners." },
   { name: "First Blood", icon: "🎯", date: "June 05, 2026", desc: "Submitted flag within first 5 mins of lab launch." },

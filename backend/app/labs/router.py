@@ -46,7 +46,7 @@ SEED_LABS = [
         "difficulty": "Easy",
         "time_limit": 1800,
         "xp_reward": 100,
-        "description": "Practice filesystem navigation using commands like cd, ls, and pwd in a sandbox container environment.",
+        "description": "Practice filesystem navigation concepts using commands like cd, ls, and pwd in an interactive practice lab environment.",
         "container_template": "linux-basic",
     },
     {
@@ -219,7 +219,7 @@ def start_lab_session(
     new_session = models.LabSession(
         user_id=current_user.id,
         lab_id=lab.id,
-        container_id=f"sandbox-container-{current_user.id[:8]}-{lab.id[:8]}-{secrets.token_hex(3)}",
+        container_id=f"workspace-session-{current_user.id[:8]}-{lab.id[:8]}-{secrets.token_hex(3)}",
         status="running",
         started_at=datetime.now(timezone.utc),
         expires_at=expires_at
@@ -349,7 +349,7 @@ def proxy_forward_request(
     url_lower = req.url.lower()
     body_lower = req.body.lower()
     
-    # Analyze payloads for educational sandbox vulnerabilities
+    # Analyze payloads for educational web security vulnerabilities
     if "' or '1'='1" in body_lower or "or 1=1" in url_lower:
         flag = generate_lab_flag("sql-injection-bypass")
         res_body = json.dumps({

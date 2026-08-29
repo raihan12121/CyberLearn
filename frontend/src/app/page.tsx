@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Shield,
-  Terminal,
+  Globe,
   BookOpen,
   Bot,
   Trophy,
@@ -19,6 +19,7 @@ import {
   Award,
   Menu,
   X,
+  Network,
 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
@@ -44,9 +45,9 @@ const features = [
     bg: "bg-primary/10",
   },
   {
-    icon: Terminal,
+    icon: Globe,
     title: "Interactive Labs",
-    desc: "Practice in safe, isolated environments with real Linux terminals.",
+    desc: "Practice with live HTTP Web Proxies, Attack Topology Graphs, and SOC Workbenches.",
     color: "text-accent",
     bg: "bg-accent/10",
   },
@@ -207,7 +208,7 @@ export default function LandingPage() {
               </Button>
             </Link>
             <Link href="/labs" className="w-full sm:w-auto">
-              <Button variant="outline" size="lg" className="w-full sm:w-auto justify-center" icon={<Terminal className="w-4 h-4" />}>
+              <Button variant="outline" size="lg" className="w-full sm:w-auto justify-center" icon={<Globe className="w-4 h-4" />}>
                 Explore Labs
               </Button>
             </Link>
@@ -347,7 +348,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Terminal Preview */}
+      {/* Web Proxy & Security Tooling Preview */}
       <section className="py-24 px-6">
         <div className="max-w-5xl mx-auto">
           <motion.div
@@ -357,10 +358,10 @@ export default function LandingPage() {
             className="text-center mb-12"
           >
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Real Terminal. Real Practice.
+              Interactive Tooling. Real-World Defense.
             </h2>
             <p className="text-foreground-secondary text-lg">
-              Practice in isolated Linux environments directly in your browser.
+              Intercept live HTTP payloads, analyze attack graphs, and parse SOC telemetry directly in your browser.
             </p>
           </motion.div>
 
@@ -370,33 +371,37 @@ export default function LandingPage() {
             viewport={{ once: true }}
           >
             <Card padding="none" className="overflow-hidden glow-primary">
-              {/* Terminal header */}
-              <div className="flex items-center gap-2 px-4 py-3 bg-surface border-b border-border">
-                <div className="flex gap-1.5">
-                  <span className="w-3 h-3 rounded-full bg-error/60" />
-                  <span className="w-3 h-3 rounded-full bg-warning/60" />
-                  <span className="w-3 h-3 rounded-full bg-accent/60" />
+              {/* Proxy Inspector header */}
+              <div className="flex items-center justify-between px-4 py-3 bg-surface border-b border-border">
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1.5">
+                    <span className="w-3 h-3 rounded-full bg-error/60" />
+                    <span className="w-3 h-3 rounded-full bg-warning/60" />
+                    <span className="w-3 h-3 rounded-full bg-accent/60" />
+                  </div>
+                  <span className="text-xs text-foreground-muted font-mono ml-2 flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5 text-primary" />
+                    proxy-repeater://target.cyberlearn.local:443/auth/login
+                  </span>
                 </div>
-                <span className="text-xs text-foreground-muted font-mono ml-2">
-                  cyberlearn@lab:~
-                </span>
+                <Badge variant="primary" size="sm" className="font-mono text-[10px]">
+                  INTERCEPT: ACTIVE
+                </Badge>
               </div>
-              {/* Terminal body */}
+              {/* Proxy body */}
               <div className="bg-terminal-bg p-6 font-mono text-sm leading-7 min-h-[280px]">
-                <p><span className="text-accent">cyberlearn@lab</span>:<span className="text-primary">~</span>$ <span className="text-foreground">ls -la /home/user</span></p>
-                <p className="text-foreground-secondary">total 32</p>
-                <p className="text-foreground-secondary">drwxr-xr-x 4 user user 4096 Jun 15 10:15 .</p>
-                <p className="text-foreground-secondary">drwxr-xr-x 3 root root 4096 Jun 15 10:13 ..</p>
-                <p className="text-foreground-secondary">-rw-r--r-- 1 user user  220 Jun 15 10:13 notes.txt</p>
-                <p className="text-foreground-secondary">-rw------- 1 root root  455 Jun 15 10:14 <span className="text-warning">flag.txt</span></p>
-                <p className="text-foreground-secondary">drwx------ 2 user user 4096 Jun 15 10:15 .ssh</p>
-                <p><span className="text-accent">cyberlearn@lab</span>:<span className="text-primary">~</span>$ <span className="text-foreground">cat flag.txt</span></p>
-                <p className="text-error">cat: flag.txt: Permission denied</p>
-                <p><span className="text-accent">cyberlearn@lab</span>:<span className="text-primary">~</span>$ <span className="text-foreground">chmod 644 flag.txt && cat flag.txt</span></p>
-                <p className="text-accent">🚩 FLAG{'{'}cyber_learn_permissions_101{'}'}</p>
-                <p>
-                  <span className="text-accent">cyberlearn@lab</span>:<span className="text-primary">~</span>$
-                  <span className="terminal-cursor ml-1 inline-block w-2 h-4 bg-accent" />
+                <p><span className="text-accent font-bold">POST</span> <span className="text-foreground">/api/v1/auth/admin-login HTTP/1.1</span></p>
+                <p className="text-foreground-secondary">Host: api.cyberlearn.local</p>
+                <p className="text-foreground-secondary">User-Agent: CyberLearn-SecurityProxy/3.2</p>
+                <p className="text-foreground-secondary">Content-Type: application/json</p>
+                <p className="text-foreground-muted">----------------------------------------</p>
+                <p className="text-primary font-semibold">{`{ "username": "admin' OR 1=1--", "password": "any_password" }`}</p>
+                <p className="text-foreground-muted">----------------------------------------</p>
+                <p className="text-emerald-400 font-bold">HTTP/1.1 200 OK</p>
+                <p className="text-foreground-secondary">Content-Type: application/json</p>
+                <p className="text-amber-400 font-mono">{`{ "status": "authenticated", "role": "admin", "flag": "FLAG{web_proxy_sqli_bypassed_98a2}" }`}</p>
+                <p className="pt-2 text-accent">
+                  <span>Target server compromised. Capture flag ready for validation.</span>
                 </p>
               </div>
             </Card>

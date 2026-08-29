@@ -36,7 +36,7 @@ def get_user_profile_details(
 
     milestones = [
         {"badge": "First Blood", "icon": "🎯", "desc": "Earned your first XP points on CyberLearn.", "condition": current_user.xp > 0},
-        {"badge": "Web Wizard", "icon": "🧙", "desc": "Successfully completed a web security sandbox lab.", "condition": solved_labs_count >= 1},
+        {"badge": "Web Wizard", "icon": "🧙", "desc": "Successfully completed a web security practice lab.", "condition": solved_labs_count >= 1},
         {"badge": "50 Labs Master", "icon": "🏆", "desc": "Demonstrated relentless practice across labs.", "condition": solved_labs_count >= 3},
         {"badge": "Top 10% Rank", "icon": "⭐", "desc": "Ranked among global active learners.", "condition": rank <= max(1, total_users // 10)},
     ]
@@ -95,7 +95,7 @@ def get_user_profile_details(
     # If achievements table has entries, map them
     for a in current_user.achievements:
         # Match with description
-        desc = "Completed sandbox practice badge."
+        desc = "Completed practice lab badge."
         for m in milestones:
             if m["badge"] == a.badge_name:
                 desc = m["desc"]
@@ -129,7 +129,7 @@ def get_user_profile_details(
         models.LabSession.status == "completed"
     ).all()
     for s, lab in completed_sessions:
-        lab_title = lab.title if lab else "Sandbox Lab"
+        lab_title = lab.title if lab else "Practice Lab"
         xp_gain = lab.xp_reward if lab else 100
         timeline.append({
             "action": f"Completed {lab_title} Lab",

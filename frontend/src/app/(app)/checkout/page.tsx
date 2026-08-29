@@ -11,7 +11,7 @@ import {
   AlertCircle,
   Zap,
   ArrowLeft,
-  Terminal,
+  FlaskConical,
   BookOpen,
   Award,
   Sparkles,
@@ -43,12 +43,12 @@ const PLANS: Record<string, PlanConfig> = {
   pro: {
     name: "Pro",
     title: "CyberLearn Pro All-Access",
-    tagline: "Unlocks every course video, syllabus, quizzes, and live Docker CTF sandboxes.",
+    tagline: "Unlocks every course video, syllabus, quizzes, and hands-on practice labs.",
     monthlyPrice: 12.00,
     annualPrice: 120.00,
     features: [
       "Full access to 10+ Complete Security Courses",
-      "Unlimited Docker Sandbox Containers & Kali Shells",
+      "Unlimited Hands-on Security Labs & CTF Challenges",
       "Live HTTP Proxy & Wireshark Log Workbenches",
       "AI Socratic Tutor with Infinite Hints",
       "Verified Course Credentials & Diplomas",
@@ -65,7 +65,7 @@ const PLANS: Record<string, PlanConfig> = {
       "1-on-1 Monthly Mentorship & Career Guidance",
       "Custom Private Cohort Batches & LMS Sync",
       "Advanced SOC Team Analytics & Leaderboard Badging",
-      "Priority VIP Support & Custom CTF Environments",
+      "Priority VIP Support & Custom CTF Scenarios",
     ],
   },
 };
@@ -341,7 +341,7 @@ function CheckoutContent() {
           <p className="text-sm text-foreground-secondary max-w-md mx-auto">
             {isLifetime
               ? `You now own lifetime access to '${targetCourse?.title || successResult.course_title || "your course"}'. All video lessons, quizzes, and certificates are permanently unlocked.`
-              : `Your ${plan.name} membership is active for ${durationMonths} month(s). All security courses and Docker CTF sandbox labs are ready.`}
+              : `Your ${plan.name} membership is active for ${durationMonths} month(s). All security courses and interactive practice labs are ready.`}
           </p>
         </motion.div>
 
@@ -431,8 +431,8 @@ function CheckoutContent() {
               </Link>
             )}
             <Link href="/labs" className="w-full sm:flex-1">
-              <Button variant="outline" fullWidth size="lg" icon={<Terminal className="w-4 h-4" />}>
-                Launch Sandbox Labs
+              <Button variant="outline" fullWidth size="lg" icon={<FlaskConical className="w-4 h-4" />}>
+                Launch Practice Labs
               </Button>
             </Link>
           </div>
@@ -566,7 +566,7 @@ function CheckoutContent() {
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-primary flex items-center gap-1">
                   <Zap className="w-3 h-3 text-primary" />
-                  Testing &amp; Evaluation Sandbox
+                  Testing &amp; Evaluation Mode
                 </span>
                 <span className="text-[10px] text-foreground-muted">Instant Authorization</span>
               </div>

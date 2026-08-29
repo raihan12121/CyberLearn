@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import {
   Zap,
   Flame,
-  Terminal,
+  FlaskConical,
   Trophy,
   Target,
   ChevronRight,
@@ -156,7 +156,7 @@ export default function DashboardPage() {
   const statsRow = [
     { label: "XP Earned", value: profile.xp.toLocaleString(), icon: Zap, color: "text-amber-400", bg: "bg-amber-500/15 border border-amber-500/30 shadow-sm shadow-amber-500/10" },
     { label: "Current Streak", value: `${profile.streak_days} Days`, icon: Flame, color: "text-rose-400", bg: "bg-rose-500/15 border border-rose-500/30 shadow-sm shadow-rose-500/10" },
-    { label: "Labs Completed", value: `${profile.solved_labs_count}`, icon: Terminal, color: "text-emerald-400", bg: "bg-emerald-500/15 border border-emerald-500/30 shadow-sm shadow-emerald-500/10" },
+    { label: "Labs Completed", value: `${profile.solved_labs_count}`, icon: FlaskConical, color: "text-emerald-400", bg: "bg-emerald-500/15 border border-emerald-500/30 shadow-sm shadow-emerald-500/10" },
     { label: "Platform Rank", value: `#${profile.rank}`, icon: Trophy, color: "text-sky-400", bg: "bg-sky-500/15 border border-sky-500/30 shadow-sm shadow-sky-500/10" },
   ];
 
@@ -320,7 +320,7 @@ export default function DashboardPage() {
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary/10">
-                      <Terminal className="w-4 h-4 text-primary" />
+                      <FlaskConical className="w-4 h-4 text-primary" />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-foreground">{activity.action}</p>

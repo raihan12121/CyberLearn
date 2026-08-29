@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Search,
-  Terminal,
+  Globe,
   Clock,
   Zap,
   ChevronRight,
@@ -29,7 +29,7 @@ const labs = [
     difficulty: "Easy",
     timeLimit: "30 mins",
     xp: 100,
-    desc: "Practice filesystem navigation using commands like cd, ls, and pwd in a sandbox container environment.",
+    desc: "Practice filesystem navigation using commands like cd, ls, and pwd in an interactive practice lab environment.",
     template: "linux-basic",
   },
   {
@@ -233,15 +233,15 @@ export default function LabsCatalogPage() {
           <div>
             <h1 className="text-2xl font-bold text-foreground">Labs</h1>
             <p className="text-foreground-secondary mt-1">
-              Start isolated sandbox container environments directly in your browser.
+              Practice hands-on web security exploits, network topology analysis, and SOC log investigations.
             </p>
           </div>
           <Card padding="sm" className="flex items-center gap-3 bg-surface-elevated/50">
-            <Terminal className="w-5 h-5 text-accent" />
+            <Globe className="w-5 h-5 text-accent" />
             <div>
-              <p className="text-xs text-foreground-secondary">Docker Containers Running</p>
+              <p className="text-xs text-foreground-secondary">Security Tooling</p>
               <p className="text-sm font-semibold text-foreground">
-                {subscribed ? "Sandbox Ready" : "Subscription Required"}
+                {subscribed ? "Labs Ready" : "Subscription Required"}
               </p>
             </div>
           </Card>
@@ -335,7 +335,7 @@ export default function LabsCatalogPage() {
                   onClick={() => handleLaunchLab(lab.id, lab.title)}
                   variant={!subscribed ? "outline" : "primary"}
                   className={subscribed ? "group-hover:bg-primary group-hover:text-white transition-all duration-200" : ""}
-                  icon={!subscribed ? <Lock className="w-4 h-4 text-primary" /> : <Terminal className="w-4 h-4" />}
+                  icon={!subscribed ? <Lock className="w-4 h-4 text-primary" /> : <Globe className="w-4 h-4" />}
                 >
                   {!subscribed ? "Unlock Lab (Pro)" : "Launch Lab"}
                 </Button>
@@ -348,7 +348,7 @@ export default function LabsCatalogPage() {
       <SubscriptionPaywallModal
         isOpen={paywallModalOpen}
         onClose={() => setPaywallModalOpen(false)}
-        title="Unlock Cloud Sandbox Labs"
+        title="Unlock Interactive Practice Labs"
         resourceName={selectedLabForPaywall}
       />
     </div>

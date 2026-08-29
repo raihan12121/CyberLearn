@@ -80,7 +80,7 @@ function VerifyEmailContent() {
             <div className="space-y-2">
               <h1 className="text-2xl font-extrabold text-foreground">Account Verified!</h1>
               <p className="text-sm text-foreground-secondary leading-relaxed">
-                Your email address has been successfully confirmed. You now have full access to interactive disposable sandbox labs and AI Cyber Coach tutoring.
+                Your email address has been successfully confirmed. You now have full access to interactive practice labs and AI Cyber Coach tutoring.
               </p>
             </div>
 
