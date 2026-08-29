@@ -939,7 +939,7 @@ export default function CourseDetailPage() {
                   </div>
                   <div className="p-3 rounded-xl bg-surface-elevated/80 border border-border flex items-start gap-2.5">
                     <CheckCircle className="w-4 h-4 text-accent shrink-0 mt-0.5" />
-                    <span className="text-xs text-foreground-secondary font-medium">Unlimited Docker CTF sandbox labs</span>
+                    <span className="text-xs text-foreground-secondary font-medium">Unlimited CTF practice labs &amp; security tools</span>
                   </div>
                   <div className="p-3 rounded-xl bg-surface-elevated/80 border border-border flex items-start gap-2.5">
                     <CheckCircle className="w-4 h-4 text-accent shrink-0 mt-0.5" />

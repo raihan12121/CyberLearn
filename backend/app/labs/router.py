@@ -11,7 +11,6 @@ from ..database import get_db
 from .. import models, schemas
 from ..auth.dependencies import get_current_user, require_subscription
 from ..config import settings
-from .terminal import terminal_manager
 
 router = APIRouter(
     prefix="/labs",
@@ -429,8 +428,4 @@ def unlock_socratic_hint(
         "cost": req.cost,
         "remaining_xp": current_user.xp
     }
-
-@router.websocket("/ws/{session_id}/terminal")
-async def websocket_terminal_endpoint(websocket: WebSocket, session_id: str):
-    await terminal_manager.handle_websocket(websocket, session_id)
 

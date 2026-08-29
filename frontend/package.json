@@ -10,8 +10,6 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
-    "@xterm/addon-fit": "^0.11.0",
-    "@xterm/xterm": "^6.0.0",
     "firebase": "^12.17.1",
     "framer-motion": "^12.40.0",
     "lucide-react": "^1.18.0",

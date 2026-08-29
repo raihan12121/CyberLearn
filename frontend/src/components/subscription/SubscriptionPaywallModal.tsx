@@ -10,7 +10,7 @@ import {
   Lock,
   ArrowRight,
   X,
-  Terminal,
+  Globe,
   BookOpen,
   Award,
 } from "lucide-react";
@@ -109,10 +109,10 @@ export default function SubscriptionPaywallModal({
               </div>
 
               <div className="p-3.5 rounded-xl bg-surface-elevated/60 border border-border flex items-start gap-3">
-                <Terminal className="w-5 h-5 text-accent shrink-0 mt-0.5" />
+                <Globe className="w-5 h-5 text-accent shrink-0 mt-0.5" />
                 <div className="space-y-0.5">
-                  <h4 className="text-xs font-bold text-foreground">Cloud Docker Sandboxes</h4>
-                  <p className="text-[11px] text-foreground-muted">Real Linux terminals, Wireshark, SQLi & CTF labs.</p>
+                  <h4 className="text-xs font-bold text-foreground">Interactive Security Labs</h4>
+                  <p className="text-[11px] text-foreground-muted">Live Web Proxy, Attack Graphs, SOC Logs &amp; CTF tools.</p>
                 </div>
               </div>
 
@@ -149,7 +149,7 @@ export default function SubscriptionPaywallModal({
                   <ul className="space-y-2 text-xs text-foreground-secondary">
                     <li className="flex items-center gap-2">
                       <Check className="w-3.5 h-3.5 text-accent shrink-0" />
-                      <span>Unlimited practice labs & sandboxes</span>
+                      <span>Unlimited practice labs & security tools</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <Check className="w-3.5 h-3.5 text-accent shrink-0" />

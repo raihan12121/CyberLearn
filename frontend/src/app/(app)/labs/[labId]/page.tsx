@@ -1,15 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
-  Terminal as TerminalIcon,
   Globe,
   Network,
   ShieldAlert,
   HelpCircle,
-  Play,
   RotateCcw,
   Flag,
   CheckCircle,
@@ -26,18 +24,16 @@ import WebProxyInspector from "@/components/labs/WebProxyInspector";
 import NetworkTopologyGraph from "@/components/labs/NetworkTopologyGraph";
 import SocLogWorkbench from "@/components/labs/SocLogWorkbench";
 import SocraticHintDrawer from "@/components/labs/SocraticHintDrawer";
-import XTermTerminal from "@/components/labs/XTermTerminal";
 
 export default function LabWorkspacePage() {
-
   const params = useParams();
   const router = useRouter();
-  const labId = (params?.labId as string) || "linux-navigation";
+  const labId = (params?.labId as string) || "sql-injection-bypass";
   const { user } = useAuthStore();
   const subscribed = isUserSubscribed(user);
 
   // Session & workspace state
-  const [activeTab, setActiveTab] = useState<"terminal" | "proxy" | "network" | "soc">("terminal");
+  const [activeTab, setActiveTab] = useState<"proxy" | "network" | "soc">("proxy");
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionStatus, setSessionStatus] = useState<"idle" | "running" | "completed">("idle");
   const [timeRemaining, setTimeRemaining] = useState<number>(1800);
@@ -46,19 +42,6 @@ export default function LabWorkspacePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isHintOpen, setIsHintOpen] = useState(false);
   const [paywallOpen, setPaywallOpen] = useState(false);
-
-  // Terminal state
-  const [terminalHistory, setTerminalHistory] = useState<Array<{ text: string; type: "cmd" | "output" | "error" | "sys" }>>([
-    { text: "CyberLearn Terminal v2.4 (Ubuntu 24.04 LTS)", type: "sys" },
-    { text: "Type 'help' to view available sandbox commands.", type: "sys" },
-  ]);
-  const [inputCmd, setInputCmd] = useState("");
-  const termEndRef = useRef<HTMLDivElement>(null);
-
-  // Auto scroll terminal
-  useEffect(() => {
-    termEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [terminalHistory]);
 
   // Launch lab session on mount (only for subscribed users)
   useEffect(() => {
@@ -84,51 +67,6 @@ export default function LabWorkspacePage() {
     }, 1000);
     return () => clearInterval(interval);
   }, [sessionStatus]);
-
-  // Handle Terminal Execution
-  const handleTerminalSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const cmd = inputCmd.trim();
-    if (!cmd) return;
-
-    const newHistory = [...terminalHistory, { text: `user@cyberlearn:~$ ${cmd}`, type: "cmd" as const }];
-    const lower = cmd.toLowerCase();
-
-    if (lower === "clear") {
-      setTerminalHistory([]);
-      setInputCmd("");
-      return;
-    } else if (lower === "help") {
-      newHistory.push({
-        text: "Available Commands: ls, cd, pwd, cat, nmap, curl, whoami, clear, flag-hint",
-        type: "sys",
-      });
-    } else if (lower === "ls" || lower === "ls -la") {
-      newHistory.push({
-        text: "drwxr-xr-x 2 root root 4096 Jul 22 10:00 .\ndrwxr-xr-x 3 root root 4096 Jul 22 10:00 ..\n-rw-r--r-- 1 root root  240 Jul 22 10:00 instructions.txt\n-r--r----- 1 root root   38 Jul 22 10:00 flag.txt",
-        type: "output",
-      });
-    } else if (lower === "pwd") {
-      newHistory.push({ text: "/home/learner/sandbox", type: "output" });
-    } else if (lower === "whoami") {
-      newHistory.push({ text: "learner (uid=1000, gid=1000)", type: "output" });
-    } else if (lower.startsWith("cat flag.txt") || lower.startsWith("cat instructions.txt")) {
-      newHistory.push({
-        text: "Hint: To retrieve the real flag, solve the lab objective or check the Socratic hints drawer!",
-        type: "output",
-      });
-    } else if (lower.startsWith("nmap")) {
-      newHistory.push({
-        text: "Starting Nmap 7.94 ( https://nmap.org )\nNmap scan report for 10.0.4.15\nPORT   STATE SERVICE\n22/tcp open  ssh\n80/tcp open  http\n443/tcp open https",
-        type: "output",
-      });
-    } else {
-      newHistory.push({ text: `bash: ${cmd}: command executed in virtual sandbox container environment`, type: "output" });
-    }
-
-    setTerminalHistory(newHistory);
-    setInputCmd("");
-  };
 
   // Flag Submission Handler
   const handleFlagSubmit = (e: React.FormEvent) => {
@@ -198,28 +136,28 @@ export default function LabWorkspacePage() {
               Pro Subscription Required
             </Badge>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground capitalize">
-              {labId.replace(/-/g, " ")} Sandbox Locked
+              {labId.replace(/-/g, " ")} Workspace Locked
             </h2>
             <p className="text-xs sm:text-sm text-foreground-secondary leading-relaxed">
-              Interactive Docker sandbox containers, root shell terminals, packet sniffers, and flag submission verify engines are exclusively available for Pro and Premium subscribers.
+              Interactive Web Security Proxy Inspector, Attack Network Topology Graph, SIEM Log Analyzer, and live Flag Verification engines are exclusively available for Pro and Premium subscribers.
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-xl mx-auto text-left py-2">
             <div className="p-3.5 rounded-xl bg-surface border border-border space-y-1">
               <div className="flex items-center gap-2 text-primary font-bold text-xs">
-                <TerminalIcon className="w-4 h-4" />
-                <span>Isolated Docker</span>
+                <Globe className="w-4 h-4" />
+                <span>Web Proxy</span>
               </div>
-              <p className="text-[11px] text-foreground-muted">Spin up fresh Kali &amp; Ubuntu instances on demand.</p>
+              <p className="text-[11px] text-foreground-muted">Live HTTP Repeater, header tamper, and injection payload tester.</p>
             </div>
 
             <div className="p-3.5 rounded-xl bg-surface border border-border space-y-1">
               <div className="flex items-center gap-2 text-accent font-bold text-xs">
-                <Globe className="w-4 h-4" />
-                <span>Security Tools</span>
+                <Network className="w-4 h-4" />
+                <span>Attack Graph</span>
               </div>
-              <p className="text-[11px] text-foreground-muted">Live HTTP Proxy, Wireshark, &amp; SOC Log Workbench.</p>
+              <p className="text-[11px] text-foreground-muted">Visual subnet map, port discovery, and host pivot analysis.</p>
             </div>
 
             <div className="p-3.5 rounded-xl bg-surface border border-border space-y-1">
@@ -239,7 +177,7 @@ export default function LabWorkspacePage() {
               className="w-full sm:w-auto font-bold shadow-lg"
             >
               <Zap className="w-4 h-4 mr-1.5" />
-              <span>Unlock Sandbox with Pro ($12/mo)</span>
+              <span>Unlock Practice Labs with Pro ($12/mo)</span>
             </Button>
             <Button
               variant="outline"
@@ -255,7 +193,7 @@ export default function LabWorkspacePage() {
         <SubscriptionPaywallModal
           isOpen={paywallOpen}
           onClose={() => setPaywallOpen(false)}
-          title="Unlock Practice Lab Sandboxes"
+          title="Unlock Practice Lab Workspaces"
           resourceName={labId.replace(/-/g, " ")}
         />
       </div>
@@ -272,7 +210,7 @@ export default function LabWorkspacePage() {
           </Button>
           <div>
             <h1 className="text-lg font-bold text-foreground capitalize">{labId.replace(/-/g, " ")} Workspace</h1>
-            <p className="text-xs text-foreground-muted">Sandbox Container ID: {sessionId || "Initializing..."}</p>
+            <p className="text-xs text-foreground-muted">Lab Session ID: {sessionId || "Active Workspace"}</p>
           </div>
         </div>
 
@@ -299,16 +237,6 @@ export default function LabWorkspacePage() {
 
       {/* Tool Navigation Tabs */}
       <div className="flex items-center gap-2 border-b border-border pb-2 overflow-x-auto">
-        <button
-          onClick={() => setActiveTab("terminal")}
-          className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-[var(--radius)] transition-all cursor-pointer ${
-            activeTab === "terminal" ? "bg-primary text-white" : "bg-surface text-foreground-secondary hover:text-foreground border border-border"
-          }`}
-        >
-          <TerminalIcon className="w-4 h-4" />
-          Interactive Terminal
-        </button>
-
         <button
           onClick={() => setActiveTab("proxy")}
           className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-[var(--radius)] transition-all cursor-pointer ${
@@ -342,11 +270,6 @@ export default function LabWorkspacePage() {
 
       {/* Active Tool Area */}
       <div className="min-h-[520px]">
-        {activeTab === "terminal" && (
-          <XTermTerminal sessionId={sessionId || "session-demo"} labId={labId} />
-        )}
-
-
         {activeTab === "proxy" && <WebProxyInspector labId={labId} />}
 
         {activeTab === "network" && <NetworkTopologyGraph />}
