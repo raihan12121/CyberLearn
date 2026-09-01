@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 1. User Profiles & Subcollections (courses, labs, certificates)
+    match /users/{userEmail} {
+      allow read, write: if true;
+      
+      match /{allSubcollections=**} {
+        allow read, write: if true;
+      }
+    }
+    
+    // 2. Cryptographic Certificates Registry
+    match /certificates/{certToken} {
+      allow read, write: if true;
+    }
+    
+    // 3. Community Forum Posts & Comments
+    match /community_posts/{postId} {
+      allow read, write: if true;
+      
+      match /comments/{commentId} {
+        allow read, write: if true;
+      }
+    }
+    
+    // 4. Global Fallback Allow
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
