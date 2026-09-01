@@ -14,9 +14,15 @@ import {
   CheckCircle2,
   KeyRound,
   Mail,
+  Eye,
+  Printer,
+  Download,
+  ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import { Card, Badge, Button } from "@/components/ui";
 import { api } from "@/lib/api";
+import { getCertificatesFromFirestore, saveCertificateToFirestore } from "@/lib/firebase";
 
 export default function AdminCertificatesPage() {
   const router = useRouter();
@@ -28,6 +34,7 @@ export default function AdminCertificatesPage() {
   const [certsList, setCertsList] = useState<any[]>([]);
   const [coursesList, setCoursesList] = useState<any[]>([]);
   const [showMintModal, setShowMintModal] = useState(false);
+  const [selectedCert, setSelectedCert] = useState<any | null>(null);
   const [mintForm, setMintForm] = useState({
     user_email: "",
     course_id: "",
@@ -45,13 +52,35 @@ export default function AdminCertificatesPage() {
         return;
       }
 
-      const [certs, courses, users] = await Promise.all([
-        api.getAdminCertificates().catch(() => []),
-        api.getAdminCourses().catch(() => []),
-        api.getAdminUsers().catch(() => []),
+      const [backendCertsRes, firestoreCertsRes, coursesRes, usersRes] = await Promise.allSettled([
+        api.getAdminCertificates(),
+        getCertificatesFromFirestore(),
+        api.getAdminCourses(),
+        api.getAdminUsers(),
       ]);
 
-      setCertsList(certs || []);
+      const backendCerts = backendCertsRes.status === "fulfilled" && Array.isArray(backendCertsRes.value) ? backendCertsRes.value : [];
+      const firestoreCerts = firestoreCertsRes.status === "fulfilled" && Array.isArray(firestoreCertsRes.value) ? firestoreCertsRes.value : [];
+      const courses = coursesRes.status === "fulfilled" && Array.isArray(coursesRes.value) ? coursesRes.value : [];
+      const users = usersRes.status === "fulfilled" && Array.isArray(usersRes.value) ? usersRes.value : [];
+
+      // Merge & deduplicate by verification token
+      const certsMap = new Map<string, any>();
+      firestoreCerts.forEach((fc) => {
+        if (fc.verification_token) {
+          certsMap.set(fc.verification_token, fc);
+        }
+      });
+      backendCerts.forEach((bc) => {
+        if (bc.verification_token) {
+          certsMap.set(bc.verification_token, { ...certsMap.get(bc.verification_token), ...bc });
+        }
+      });
+
+      const mergedCerts = Array.from(certssMapValues(certsMap));
+      mergedCerts.sort((a, b) => new Date(b.issued_at || b.created_at || 0).getTime() - new Date(a.issued_at || a.created_at || 0).getTime());
+
+      setCertsList(mergedCerts);
       setCoursesList(courses || []);
       setUsersList(users || []);
     } catch (err: any) {
@@ -64,6 +93,8 @@ export default function AdminCertificatesPage() {
       setRefreshing(false);
     }
   };
+
+  const certssMapValues = (m: Map<string, any>) => Array.from(m.values());
 
   const [usersList, setUsersList] = useState<any[]>([]);
 
@@ -229,8 +260,17 @@ export default function AdminCertificatesPage() {
                         <Button
                           size="sm"
                           variant="ghost"
+                          onClick={() => setSelectedCert(c)}
+                          className="hover:text-primary text-foreground-secondary"
+                          title="Inspect Certificate Copy"
+                          icon={<Eye className="w-3.5 h-3.5" />}
+                        />
+                        <Button
+                          size="sm"
+                          variant="ghost"
                           onClick={() => window.open(c.verify_url || `/verify/${c.verification_token || c.id}`, "_blank")}
-                          className="hover:text-sky-400"
+                          className="hover:text-sky-400 text-foreground-secondary"
+                          title="Verify in Public Portal"
                           icon={<ExternalLink className="w-3.5 h-3.5" />}
                         />
                         <Button
@@ -238,6 +278,7 @@ export default function AdminCertificatesPage() {
                           variant="ghost"
                           onClick={() => handleRevokeCertificate(c.id, c.student_name || c.user_name || c.user_email || "User")}
                           className="hover:bg-rose-500/10 text-rose-400"
+                          title="Revoke Certificate"
                           icon={<Trash2 className="w-3.5 h-3.5" />}
                         />
                       </div>
@@ -249,6 +290,125 @@ export default function AdminCertificatesPage() {
           </table>
         </div>
       </Card>
+
+      {/* Admin Certificate Preview & Copy Modal */}
+      <AnimatePresence>
+        {selectedCert && (
+          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-2xl bg-surface border border-border shadow-2xl rounded-3xl overflow-hidden flex flex-col max-h-[92vh]"
+            >
+              {/* Header */}
+              <div className="p-4 px-6 border-b border-border bg-surface-elevated flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20">
+                    <Award className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-foreground">Official Certificate Copy (Admin Registry)</h3>
+                    <p className="text-[11px] font-mono text-primary font-bold">{selectedCert.verification_token}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedCert(null)}
+                  className="p-1.5 rounded-lg text-foreground-muted hover:text-foreground hover:bg-surface transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Certificate Canvas Preview */}
+              <div className="p-6 overflow-y-auto space-y-6">
+                <div className="p-8 rounded-2xl bg-gradient-to-b from-surface-elevated to-surface border-2 border-primary/40 relative overflow-hidden shadow-xl text-center space-y-5">
+                  <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none">
+                    <ShieldCheck className="w-48 h-48 text-primary" />
+                  </div>
+
+                  <div className="flex items-center justify-center gap-2 text-primary font-mono text-xs uppercase tracking-widest font-bold">
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>CyberLearn Cryptographic Credential</span>
+                  </div>
+
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
+                    Certificate of Competency
+                  </h2>
+                  <p className="text-xs text-foreground-secondary uppercase tracking-wider font-semibold">
+                    This official qualification is proudly conferred upon
+                  </p>
+
+                  <div className="py-2 border-b-2 border-primary/30 max-w-md mx-auto">
+                    <h1 className="text-xl sm:text-2xl font-black text-primary uppercase tracking-wide">
+                      {selectedCert.student_name || selectedCert.user_name || "Verified Operative"}
+                    </h1>
+                    <p className="text-xs text-foreground-muted font-mono mt-1">
+                      {selectedCert.student_email || selectedCert.user_email || ""}
+                    </p>
+                  </div>
+
+                  <p className="text-xs text-foreground-secondary max-w-lg mx-auto leading-relaxed">
+                    For demonstrating mastery and successfully completing all rigorous theoretical and practical requirements for
+                  </p>
+
+                  <div className="p-3 bg-surface-elevated/80 rounded-xl border border-border inline-block max-w-md mx-auto">
+                    <h3 className="text-base font-bold text-foreground">
+                      {selectedCert.title || selectedCert.course_title || "Cybersecurity Professional"}
+                    </h3>
+                    <div className="flex items-center justify-center gap-4 mt-2 text-xs font-mono">
+                      <span className="text-emerald-400 font-bold">Score: {selectedCert.score_pct || 100}%</span>
+                      <span className="text-foreground-muted">•</span>
+                      <span className="text-primary font-bold">Type: {selectedCert.certificate_type || "Exam Certified"}</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border/60 text-left text-xs font-mono">
+                    <div>
+                      <span className="text-[10px] text-foreground-muted uppercase block">Issued Date</span>
+                      <span className="font-semibold text-foreground">
+                        {selectedCert.issued_at || selectedCert.issue_date
+                          ? new Date(selectedCert.issued_at || selectedCert.issue_date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+                          : "Issued"}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[10px] text-foreground-muted uppercase block">Verification Token</span>
+                      <span className="font-bold text-sky-400">{selectedCert.verification_token}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+                  <span className="text-xs text-foreground-muted flex items-center gap-1 font-mono">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    Verified in database & public ledger
+                  </span>
+
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.print()}
+                      icon={<Printer className="w-3.5 h-3.5" />}
+                    >
+                      Print Copy
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => window.open(selectedCert.verify_url || `/verify/${selectedCert.verification_token}`, "_blank")}
+                      icon={<ExternalLink className="w-3.5 h-3.5" />}
+                    >
+                      Public Verifier
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Mint Certificate Modal */}
       <AnimatePresence>

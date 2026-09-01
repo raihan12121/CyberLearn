@@ -358,10 +358,6 @@ def check_and_issue_course_completion(current_user: models.User, course_id: str,
     ).count()
 
     if completed_count >= total_lessons:
-        # Rule: Certificate is only minted if ID verification is completed!
-        if current_user.verification_status != "verified":
-            return None
-
         existing_cert = db.query(models.Certificate).filter(
             models.Certificate.user_id == current_user.id,
             models.Certificate.course_id == course_id
@@ -369,7 +365,7 @@ def check_and_issue_course_completion(current_user: models.User, course_id: str,
         if not existing_cert:
             import uuid
             from datetime import datetime, timezone
-            course_code = "".join([w[0] for w in course.title.split() if w.isalpha()]).upper()[:6]
+            course_code = "".join([w[0] for w in course.title.split() if w.isalpha()]).upper()[:6] or "CERT"
             token = f"CERT-{course_code}-{uuid.uuid4().hex[:8].upper()}"
             new_cert = models.Certificate(
                 user_id=current_user.id,

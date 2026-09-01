@@ -20,6 +20,8 @@ import {
   Fingerprint,
 } from "lucide-react";
 import { api } from "@/lib/api";
+import { useAuthStore } from "@/lib/authStore";
+import { saveCertificateToFirestore } from "@/lib/firebase";
 
 interface Question {
   id: string;
@@ -65,6 +67,7 @@ export default function CourseExamPage() {
   const params = useParams();
   const router = useRouter();
   const courseId = params.courseId as string;
+  const { user } = useAuthStore();
 
   const [exam, setExam] = useState<ExamData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -143,6 +146,21 @@ export default function CourseExamPage() {
 
       const res = await api.submitExam(exam.id, payload);
       setResult(res);
+
+      if (res.certificate_token && user?.email) {
+        saveCertificateToFirestore({
+          verification_token: res.certificate_token,
+          user_id: user.id,
+          student_name: user.full_name || user.username || "Verified Operative",
+          student_email: user.email,
+          title: exam.title,
+          exam_id: exam.id,
+          course_id: exam.course_id,
+          certificate_type: "exam_certified",
+          score_pct: res.score_pct,
+          issued_at: new Date().toISOString(),
+        }).catch(() => {});
+      }
     } catch (err: any) {
       alert(`Submission error: ${err.message}`);
     } finally {

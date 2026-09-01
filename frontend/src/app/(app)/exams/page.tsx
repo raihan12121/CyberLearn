@@ -27,6 +27,7 @@ import {
 import { Card, Badge, Button, ProgressBar } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/lib/authStore";
+import { saveCertificateToFirestore } from "@/lib/firebase";
 
 interface ExamItem {
   id: string;
@@ -191,13 +192,29 @@ export default function ExamsPage() {
     try {
       const result = await api.submitExam(activeExam.id, payloadAnswers);
       setExamResult(result);
+
+      if (result.certificate_token && user?.email) {
+        saveCertificateToFirestore({
+          verification_token: result.certificate_token,
+          user_id: user.id,
+          student_name: user.full_name || user.username || "Verified Operative",
+          student_email: user.email,
+          title: activeExam.title,
+          exam_id: activeExam.id,
+          course_id: activeExam.course_id,
+          certificate_type: "exam_certified",
+          score_pct: result.score_pct,
+          issued_at: new Date().toISOString(),
+        }).catch(() => {});
+      }
+
       loadExams(); // Refresh submissions & certificates
     } catch (err: any) {
       alert(err.message || "Failed to evaluate exam submission.");
     } finally {
       setIsSubmitting(false);
     }
-  }, [activeExam, selectedAnswers]);
+  }, [activeExam, selectedAnswers, user]);
 
   const handleAutoSubmit = useCallback(() => {
     handleSubmitExam();

@@ -383,33 +383,31 @@ def submit_exam(
     is_verified = (current_user.verification_status == "verified")
 
     if passed:
-        # Mandatory Rule: Certificate is only minted if ID verification is completed!
-        if is_verified:
-            existing_cert = db.query(models.Certificate).filter(
-                models.Certificate.user_id == current_user.id,
-                models.Certificate.exam_id == exam.id
-            ).first()
+        existing_cert = db.query(models.Certificate).filter(
+            models.Certificate.user_id == current_user.id,
+            models.Certificate.exam_id == exam.id
+        ).first()
 
-            if not existing_cert:
-                code_prefix = "".join([w[0] for w in exam.title.split() if w.isalpha()]).upper()[:6]
-                cert_token = f"CERT-{code_prefix}-{uuid.uuid4().hex[:8].upper()}"
-                
-                # Award Exam Passing XP
-                current_user.xp += 800
+        if not existing_cert:
+            code_prefix = "".join([w[0] for w in exam.title.split() if w.isalpha()]).upper()[:6] or "CERT"
+            cert_token = f"CERT-{code_prefix}-{uuid.uuid4().hex[:8].upper()}"
+            
+            # Award Exam Passing XP
+            current_user.xp += 800
 
-                new_cert = models.Certificate(
-                    user_id=current_user.id,
-                    course_id=exam.course_id,
-                    exam_id=exam.id,
-                    score_pct=score_pct,
-                    certificate_type="exam_certified",
-                    verification_token=cert_token,
-                    issued_at=datetime.now(timezone.utc)
-                )
-                db.add(new_cert)
-            else:
-                cert_token = existing_cert.verification_token
-                existing_cert.score_pct = max(float(existing_cert.score_pct or 0), score_pct)
+            new_cert = models.Certificate(
+                user_id=current_user.id,
+                course_id=exam.course_id,
+                exam_id=exam.id,
+                score_pct=score_pct,
+                certificate_type="exam_certified",
+                verification_token=cert_token,
+                issued_at=datetime.now(timezone.utc)
+            )
+            db.add(new_cert)
+        else:
+            cert_token = existing_cert.verification_token
+            existing_cert.score_pct = max(float(existing_cert.score_pct or 0), score_pct)
 
     # Save Exam Submission Record
     db_submission = models.ExamSubmission(

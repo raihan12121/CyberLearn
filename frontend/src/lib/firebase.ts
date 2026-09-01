@@ -470,3 +470,76 @@ export async function deleteCommunityPostFromFirestore(postId: string): Promise<
     console.warn("Firestore deleteCommunityPost warning:", err);
   }
 }
+
+// =========================================================================
+// CLOUD FIRESTORE CERTIFICATES REGISTRY PERMANENT STORAGE
+// =========================================================================
+
+export interface CertificateData {
+  id?: string;
+  verification_token: string;
+  user_id?: string;
+  student_name: string;
+  student_email: string;
+  title: string;
+  course_id?: string;
+  exam_id?: string;
+  certificate_type: string;
+  score_pct: number;
+  issued_at: string;
+}
+
+/**
+ * Permanently saves an issued certificate into Cloud Firestore.
+ */
+export async function saveCertificateToFirestore(cert: CertificateData): Promise<void> {
+  if (!cert || !cert.verification_token) return;
+
+  try {
+    const certDocRef = doc(firestore, "certificates", cert.verification_token);
+    await setDoc(
+      certDocRef,
+      {
+        ...cert,
+        updated_at: serverTimestamp(),
+      },
+      { merge: true }
+    );
+
+    // Also link under user's document
+    if (cert.student_email) {
+      const userCertRef = doc(
+        firestore,
+        "users",
+        cert.student_email.toLowerCase().trim(),
+        "certificates",
+        cert.verification_token
+      );
+      await setDoc(userCertRef, cert, { merge: true });
+    }
+  } catch (err) {
+    console.warn("Firestore saveCertificate warning:", err);
+  }
+}
+
+/**
+ * Retrieves all certificates from Cloud Firestore.
+ */
+export async function getCertificatesFromFirestore(): Promise<any[]> {
+  try {
+    const q = query(
+      collection(firestore, "certificates"),
+      orderBy("issued_at", "desc"),
+      limit(100)
+    );
+    const snap = await getDocs(q);
+    const results: any[] = [];
+    snap.forEach((d) => {
+      results.push(d.data());
+    });
+    return results;
+  } catch (err) {
+    console.warn("Firestore getCertificates warning:", err);
+    return [];
+  }
+}
