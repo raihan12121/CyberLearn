@@ -12,6 +12,12 @@ import {
   Filter,
   Flame,
   Lock,
+  Terminal as TerminalIcon,
+  Network,
+  ShieldAlert,
+  Server,
+  Layers,
+  Cpu
 } from "lucide-react";
 import { Card, Badge, Button } from "@/components/ui";
 import { api } from "@/lib/api";
@@ -19,198 +25,139 @@ import { useAuthStore, isUserSubscribed } from "@/lib/authStore";
 import SubscriptionBanner from "@/components/subscription/SubscriptionBanner";
 import SubscriptionPaywallModal from "@/components/subscription/SubscriptionPaywallModal";
 
-const categories = ["All", "Linux", "Web Security", "Networking", "Privilege Escalation", "Crypto", "CTF & OSINT"];
+const categories = ["All", "Linux", "Web Security", "Networking", "SOC & SIEM", "Cloud & Containers"];
 
-const labs = [
+export interface LabWorkbenchItem {
+  id: string;
+  title: string;
+  category: string;
+  difficulty: "Easy" | "Medium" | "Hard" | "Expert";
+  timeLimit: string;
+  xp: number;
+  desc: string;
+  tools: string[];
+  template: string;
+}
+
+const handsOnLabs: LabWorkbenchItem[] = [
   {
     id: "linux-navigation",
-    title: "Linux Command Navigation",
+    title: "Linux Command & Shell Mastery",
     category: "Linux",
     difficulty: "Easy",
     timeLimit: "30 mins",
     xp: 100,
-    desc: "Practice filesystem navigation using commands like cd, ls, and pwd in an interactive lab environment.",
+    desc: "Hands-on Linux PTY shell. Practice directory navigation, file permissions, pipe redirection, and custom bash scripts.",
+    tools: ["Linux PTY", "Bash CLI", "File Explorer"],
     template: "linux-basic",
   },
   {
     id: "sql-injection-bypass",
-    title: "SQL Injection Bypass",
+    title: "SQL Injection Authentication Bypass",
     category: "Web Security",
     difficulty: "Medium",
     timeLimit: "45 mins",
     xp: 250,
-    desc: "Bypass standard authentication mechanisms by exploiting vulnerable SQL search queries.",
+    desc: "Interactive Web Security workbench. Inspect HTTP requests with the Web Proxy Repeater, tamper headers, and extract database tables.",
+    tools: ["Web Proxy Repeater", "Header Tamper", "SQLi Inspector"],
     template: "web-security",
   },
   {
     id: "packet-sniffer-recon",
-    title: "Packet Sniffer & Wireshark",
+    title: "Wireshark Packet Sniffing & ARP Topology",
     category: "Networking",
     difficulty: "Medium",
     timeLimit: "60 mins",
     xp: 300,
-    desc: "Intercept traffic on a local area network to capture plaintext login credentials.",
+    desc: "Real-time Attack Network Topology Graph. Visualize subnet routers, inspect promiscuous mode PCAPs, and analyze rogue ARP frames.",
+    tools: ["Network Topology Graph", "TCPDump Stream", "Subnet Map"],
     template: "networking",
   },
   {
-    id: "book-recon",
-    title: "Book Recon",
-    category: "OSINT",
-    difficulty: "Easy",
-    timeLimit: "30 mins",
-    xp: 100,
-    desc: "Find the flag hidden in the vulnerable web application using intelligence methodologies.",
-    template: "osint-basic",
-  },
-  {
-    id: "sql-beginner",
-    title: "SQL Beginner",
-    category: "Web Security",
-    difficulty: "Easy",
-    timeLimit: "30 mins",
-    xp: 150,
-    desc: "Exploit a basic SQL injection vulnerability to retrieve the flag.",
-    template: "web-security",
-  },
-  {
-    id: "ctf-101",
-    title: "Capture The Flag 101",
-    category: "CTF",
+    id: "siem-soc-investigation",
+    title: "SOC SIEM Syslog & Threat Hunting",
+    category: "SOC & SIEM",
     difficulty: "Medium",
     timeLimit: "45 mins",
-    xp: 250,
-    desc: "Your first multi-step CTF challenge. Follow the breadcrumbs.",
-    template: "ctf-basic",
+    xp: 350,
+    desc: "Full SOC Log Investigation workbench. Correlate Apache access logs, SSH brute-force attempts, and Windows Event logs for IOCs.",
+    tools: ["SOC Log Analyzer", "SIEM Filter", "IOC Hunter"],
+    template: "soc-analyst",
   },
   {
-    id: "linux-privesc",
-    title: "Linux Privesc",
-    category: "Linux",
+    id: "container-sandbox-escape",
+    title: "Docker Container Sandbox Escape",
+    category: "Cloud & Containers",
     difficulty: "Hard",
     timeLimit: "60 mins",
     xp: 500,
-    desc: "Escalate your privileges on a Linux machine to read the root flag.",
-    template: "linux-basic",
+    desc: "Investigate misconfigured Docker daemon sockets (`/var/run/docker.sock`), abuse SYS_PTRACE capabilities, and break out to host root.",
+    tools: ["Docker CLI", "Linux PTY", "Privesc Scanner"],
+    template: "container-sandbox",
   },
   {
-    id: "bug-hunter",
-    title: "Bug Hunter",
-    category: "Web Security",
-    difficulty: "Expert",
-    timeLimit: "90 mins",
-    xp: 1000,
-    desc: "Find and chain multiple vulnerabilities in a complex web app.",
-    template: "web-security",
-  },
-  {
-    id: "root-access",
-    title: "Root Access",
-    category: "Privilege Escalation",
-    difficulty: "Medium",
-    timeLimit: "45 mins",
-    xp: 300,
-    desc: "Gain root access to the system using misconfigurations.",
-    template: "linux-basic",
-  },
-  {
-    id: "xss-master",
-    title: "XSS Master",
+    id: "xss-filter-bypass",
+    title: "Cross-Site Scripting (XSS) Sanitization",
     category: "Web Security",
     difficulty: "Medium",
     timeLimit: "40 mins",
     xp: 200,
-    desc: "Bypass XSS filters and execute arbitrary JavaScript.",
+    desc: "Tamper with DOM contexts, evade WAF keyword filters, and craft cookie-stealing payloads using the Web Proxy Inspector.",
+    tools: ["Web Proxy Inspector", "DOM Analyzer", "Payload Tester"],
     template: "web-security",
   },
   {
-    id: "network-sniffer",
-    title: "Network Sniffer",
-    category: "Networking",
-    difficulty: "Easy",
-    timeLimit: "30 mins",
-    xp: 120,
-    desc: "Analyze network traffic to extract credentials.",
-    template: "networking",
+    id: "cloud-iam-misconfig",
+    title: "Cloud Security & IAM Least Privilege",
+    category: "Cloud & Containers",
+    difficulty: "Medium",
+    timeLimit: "45 mins",
+    xp: 320,
+    desc: "Audit permissive Cloud IAM policies (`*` wildcard permissions), identify privilege escalation paths, and enforce least privilege.",
+    tools: ["Cloud IAM Inspector", "Policy Auditor", "Terminal"],
+    template: "cloud-security",
   },
   {
-    id: "crypto-basics",
-    title: "Crypto Basics",
-    category: "Crypto",
-    difficulty: "Easy",
-    timeLimit: "30 mins",
-    xp: 100,
-    desc: "Decode encrypted messages using classic ciphers.",
-    template: "crypto-basic",
+    id: "network-pivot-defense",
+    title: "Subnet Pivoting & Firewall Hardening",
+    category: "Networking",
+    difficulty: "Hard",
+    timeLimit: "60 mins",
+    xp: 450,
+    desc: "Map multi-tier DMZ network graphs, configure iptables firewall rules, and establish encrypted SSH dynamic SOCKS tunnels.",
+    tools: ["Network Topology Graph", "SSH Tunnel", "iptables Hardening"],
+    template: "networking",
   },
 ];
 
 const difficultyColor: Record<string, "success" | "primary" | "warning" | "danger"> = {
   Easy: "success",
-  Medium: "warning",
-  Hard: "danger",
+  Medium: "primary",
+  Hard: "warning",
   Expert: "danger",
 };
 
-export default function LabsCatalogPage() {
+export default function PracticeLabsPage() {
   const router = useRouter();
   const { user } = useAuthStore();
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
-  const [labList, setLabList] = useState(labs);
+  const [labList, setLabList] = useState<LabWorkbenchItem[]>(handsOnLabs);
   const [paywallModalOpen, setPaywallModalOpen] = useState(false);
   const [selectedLabForPaywall, setSelectedLabForPaywall] = useState<string | undefined>(undefined);
 
   const subscribed = isUserSubscribed(user);
 
-  useEffect(() => {
-    api.getLabs()
-      .then((data) => {
-        if (data && data.length > 0) {
-          const merged = data.map((l: { id: string; xp_reward?: number; description?: string; type?: string; container_template?: string }) => {
-            const local = labs.find((loc) => loc.id === l.id);
-            return {
-              ...l,
-              timeLimit: local ? local.timeLimit : "45 mins",
-              xp: l.xp_reward || (local ? local.xp : 100),
-              desc: l.description || (local ? local.desc : ""),
-              category: l.type || (local ? local.category : "Web Security"),
-              template: l.container_template || (local ? local.template : ""),
-            };
-          });
-          setLabList(merged);
-        }
-      })
-      .catch((err) => console.log("Backend offline, utilizing local lab list:", err));
-  }, []);
-
   const filtered = labList.filter((l) => {
-    let matchCategory = false;
-    if (activeCategory === "All") {
-      matchCategory = true;
-    } else {
+    let matchCategory = activeCategory === "All";
+    if (!matchCategory) {
       const cat = (l.category || "").toLowerCase();
       const act = activeCategory.toLowerCase();
-      const labId = (l.id || "").toLowerCase();
-
-      if (act.includes("linux")) {
-        matchCategory = cat.includes("linux") || labId.includes("linux");
-      } else if (act.includes("privilege") || act.includes("privesc")) {
-        matchCategory = cat.includes("priv") || cat.includes("escalation") || labId.includes("privesc") || labId.includes("root-access");
-      } else if (act.includes("web")) {
-        matchCategory = cat.includes("web") || labId.includes("sql") || labId.includes("xss") || labId.includes("bug");
-      } else if (act.includes("network")) {
-        matchCategory = cat.includes("network") || labId.includes("sniffer") || labId.includes("wireshark");
-      } else if (act.includes("crypto")) {
-        matchCategory = cat.includes("crypto") || labId.includes("crypto");
-      } else if (act.includes("ctf") || act.includes("osint")) {
-        matchCategory = cat.includes("ctf") || cat.includes("osint") || labId.includes("ctf") || labId.includes("recon");
-      } else {
-        matchCategory = cat === act || cat.includes(act) || act.includes(cat);
-      }
+      matchCategory = cat === act || cat.includes(act) || act.includes(cat);
     }
 
     const labTitle = (l.title || "").toLowerCase();
-    const labDesc = (l.desc || (l as any).description || "").toLowerCase();
+    const labDesc = (l.desc || "").toLowerCase();
     const q = searchQuery.toLowerCase().trim();
     const matchSearch = !q || labTitle.includes(q) || labDesc.includes(q);
     return matchCategory && matchSearch;
@@ -231,9 +178,14 @@ export default function LabsCatalogPage() {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Labs</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-foreground">Interactive Hands-On Labs</h1>
+              <Badge variant="primary" size="sm" className="font-mono uppercase text-[10px] tracking-wider">
+                Live Workbenches
+              </Badge>
+            </div>
             <p className="text-foreground-secondary mt-1">
-              Practice hands-on web security exploits, network topology analysis, and SOC log investigations.
+              Sandboxed Linux terminals, HTTP web proxy repeaters, attack network topology graphs, and SOC SIEM log analyzers.
             </p>
           </div>
           <Card padding="sm" className="flex items-center gap-3 bg-surface-elevated/50">
@@ -241,7 +193,7 @@ export default function LabsCatalogPage() {
             <div>
               <p className="text-xs text-foreground-secondary">Security Tooling</p>
               <p className="text-sm font-semibold text-foreground">
-                {subscribed ? "Labs Ready" : "Subscription Required"}
+                {subscribed ? "Live Workbenches Ready" : "Pro Subscription Required"}
               </p>
             </div>
           </Card>
@@ -264,7 +216,7 @@ export default function LabsCatalogPage() {
               onClick={() => setActiveCategory(cat)}
               className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-full shrink-0 transition-all duration-200 cursor-pointer ${
                 activeCategory === cat
-                  ? "bg-primary text-white"
+                  ? "bg-primary text-white shadow-md shadow-primary/20"
                   : "bg-surface-elevated text-foreground-secondary hover:text-foreground border border-border"
               }`}
             >
@@ -276,7 +228,7 @@ export default function LabsCatalogPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-muted" />
           <input
             type="text"
-            placeholder="Search labs..."
+            placeholder="Search hands-on labs..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-surface-elevated border border-border rounded-[var(--radius-lg)] pl-9 pr-4 py-2 text-sm text-foreground placeholder:text-foreground-muted focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary-glow transition-all duration-200"
@@ -285,7 +237,7 @@ export default function LabsCatalogPage() {
       </div>
 
       {/* Labs Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {filtered.map((lab, i) => (
           <motion.div
             key={lab.id}
@@ -293,62 +245,65 @@ export default function LabsCatalogPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
           >
-            <Card hover padding="lg" className="h-full flex flex-col justify-between group relative">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <Badge variant="primary" size="sm">{lab.category}</Badge>
-                  <div className="flex items-center gap-1.5">
-                    {!subscribed && (
-                      <Badge variant="primary" size="sm" className="gap-1 text-[10px] font-bold">
-                        <Lock className="w-3 h-3" />
-                        PRO
-                      </Badge>
-                    )}
-                    <Badge variant={difficultyColor[lab.difficulty]} size="sm">
-                      {lab.difficulty}
-                    </Badge>
-                  </div>
-                </div>
-
-                <h3 className="text-lg font-bold text-foreground mb-2 leading-snug group-hover:text-primary transition-colors">
-                  {lab.title}
-                </h3>
-                <p className="text-sm text-foreground-secondary mb-4 leading-relaxed line-clamp-3">
-                  {lab.desc}
-                </p>
+            <Card hover padding="lg" className="h-full flex flex-col group relative overflow-hidden">
+              <div className="flex items-center justify-between mb-3">
+                <Badge variant="primary" size="sm">{lab.category}</Badge>
+                <Badge variant={difficultyColor[lab.difficulty]} size="sm">
+                  {lab.difficulty}
+                </Badge>
               </div>
 
-              <div>
-                <div className="flex items-center gap-4 text-xs text-foreground-muted mb-4 border-t border-border pt-4">
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5" />
-                    {lab.timeLimit} limit
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Zap className="w-3.5 h-3.5 text-primary" />
-                    {lab.xp} XP Reward
-                  </span>
-                </div>
+              <h3 className="text-base font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">
+                {lab.title}
+              </h3>
+              
+              <p className="text-xs sm:text-sm text-foreground-secondary mb-4 flex-1 leading-relaxed">
+                {lab.desc}
+              </p>
 
-                <Button
-                  fullWidth
-                  onClick={() => handleLaunchLab(lab.id, lab.title)}
-                  variant={!subscribed ? "outline" : "primary"}
-                  className={subscribed ? "group-hover:bg-primary group-hover:text-white transition-all duration-200" : ""}
-                  icon={!subscribed ? <Lock className="w-4 h-4 text-primary" /> : <Globe className="w-4 h-4" />}
-                >
-                  {!subscribed ? "Unlock Lab (Pro)" : "Launch Lab"}
-                </Button>
+              {/* Toolset Chips */}
+              <div className="flex flex-wrap gap-1.5 mb-4">
+                {lab.tools.map((t) => (
+                  <span
+                    key={t}
+                    className="px-2 py-0.5 rounded text-[10px] font-mono bg-surface border border-primary/20 text-primary"
+                  >
+                    ⚡ {t}
+                  </span>
+                ))}
               </div>
+
+              <div className="flex items-center gap-4 text-xs text-foreground-muted mb-4 pt-2 border-t border-border/50">
+                <span className="flex items-center gap-1 font-mono font-bold text-primary">
+                  <Zap className="w-3.5 h-3.5" />
+                  +{lab.xp} XP
+                </span>
+                <span className="flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5" />
+                  {lab.timeLimit}
+                </span>
+              </div>
+
+              <Button
+                variant={subscribed ? "primary" : "outline"}
+                size="sm"
+                fullWidth
+                onClick={() => handleLaunchLab(lab.id, lab.title)}
+                icon={subscribed ? <TerminalIcon className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+                className="font-semibold shadow-md"
+              >
+                {subscribed ? "Launch Lab Workbench" : "Unlock with Pro"}
+              </Button>
             </Card>
           </motion.div>
         ))}
       </div>
 
+      {/* Paywall Modal */}
       <SubscriptionPaywallModal
         isOpen={paywallModalOpen}
         onClose={() => setPaywallModalOpen(false)}
-        title="Unlock Interactive Practice Labs"
+        title="Unlock Interactive Labs"
         resourceName={selectedLabForPaywall}
       />
     </div>
