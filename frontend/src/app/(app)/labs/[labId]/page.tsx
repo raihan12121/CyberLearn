@@ -20,6 +20,7 @@ import {
 import { Card, Badge, Button } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useAuthStore, isUserSubscribed } from "@/lib/authStore";
+import { saveLabSolveToFirestore } from "@/lib/firebase";
 import SubscriptionPaywallModal from "@/components/subscription/SubscriptionPaywallModal";
 import WebProxyInspector from "@/components/labs/WebProxyInspector";
 import NetworkTopologyGraph from "@/components/labs/NetworkTopologyGraph";
@@ -89,6 +90,9 @@ export default function LabWorkspacePage() {
         if (res.correct) {
           setFlagFeedback({ success: true, msg: res.message || "Flag accepted! XP awarded." });
           setSessionStatus("completed");
+          if (user?.email) {
+            saveLabSolveToFirestore(user.email, labId, userFlag.trim(), 100).catch(() => {});
+          }
         } else {
           setFlagFeedback({ success: false, msg: res.message || "Incorrect flag payload. Try again!" });
         }

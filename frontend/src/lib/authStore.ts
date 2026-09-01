@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { api, getAuthToken } from "./api";
+import { saveUserToFirestore, getUserFromFirestore } from "./firebase";
 
 export interface UserProfile {
   id: string;
@@ -101,15 +102,62 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     try {
       const data = await api.getMe();
-      set({ user: data, loading: false, lastFetched: Date.now(), error: null });
-      if (typeof window !== "undefined" && data) {
+      let mergedData: UserProfile = { ...data };
+
+      // Permanently sync & restore from Cloud Firestore
+      try {
+        if (data && data.email) {
+          const firestoreUser = await getUserFromFirestore(data.email);
+          if (firestoreUser) {
+            // Restore persistent subscription if active in Firestore
+            if (firestoreUser.subscription_status === "active") {
+              mergedData.subscription_status = "active";
+              mergedData.subscription_tier = firestoreUser.subscription_tier || "pro";
+              mergedData.subscription_expires_at = firestoreUser.subscription_expires_at;
+              mergedData.is_subscribed = true;
+              if (firestoreUser.role && firestoreUser.role !== "student") {
+                mergedData.role = firestoreUser.role;
+              }
+            }
+          }
+          // Backup latest profile to Cloud Firestore permanently
+          await saveUserToFirestore(mergedData);
+        }
+      } catch (fsErr) {
+        console.warn("Firestore sync notification:", fsErr);
+      }
+
+      set({ user: mergedData, loading: false, lastFetched: Date.now(), error: null });
+      if (typeof window !== "undefined" && mergedData) {
         try {
-          localStorage.setItem("cyberlearn_user_profile", JSON.stringify(data));
+          localStorage.setItem("cyberlearn_user_profile", JSON.stringify(mergedData));
         } catch {}
       }
-      return data;
+      return mergedData;
     } catch (err: any) {
-      // If unauthorized, clear user
+      // If backend network fails, attempt fallback restore from Cloud Firestore & localStorage
+      try {
+        const stored = typeof window !== "undefined" ? localStorage.getItem("cyberlearn_user_profile") : null;
+        if (stored) {
+          const localUser = JSON.parse(stored);
+          if (localUser && localUser.email) {
+            const firestoreUser = await getUserFromFirestore(localUser.email);
+            if (firestoreUser) {
+              const restored: UserProfile = {
+                ...localUser,
+                ...firestoreUser,
+                is_subscribed: firestoreUser.subscription_status === "active",
+              };
+              set({ user: restored, loading: false, lastFetched: Date.now(), error: null });
+              return restored;
+            }
+            set({ user: localUser, loading: false, lastFetched: Date.now(), error: null });
+            return localUser;
+          }
+        }
+      } catch {}
+
+      // If truly unauthorized, clear user
       set({ user: null, loading: false, error: err?.message || "Failed to fetch user" });
       if (typeof window !== "undefined") {
         try {
@@ -126,6 +174,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       try {
         if (user) {
           localStorage.setItem("cyberlearn_user_profile", JSON.stringify(user));
+          saveUserToFirestore(user).catch(() => {});
         } else {
           localStorage.removeItem("cyberlearn_user_profile");
         }

@@ -28,6 +28,7 @@ import {
 import { Card, Badge, Button } from "@/components/ui";
 import { api, getAuthToken, setAuthToken, removeAuthToken } from "@/lib/api";
 import { useAuthStore } from "@/lib/authStore";
+import { saveSubscriptionToFirestore } from "@/lib/firebase";
 import Link from "next/link";
 
 interface PlanConfig {
@@ -278,6 +279,20 @@ function CheckoutContent() {
         billing_zip: billingZip,
         promo_code: appliedPromo?.code,
       });
+
+      // Permanently save active subscription in Cloud Firestore
+      const currentUser = useAuthStore.getState().user;
+      if (currentUser?.email) {
+        const expDate = new Date();
+        expDate.setDate(expDate.getDate() + (durationMonths === 12 ? 365 : durationMonths * 30));
+        await saveSubscriptionToFirestore(
+          currentUser.email,
+          plan.name,
+          "active",
+          expDate.toISOString(),
+          `${plan.name.toLowerCase()}_member`
+        ).catch(() => {});
+      }
 
       await fetchUser(true);
       setSuccessResult({
