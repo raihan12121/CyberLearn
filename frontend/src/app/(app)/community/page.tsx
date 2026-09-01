@@ -326,38 +326,16 @@ export default function CommunityPage() {
     const authorEmail = user?.email || "";
 
     try {
-      let createdPost: PostItem;
+      // 1. Create post in backend database
+      const createdPost = await api.createPost({
+        title: newPostTitle.trim(),
+        content: newPostContent.trim(),
+        category: newPostCategory,
+        tags: newPostTags.trim() || undefined,
+      });
 
-      try {
-        createdPost = await api.createPost({
-          title: newPostTitle.trim(),
-          content: newPostContent.trim(),
-          category: newPostCategory,
-          tags: newPostTags.trim() || undefined,
-        });
-      } catch (backendErr) {
-        console.warn("Backend post creation fallback to Firestore:", backendErr);
-        const fallbackId = `post_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-        createdPost = {
-          id: fallbackId,
-          user_id: user?.id || "",
-          title: newPostTitle.trim(),
-          content: newPostContent.trim(),
-          category: newPostCategory,
-          tags: newPostTags.trim() || undefined,
-          is_solved: false,
-          author_name: authorName,
-          author_username: authorUsername,
-          author_avatar: authorAvatar,
-          upvotes: 1,
-          comment_count: 0,
-          has_upvoted: true,
-          created_at: new Date().toISOString(),
-        };
-      }
-
-      // Permanently save to Cloud Firestore so question is instantly visible to all users
-      await saveCommunityPostToFirestore({
+      // 2. Non-blocking Firestore sync for permanent cloud backup
+      saveCommunityPostToFirestore({
         id: createdPost.id,
         user_id: createdPost.user_id || user?.id,
         title: createdPost.title,
@@ -372,8 +350,9 @@ export default function CommunityPage() {
         upvotes: 1,
         comment_count: 0,
         created_at: createdPost.created_at || new Date().toISOString(),
-      });
+      }).catch((err) => console.warn("Firestore post sync non-blocking error:", err));
 
+      // 3. Instantly update UI and close modal
       setPosts((prev) => [createdPost, ...prev.filter((p) => p.id !== createdPost.id)]);
       setShowCreateModal(false);
       setNewPostTitle("");
@@ -402,30 +381,11 @@ export default function CommunityPage() {
     const authorRole = user?.role || "student";
 
     try {
-      let createdComment: CommentItem;
+      const commentRes = await api.addComment(selectedPost.id, newComment.trim());
 
-      try {
-        createdComment = await api.addComment(selectedPost.id, newComment.trim());
-      } catch (backendErr) {
-        console.warn("Backend add comment fallback to Firestore:", backendErr);
-        const fallbackId = `comment_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-        createdComment = {
-          id: fallbackId,
-          post_id: selectedPost.id,
-          user_id: user?.id || "",
-          author_name: authorName,
-          author_username: authorUsername,
-          author_avatar: authorAvatar,
-          author_role: authorRole,
-          content: newComment.trim(),
-          is_solution: false,
-          created_at: new Date().toISOString(),
-        };
-      }
-
-      // Permanently save reply in Cloud Firestore
-      await addCommunityCommentToFirestore(selectedPost.id, {
-        id: createdComment.id,
+      // Non-blocking Firestore sync for permanent cloud backup
+      addCommunityCommentToFirestore(selectedPost.id, {
+        id: commentRes.id,
         post_id: selectedPost.id,
         user_id: user?.id,
         author_name: authorName,
@@ -435,15 +395,15 @@ export default function CommunityPage() {
         author_role: authorRole,
         content: newComment.trim(),
         is_solution: false,
-        created_at: createdComment.created_at || new Date().toISOString(),
-      });
+        created_at: commentRes.created_at || new Date().toISOString(),
+      }).catch((err) => console.warn("Firestore comment sync non-blocking error:", err));
 
       if (selectedPostDetails) {
         setSelectedPostDetails({
           ...selectedPostDetails,
           comments: [
-            ...(selectedPostDetails.comments || []).filter((c: any) => c.id !== createdComment.id),
-            createdComment,
+            ...(selectedPostDetails.comments || []).filter((c: any) => c.id !== commentRes.id),
+            commentRes,
           ],
         });
       }

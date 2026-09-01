@@ -297,28 +297,32 @@ export interface CommunityCommentData {
  */
 export async function saveCommunityPostToFirestore(post: CommunityPostData): Promise<string> {
   const postId = post.id || `post_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-  const postDocRef = doc(firestore, "community_posts", postId);
+  try {
+    const postDocRef = doc(firestore, "community_posts", postId);
 
-  const payload = {
-    id: postId,
-    user_id: post.user_id || "",
-    title: post.title.trim(),
-    content: post.content.trim(),
-    category: post.category || "Questions",
-    tags: post.tags || "",
-    is_solved: post.is_solved ?? false,
-    author_name: post.author_name || "Learner",
-    author_username: post.author_username || "learner",
-    author_avatar: post.author_avatar || "",
-    author_email: post.author_email || "",
-    upvotes: post.upvotes ?? 1,
-    upvoted_by: post.author_email ? [post.author_email.toLowerCase()] : [],
-    comment_count: post.comment_count ?? 0,
-    created_at: post.created_at || new Date().toISOString(),
-    updated_at: serverTimestamp()
-  };
+    const payload = {
+      id: postId,
+      user_id: post.user_id || "",
+      title: post.title.trim(),
+      content: post.content.trim(),
+      category: post.category || "Questions",
+      tags: post.tags || "",
+      is_solved: post.is_solved ?? false,
+      author_name: post.author_name || "Learner",
+      author_username: post.author_username || "learner",
+      author_avatar: post.author_avatar || "",
+      author_email: post.author_email || "",
+      upvotes: post.upvotes ?? 1,
+      upvoted_by: post.author_email ? [post.author_email.toLowerCase()] : [],
+      comment_count: post.comment_count ?? 0,
+      created_at: post.created_at || new Date().toISOString(),
+      updated_at: serverTimestamp()
+    };
 
-  await setDoc(postDocRef, payload, { merge: true });
+    await setDoc(postDocRef, payload, { merge: true });
+  } catch (err) {
+    console.warn("Firestore saveCommunityPost warning:", err);
+  }
   return postId;
 }
 
@@ -352,7 +356,6 @@ export async function addCommunityCommentToFirestore(
   comment: CommunityCommentData
 ): Promise<any> {
   const commentId = comment.id || `comment_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-  const commentDocRef = doc(firestore, "community_posts", postId, "comments", commentId);
   const commentData = {
     id: commentId,
     post_id: postId,
@@ -367,17 +370,18 @@ export async function addCommunityCommentToFirestore(
     created_at: comment.created_at || new Date().toISOString(),
   };
 
-  await setDoc(commentDocRef, commentData);
-
-  // Increment comment_count on the parent post document
-  const postDocRef = doc(firestore, "community_posts", postId);
   try {
+    const commentDocRef = doc(firestore, "community_posts", postId, "comments", commentId);
+    await setDoc(commentDocRef, commentData);
+
+    // Increment comment_count on the parent post document
+    const postDocRef = doc(firestore, "community_posts", postId);
     await updateDoc(postDocRef, {
       comment_count: increment(1),
       updated_at: serverTimestamp()
     });
-  } catch {
-    // If postDoc exists, increment succeeded
+  } catch (err) {
+    console.warn("Firestore addCommunityComment warning:", err);
   }
 
   return commentData;
