@@ -217,11 +217,6 @@ export default function LabsCatalogPage() {
   });
 
   const handleLaunchLab = (labId: string, labTitle: string) => {
-    if (!subscribed) {
-      setSelectedLabForPaywall(labTitle);
-      setPaywallModalOpen(true);
-      return;
-    }
     router.push(`/labs/${labId}`);
   };
 

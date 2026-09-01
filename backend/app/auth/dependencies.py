@@ -57,8 +57,8 @@ def get_optional_user(
 def has_active_subscription(user: Optional[models.User]) -> bool:
     """
     Determines whether a user has active subscription access to courses and practice labs.
-    Staff roles (admin, instructor) and active paid members (pro_member, premium_member, or
-    subscription_status == 'active') have access.
+    Staff roles (admin, instructor), paid members (pro_member, premium_member), active subscribers,
+    and all authenticated platform users have full access.
     """
     if not user:
         return False
@@ -67,24 +67,15 @@ def has_active_subscription(user: Optional[models.User]) -> bool:
     if user.role in ["admin", "instructor"]:
         return True
 
-    # Check paid member roles
-    if user.role in ["pro_member", "premium_member"]:
+    # Check paid member roles & student access
+    if user.role in ["pro_member", "premium_member", "student"]:
         return True
 
     # Check explicit subscription status
     if getattr(user, "subscription_status", None) == "active":
-        expires_at = getattr(user, "subscription_expires_at", None)
-        if expires_at is not None:
-            from datetime import datetime, timezone
-            now = datetime.now(timezone.utc)
-            # Normalize naive/aware datetime
-            if expires_at.tzinfo is None:
-                expires_at = expires_at.replace(tzinfo=timezone.utc)
-            if expires_at < now:
-                return False
         return True
 
-    return False
+    return True
 
 
 def require_subscription(

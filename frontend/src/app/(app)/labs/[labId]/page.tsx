@@ -45,10 +45,8 @@ export default function LabWorkspacePage() {
   const [isHintOpen, setIsHintOpen] = useState(false);
   const [paywallOpen, setPaywallOpen] = useState(false);
 
-  // Launch lab session on mount (only for subscribed users)
+  // Launch lab session on mount
   useEffect(() => {
-    if (!subscribed) return;
-
     api.startLab(labId)
       .then((data) => {
         if (data && data.id) {
@@ -59,7 +57,7 @@ export default function LabWorkspacePage() {
       .catch((err) => {
         console.warn("Could not start lab via backend API:", err);
       });
-  }, [labId, subscribed]);
+  }, [labId]);
 
   // Timer effect
   useEffect(() => {
@@ -117,98 +115,6 @@ export default function LabWorkspacePage() {
     const s = secs % 60;
     return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   };
-
-  if (!subscribed) {
-    return (
-      <div className="max-w-4xl mx-auto space-y-6 py-6">
-        <Button variant="ghost" size="sm" onClick={() => router.push("/labs")} icon={<ArrowLeft className="w-4 h-4" />}>
-          Back to Labs Catalog
-        </Button>
-
-        <Card padding="lg" className="border-primary/40 bg-surface-elevated/40 text-center py-12 px-6 space-y-6 shadow-2xl relative overflow-hidden">
-          {/* Cyber glow effect */}
-          <div className="absolute -right-16 -top-16 w-60 h-60 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="inline-flex items-center justify-center p-4 rounded-3xl bg-primary/15 border border-primary/30 text-primary shadow-xl">
-            <Lock className="w-12 h-12 animate-pulse text-primary" />
-          </div>
-
-          <div className="space-y-2 max-w-lg mx-auto">
-            <Badge variant="primary" size="sm" className="font-mono uppercase text-[10px] tracking-wider">
-              Pro Subscription Required
-            </Badge>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground capitalize">
-              {labId.replace(/-/g, " ")} Workspace Locked
-            </h2>
-            <p className="text-xs sm:text-sm text-foreground-secondary leading-relaxed">
-              Interactive Web Security Proxy Inspector, Attack Network Topology Graph, SIEM Log Analyzer, and live Flag Verification engines are exclusively available for Pro and Premium subscribers.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 max-w-2xl mx-auto text-left py-2">
-            <div className="p-3 rounded-xl bg-surface border border-border space-y-1">
-              <div className="flex items-center gap-2 text-primary font-bold text-xs">
-                <TerminalIcon className="w-4 h-4" />
-                <span>Linux Terminal</span>
-              </div>
-              <p className="text-[11px] text-foreground-muted">Interactive sandboxed Linux PTY & bash shell with live flag discovery.</p>
-            </div>
-
-            <div className="p-3 rounded-xl bg-surface border border-border space-y-1">
-              <div className="flex items-center gap-2 text-primary font-bold text-xs">
-                <Globe className="w-4 h-4" />
-                <span>Web Proxy</span>
-              </div>
-              <p className="text-[11px] text-foreground-muted">Live HTTP Repeater, header tamper, and injection payload tester.</p>
-            </div>
-
-            <div className="p-3 rounded-xl bg-surface border border-border space-y-1">
-              <div className="flex items-center gap-2 text-accent font-bold text-xs">
-                <Network className="w-4 h-4" />
-                <span>Attack Graph</span>
-              </div>
-              <p className="text-[11px] text-foreground-muted">Visual subnet map, port discovery, and host pivot analysis.</p>
-            </div>
-
-            <div className="p-3 rounded-xl bg-surface border border-border space-y-1">
-              <div className="flex items-center gap-2 text-secondary-light font-bold text-xs">
-                <Flag className="w-4 h-4" />
-                <span>XP Rewards</span>
-              </div>
-              <p className="text-[11px] text-foreground-muted">Capture flags to rank up on the global CTF leaderboard.</p>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-            <Button
-              variant="primary"
-              size="lg"
-              onClick={() => setPaywallOpen(true)}
-              className="w-full sm:w-auto font-bold shadow-lg"
-            >
-              <Zap className="w-4 h-4 mr-1.5" />
-              <span>Unlock Labs with Pro ($12/mo)</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={() => router.push("/pricing")}
-              className="w-full sm:w-auto"
-            >
-              Explore Pricing Plans
-            </Button>
-          </div>
-        </Card>
-
-        <SubscriptionPaywallModal
-          isOpen={paywallOpen}
-          onClose={() => setPaywallOpen(false)}
-          title="Unlock Lab Workspaces"
-          resourceName={labId.replace(/-/g, " ")}
-        />
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-4">
