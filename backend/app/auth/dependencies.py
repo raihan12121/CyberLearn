@@ -1,51 +1,76 @@
+import os
 from typing import Optional
-from fastapi import Depends, HTTPException, status, Header
+from datetime import datetime, timezone
+from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import jwt, JWTError
+from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 from ..database import get_db
+from .. import models
 from ..config import settings
-from .. import models, schemas
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
+
 
 def get_current_user(
-    db: Session = Depends(get_db),
-    token: str = Depends(oauth2_scheme)
+    token: Optional[str] = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
 ) -> models.User:
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+    """
+    FastAPI dependency that extracts and validates the JWT Bearer token,
+    returning the matching User record from the database.
+    """
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required. Please provide a valid Bearer token.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(
+            token,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM]
+        )
         email: str = payload.get("sub")
         if email is None:
-            raise credentials_exception
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token payload.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
     except JWTError:
-        raise credentials_exception
-        
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials or token has expired.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     user = db.query(models.User).filter(models.User.email == email).first()
     if user is None:
-        raise credentials_exception
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User account not found.",
+        )
     return user
 
+
 def get_optional_user(
-    authorization: Optional[str] = Header(None),
+    token: Optional[str] = Depends(oauth2_scheme),
     db: Session = Depends(get_db)
 ) -> Optional[models.User]:
     """
-    Extract current authenticated user if valid Bearer token is provided,
-    otherwise returns None without throwing HTTP 401 exceptions.
+    Optional authentication dependency. Returns the User model if a valid token is provided,
+    otherwise returns None without raising an HTTP error.
     """
-    if not authorization or not authorization.startswith("Bearer "):
-        return None
-    token = authorization.split(" ")[1].strip()
-    if not token or token in ("null", "undefined", ""):
+    if not token:
         return None
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(
+            token,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM]
+        )
         email: str = payload.get("sub")
         if email is None:
             return None
@@ -56,9 +81,10 @@ def get_optional_user(
 
 def has_active_subscription(user: Optional[models.User]) -> bool:
     """
-    Determines whether a user has active subscription access to courses and practice labs.
-    Staff roles (admin, instructor), paid members (pro_member, premium_member), active subscribers,
-    and all authenticated platform users have full access.
+    Determines whether a user has an active paid subscription to courses and labs.
+    Staff roles (admin, instructor) and active paid members (pro_member, premium_member, or
+    subscription_status == 'active' with a valid future expiration date) have access.
+    Free tier / inactive users do NOT have subscription access and must subscribe.
     """
     if not user:
         return False
@@ -67,15 +93,22 @@ def has_active_subscription(user: Optional[models.User]) -> bool:
     if user.role in ["admin", "instructor"]:
         return True
 
-    # Check paid member roles & student access
-    if user.role in ["pro_member", "premium_member", "student"]:
+    # Check paid member roles
+    if user.role in ["pro_member", "premium_member"]:
         return True
 
-    # Check explicit subscription status
+    # Check explicit subscription status and expiration timestamp
     if getattr(user, "subscription_status", None) == "active":
+        expires_at = getattr(user, "subscription_expires_at", None)
+        if expires_at is not None:
+            now = datetime.now(timezone.utc)
+            if expires_at.tzinfo is None:
+                expires_at = expires_at.replace(tzinfo=timezone.utc)
+            if expires_at < now:
+                return False
         return True
 
-    return True
+    return False
 
 
 def require_subscription(
@@ -110,5 +143,3 @@ def has_course_access(user: Optional[models.User], course_id: str, db: Session) 
         models.CoursePurchase.course_id == course_id
     ).first()
     return purchase is not None
-
-

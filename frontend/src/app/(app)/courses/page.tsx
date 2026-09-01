@@ -188,6 +188,11 @@ export default function CoursesPage() {
   });
 
   const handleCourseClick = (courseId: string, courseTitle: string) => {
+    if (!subscribed) {
+      setSelectedCourseForPaywall(courseTitle);
+      setPaywallModalOpen(true);
+      return;
+    }
     router.push(`/courses/${courseId}`);
   };
 

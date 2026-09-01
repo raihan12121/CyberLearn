@@ -23,18 +23,19 @@ export interface UserProfile {
 }
 
 export function isUserSubscribed(user: UserProfile | null): boolean {
-  // If user is not yet loaded in memory but auth token exists in localStorage, grant active access
-  if (!user) {
-    if (typeof window !== "undefined" && getAuthToken()) {
-      return true;
-    }
-    return false;
-  }
+  if (!user) return false;
   if (user.role === "admin" || user.role === "instructor") return true;
-  if (user.role === "pro_member" || user.role === "premium_member" || user.role === "student") return true;
-  if (user.subscription_status === "active" || user.is_subscribed === true) return true;
-  if (user.id || user.email) return true;
-  return true;
+  if (user.role === "pro_member" || user.role === "premium_member") return true;
+  if (user.subscription_status === "active" || user.is_subscribed === true) {
+    if (user.subscription_expires_at) {
+      const exp = new Date(user.subscription_expires_at).getTime();
+      if (!isNaN(exp) && exp < Date.now()) {
+        return false;
+      }
+    }
+    return true;
+  }
+  return false;
 }
 
 interface AuthState {
