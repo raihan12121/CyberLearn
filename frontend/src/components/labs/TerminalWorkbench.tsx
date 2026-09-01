@@ -4,41 +4,25 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
   Terminal as TerminalIcon,
   RotateCcw,
-  Wifi,
-  WifiOff,
   Maximize2,
   Minimize2,
-  Trash2,
-  Command,
-  Sparkles,
   CheckCircle2,
-  AlertCircle,
-  Copy,
-  Plus,
   Play,
-  HelpCircle,
-  BookOpen,
-  ChevronRight,
   Shield,
-  Layers,
   ZoomIn,
   ZoomOut,
+  Flame,
+  Globe,
+  Radio,
+  Lock,
+  Skull,
+  Crosshair,
 } from "lucide-react";
 import { Badge, Button } from "@/components/ui";
 
 interface TerminalWorkbenchProps {
   sessionId: string;
   labId: string;
-}
-
-// Built-in Virtual Filesystem for high-fidelity interactive terminal simulation
-interface VirtualFile {
-  type: "file" | "dir";
-  content?: string;
-  permissions?: string;
-  owner?: string;
-  size?: number;
-  children?: Record<string, VirtualFile>;
 }
 
 export default function TerminalWorkbench({ sessionId, labId }: TerminalWorkbenchProps) {
@@ -49,20 +33,18 @@ export default function TerminalWorkbench({ sessionId, labId }: TerminalWorkbenc
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const coldStartTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Virtual Shell State (fallback & instant response)
+  // Virtual Shell State (Always active with 0ms keystroke latency)
   const currentPathRef = useRef<string[]>([labId || "linux-navigation"]);
   const commandHistoryRef = useRef<string[]>([]);
   const historyIndexRef = useRef<number>(-1);
   const currentInputRef = useRef<string>("");
-  const isVirtualModeRef = useRef<boolean>(false);
+  const isVirtualModeRef = useRef<boolean>(true);
+  const virtualFilesRef = useRef<Record<string, string>>({});
 
-  const [connectionStatus, setConnectionStatus] = useState<"connecting" | "connected" | "virtual" | "waking_up">("connecting");
+  const [connectionStatus, setConnectionStatus] = useState<"connected" | "virtual" | "connecting">("virtual");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [copiedHelper, setCopiedHelper] = useState<string | null>(null);
-  const [copiedTextNotice, setCopiedTextNotice] = useState(false);
   const [fontSize, setFontSize] = useState<number>(14);
-  const [activeTabName, setActiveTabName] = useState<string>("bash — session 1");
-  const [showTaskBrief, setShowTaskBrief] = useState<boolean>(true);
 
   // Compute WebSocket URL from environment
   const getWebSocketUrl = useCallback(() => {
@@ -94,55 +76,68 @@ export default function TerminalWorkbench({ sessionId, labId }: TerminalWorkbenc
     term.write(" ╚██████╗   ██║   ██████╔╝███████╗██║  ██║███████╗███████╗██║  ██║██║  ██║██║ ╚████║\r\n");
     term.write("  ╚═════╝   ╚═╝   ╚═════╝ ╚══════╝╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝\r\n");
     term.write("\x1b[0m\r\n");
-    term.write("\x1b[1;32m [✓] CyberLearn Interactive Linux Practice Terminal\x1b[0m\r\n");
+    term.write("\x1b[1;32m [✓] CyberLearn Interactive Linux Practice Terminal & Attack Station\x1b[0m\r\n");
     term.write(`\x1b[90m [*] Target Workspace: /home/student/labs/${labId}\x1b[0m\r\n`);
-    term.write("\x1b[90m [*] Type '\x1b[33mhelp\x1b[90m' or '\x1b[33mcat README.txt\x1b[90m' to view lab instructions.\x1b[0m\r\n\r\n");
+    term.write("\x1b[90m [*] Type '\x1b[33mhelp\x1b[90m' or run attack tools (\x1b[36mnmap\x1b[90m, \x1b[36msqlmap\x1b[90m, \x1b[36mhydra\x1b[90m, \x1b[36mnikto\x1b[90m, \x1b[36mcurl\x1b[90m, \x1b[36mcat\x1b[90m).\x1b[0m\r\n\r\n");
   };
 
-  const getPrompt = () => {
+  const getPrompt = useCallback(() => {
     const cwd = currentPathRef.current.length > 0 ? `~/labs/${currentPathRef.current.join("/")}` : "~";
     return `\x1b[1;34m┌──(\x1b[1;32mstudent㉿cyberlearn\x1b[1;34m)-[\x1b[1;37m${cwd}\x1b[1;34m]\r\n└─\x1b[1;32m$\x1b[0m `;
-  };
+  }, []);
 
-  // Virtual Filesystem generator for instant fallback
+  // Initialize or get Virtual Filesystem
   const getVirtualFiles = useCallback(() => {
+    if (Object.keys(virtualFilesRef.current).length > 0) {
+      return virtualFilesRef.current;
+    }
+
     const files: Record<string, string> = {
       "README.txt": `=====================================================
   CYBERLEARN INTERACTIVE LAB: ${labId.toUpperCase()}
 =====================================================
-Welcome to your practice sandbox terminal.
+Welcome to your practice sandbox terminal & offensive station.
 
-Quick Commands to Get Started:
-  ls -la          - List all files including hidden ones
-  cat README.txt  - View these instructions
-  cat flag.txt    - Inspect the lab flag file
-  pwd             - Display current working directory
-  whoami          - Check active user identity
-  curl / ping     - Network inspection utilities
+Recommended Attack & Exploration Workflow:
+  1. Explore filesystem:    ls -la, pwd, whoami, id
+  2. Inspect targets:       nmap -sV 10.10.14.55
+  3. Scan web services:     nikto -h http://10.10.14.55
+  4. Database exploitation: sqlmap -u "http://10.10.14.55/login" --dump
+  5. Password cracking:     hydra -l admin -P rockyou.txt 10.10.14.55 ssh
+  6. Read secret flag:      cat flag.txt
 
-Once you recover the flag, submit it in the verification bar
-below to earn XP and rank up on the leaderboard!
+Submit the extracted flag in the verification bar below to claim XP!
 =====================================================`,
-      "flag.txt": `FLAG{${labId}_master_session_2026}`,
-      "notes.txt": `Target: Locate the secret flag in this directory tree.
-Tip: Use 'ls -la', 'cat flag.txt', and 'find . -name "*.txt"'`,
-      "help.txt": `CyberLearn Terminal Shell v2.4
-Supported utilities: ls, cat, pwd, cd, whoami, id, uname, clear, echo, grep, find, curl, ping, nmap, base64, date, history, help`,
+      "flag.txt": `FLAG{${labId.replace(/-/g, "_")}_expert_flag_2026}`,
+      "notes.txt": `[CONFIDENTIAL SECURITY REPORT]
+Host: 10.10.14.55 (Vulnerable Target Server)
+Open Ports: 22 (SSH), 80 (HTTP), 3306 (MySQL)
+Vulnerabilities: Authentication Bypass (SQLi), Weak SSH Passwords`,
+      "exploit.py": `#!/usr/bin/env python3
+# Automated Exploit Payload Runner
+import sys
+
+print("[+] Initializing exploit sequence against target 10.10.14.55...")
+print("[*] Sending malicious SQL injection payload: admin' OR '1'='1...")
+print("[✓] SUCCESS! Authentication bypassed.")
+print("[!] Extracted Flag: FLAG{sql_injection_bypass_pwned_2026}")
+`,
+      "rockyou.txt": `admin\npassword\n123456\nroot\ntoortoor\ncyberlearn\nsecret123\nPassword123!\n`,
+      "target_schema.sql": `-- Leaked database dump
+CREATE TABLE users (id INT, username VARCHAR(50), password_hash VARCHAR(255));
+INSERT INTO users VALUES (1, 'admin', '$2b$12$FLAG{hash_cracked_admin_secret}');
+`,
     };
 
-    if (labId.includes("sql")) {
-      files["query_tester.py"] = "# Python SQLi Injection Payload Tester\nprint('Inject payloads into vulnerable auth query endpoints.')";
-      files["vulnerable_schema.sql"] = "CREATE TABLE users (id INT, username VARCHAR(50), password_hash VARCHAR(255));\nINSERT INTO users VALUES (1, 'admin', '$2b$12$eX4mpL3H4shF0rFl4g');";
-    }
-
     if (labId.includes("packet") || labId.includes("network")) {
-      files["capture.pcap.txt"] = "10.0.0.5 -> 10.0.0.1 HTTP GET /auth [SYN, ACK]\n10.0.0.5 -> 10.0.0.1 HTTP POST /login user=admin pass=FLAG{sniffed_cleartext_traffic}";
+      files["capture.pcap"] = "10.10.14.5 -> 10.10.14.55 TCP SYN 80\n10.10.14.5 -> 10.10.14.55 POST /login user=admin pass=FLAG{packet_sniffed_credentials_2026}";
     }
 
+    virtualFilesRef.current = files;
     return files;
   }, [labId]);
 
-  // Execute command in built-in Virtual Linux Shell
+  // Execute offensive & defensive commands in built-in Virtual Linux Shell
   const executeVirtualCommand = useCallback((cmdStr: string, term: any) => {
     const trimmed = cmdStr.trim();
     const parts = trimmed.split(" ").filter(Boolean);
@@ -164,42 +159,48 @@ Supported utilities: ls, cat, pwd, cd, whoami, id, uname, clear, echo, grep, fin
         return;
 
       case "help":
-        term.write("\x1b[1;36mAvailable Commands:\x1b[0m\r\n");
-        term.write("  \x1b[33mls\x1b[0m [-la]           - List files in current directory\r\n");
-        term.write("  \x1b[33mcat\x1b[0m <file>         - Display file contents\r\n");
-        term.write("  \x1b[33mpwd\x1b[0m                - Print working directory\r\n");
-        term.write("  \x1b[33mcd\x1b[0m [dir]           - Change directory\r\n");
-        term.write("  \x1b[33mwhoami\x1b[0m / \x1b[33mid\x1b[0m        - Display user and group info\r\n");
-        term.write("  \x1b[33muname\x1b[0m -a           - System kernel info\r\n");
-        term.write("  \x1b[33mgrep\x1b[0m <pat> <file>  - Search text in files\r\n");
-        term.write("  \x1b[33mfind\x1b[0m . -name <pat> - Find files matching name\r\n");
-        term.write("  \x1b[33mecho\x1b[0m [text]        - Print text to terminal\r\n");
-        term.write("  \x1b[33mdate\x1b[0m               - Display current system time\r\n");
-        term.write("  \x1b[33mcurl\x1b[0m [url]         - Transfer data from a URL\r\n");
-        term.write("  \x1b[33mping\x1b[0m <host>        - Send ICMP ECHO_REQUEST to network hosts\r\n");
-        term.write("  \x1b[33mnmap\x1b[0m <host>        - Network exploration tool and port scanner\r\n");
-        term.write("  \x1b[33mbase64\x1b[0m <str>       - Encode/decode base64 data\r\n");
-        term.write("  \x1b[33mhistory\x1b[0m            - Show command history\r\n");
+        term.write("\x1b[1;36m┌── Available Linux & Offensive Cyber Commands ─────────────────────────────┐\x1b[0m\r\n");
+        term.write("│ \x1b[1;33mls\x1b[0m [-la]            - List files and directories in current workspace     │\r\n");
+        term.write("│ \x1b[1;33mcat\x1b[0m <file>          - Display contents of files (e.g. cat flag.txt)       │\r\n");
+        term.write("│ \x1b[1;33mnmap\x1b[0m [target]       - Network port scan & service detection               │\r\n");
+        term.write("│ \x1b[1;33msqlmap\x1b[0m -u <url>     - Automatic SQL injection and database dump           │\r\n");
+        term.write("│ \x1b[1;33mhydra\x1b[0m -l <usr> -P <w> - Multi-protocol network login brute-forcer           │\r\n");
+        term.write("│ \x1b[1;33mnikto\x1b[0m -h <host>     - Web server vulnerability scanner                    │\r\n");
+        term.write("│ \x1b[1;33mgobuster\x1b[0m / \x1b[1;33mdirb\x1b[0m     - Web directory and file brute-forcer                 │\r\n");
+        term.write("│ \x1b[1;33mcurl\x1b[0m [url]          - HTTP request inspector and payload repeater         │\r\n");
+        term.write("│ \x1b[1;33mping\x1b[0m <host>         - Send ICMP network echo probes                       │\r\n");
+        term.write("│ \x1b[1;33mnc\x1b[0m / \x1b[1;33mnetcat\x1b[0m         - TCP port listener & arbitrary connection client     │\r\n");
+        term.write("│ \x1b[1;33mpython3\x1b[0m <script>    - Execute Python security scripts (e.g. exploit.py)   │\r\n");
+        term.write("│ \x1b[1;33mwhoami\x1b[0m / \x1b[1;33mid\x1b[0m         - Print active user identity and privilege groups     │\r\n");
+        term.write("│ \x1b[1;33mpwd\x1b[0m / \x1b[1;33mcd\x1b[0m            - Display and change directory paths                  │\r\n");
+        term.write("│ \x1b[1;33mgrep\x1b[0m / \x1b[1;33mfind\x1b[0m          - Search strings and locate files in filesystem       │\r\n");
+        term.write("│ \x1b[1;33mbase64\x1b[0m <string>     - Encode or decode base64 hashes                      │\r\n");
+        term.write("│ \x1b[1;33mclear\x1b[0m / \x1b[1;33mhistory\x1b[0m     - Clear terminal buffer or view command history       │\r\n");
+        term.write("\x1b[1;36m└───────────────────────────────────────────────────────────────────────────┘\x1b[0m\r\n");
         break;
 
       case "ls":
         const showAll = args.includes("-la") || args.includes("-a") || args.includes("-l");
         if (showAll) {
-          term.write("total 32\r\n");
+          term.write("total 48\r\n");
           term.write("drwxr-xr-x 4 student student 4096 Sep  2 01:50 .\r\n");
           term.write("drwxr-xr-x 3 student student 4096 Sep  2 01:50 ..\r\n");
           term.write("-rw-r--r-- 1 student student  240 Sep  2 01:50 .bashrc\r\n");
+          term.write("-rw------- 1 student student  890 Sep  2 01:50 .history\r\n");
           Object.keys(files).forEach((fname) => {
             const isExec = fname.endsWith(".sh") || fname.endsWith(".py");
-            const color = isExec ? "\x1b[1;32m" : fname.includes("flag") ? "\x1b[1;31m" : "\x1b[0m";
+            const isFlag = fname.includes("flag");
+            const color = isExec ? "\x1b[1;32m" : isFlag ? "\x1b[1;31m" : "\x1b[0m";
+            const perms = isExec ? "-rwxr-xr-x" : "-rw-r--r--";
             const size = files[fname].length;
-            term.write(`-rw-r--r-- 1 student student ${size.toString().padStart(5, " ")} Sep  2 01:50 ${color}${fname}\x1b[0m\r\n`);
+            term.write(`${perms} 1 student student ${size.toString().padStart(5, " ")} Sep  2 01:50 ${color}${fname}\x1b[0m\r\n`);
           });
         } else {
           const list = Object.keys(files)
             .map((fname) => {
               const isExec = fname.endsWith(".sh") || fname.endsWith(".py");
-              const color = isExec ? "\x1b[1;32m" : fname.includes("flag") ? "\x1b[1;31m" : "\x1b[0m";
+              const isFlag = fname.includes("flag");
+              const color = isExec ? "\x1b[1;32m" : isFlag ? "\x1b[1;31m" : "\x1b[0m";
               return `${color}${fname}\x1b[0m`;
             })
             .join("  ");
@@ -220,8 +221,139 @@ Supported utilities: ls, cat, pwd, cd, whoami, id, uname, clear, echo, grep, fin
         }
         break;
 
-      case "pwd":
-        term.write(`/home/student/labs/${currentPathRef.current.join("/")}\r\n`);
+      case "nmap":
+        const targetHost = args.find((a) => !a.startsWith("-")) || "10.10.14.55";
+        term.write(`\x1b[36mStarting Nmap 7.94 ( https://nmap.org ) at ${new Date().toISOString()}\x1b[0m\r\n`);
+        term.write(`Initiating SYN Stealth Scan against ${targetHost}...\r\n`);
+        term.write(`Scanning ${targetHost} [1000 ports]\r\n`);
+        term.write("Discovered open port 22/tcp on 10.10.14.55\r\n");
+        term.write("Discovered open port 80/tcp on 10.10.14.55\r\n");
+        term.write("Discovered open port 3306/tcp on 10.10.14.55\r\n");
+        term.write("Completed SYN Stealth Scan in 0.85s (1000 total ports)\r\n\r\n");
+        term.write("PORT     STATE SERVICE VERSION\r\n");
+        term.write("\x1b[1;32m22/tcp   open  ssh     OpenSSH 8.9p1 Ubuntu (password auth enabled)\x1b[0m\r\n");
+        term.write("\x1b[1;32m80/tcp   open  http    Apache/2.4.52 (Ubuntu) CyberLearn Target Portal\x1b[0m\r\n");
+        term.write("\x1b[1;32m3306/tcp open  mysql   MySQL 8.0.36 (Vulnerable auth plugin)\x1b[0m\r\n\r\n");
+        term.write("Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel\r\n");
+        term.write("\x1b[1;33m[!] Vulnerability Note: Port 80 /login is vulnerable to SQL injection bypass.\x1b[0m\r\n");
+        term.write("Nmap done: 1 IP address (1 host up) scanned in 1.42 seconds\r\n");
+        break;
+
+      case "sqlmap":
+        term.write("\x1b[31m        ___     \r\n");
+        term.write("       __H__    \r\n");
+        term.write(" ___ ___[\"]_____ ___ ___  {1.7.11#stable}\r\n");
+        term.write("|_ -| . [,]     | .'| . |\r\n");
+        term.write("|___|_  [\"]_|_|_|__,|  _|\r\n");
+        term.write("      |_|[*]        |_|   https://sqlmap.org\x1b[0m\r\n\r\n");
+        term.write("[*] starting @ 02:10:00 /2026-09-02/\r\n");
+        term.write("[*] testing connection to the target URL: http://10.10.14.55/login\r\n");
+        term.write("[+] target URL is active and responding (200 OK)\r\n");
+        term.write("[*] testing parameter 'username' for boolean-based blind SQL injection...\r\n");
+        term.write("[*] GET parameter 'username' is vulnerable!\r\n");
+        term.write("\x1b[1;32m[+] Parameter: username (GET / POST)\r\n");
+        term.write("    Type: boolean-based blind / stacked queries\r\n");
+        term.write("    Title: MySQL >= 5.0.12 stacked queries\r\n");
+        term.write("    Payload: username=admin' OR 1=1--\x1b[0m\r\n\r\n");
+        term.write("[*] fetching database table contents: 'cyberlearn_db.users'...\r\n");
+        term.write("+----+----------+------------------------------------------------+\r\n");
+        term.write("| id | username | password_hash                                  |\r\n");
+        term.write("+----+----------+------------------------------------------------+\r\n");
+        term.write(`| 1  | admin    | \x1b[1;31mFLAG{sqlmap_automated_database_dump_2026}\x1b[0m     |\r\n`);
+        term.write("+----+----------+------------------------------------------------+\r\n");
+        term.write("[+] Database dumped successfully (1 entry recovered).\r\n");
+        break;
+
+      case "hydra":
+        term.write("\x1b[36mHydra v9.5 (c) 2026 by van Hauser / THC - Please do not use in military or secret service orgs!\x1b[0m\r\n");
+        term.write("[DATA] max 16 tasks per target, 1 target, 8 passwords in dictionary, ~8 total attempts\r\n");
+        term.write("[STATUS] attack started for SSH on 10.10.14.55:22\r\n");
+        term.write("[ATTEMPT] 10.10.14.55:22 - login: admin - pass: password (failed)\r\n");
+        term.write("[ATTEMPT] 10.10.14.55:22 - login: admin - pass: 123456 (failed)\r\n");
+        term.write("[ATTEMPT] 10.10.14.55:22 - login: admin - pass: root (failed)\r\n");
+        term.write(`\x1b[1;32m[22][ssh] host: 10.10.14.55   login: admin   password: Password123!   \x1b[1;31m[FLAG{hydra_ssh_bruteforce_pwnd_2026}]\x1b[0m\r\n`);
+        term.write("[STATUS] 1 valid password found in 0.44 seconds.\r\n");
+        break;
+
+      case "nikto":
+        term.write("\x1b[36m- Nikto v2.5.0\x1b[0m\r\n");
+        term.write("+ Target IP:          10.10.14.55\r\n");
+        term.write("+ Target Hostname:    target.cyberlearn.local\r\n");
+        term.write("+ Target Port:        80\r\n");
+        term.write("+ Start Time:         2026-09-02 02:10:15 (GMT)\r\n");
+        term.write("---------------------------------------------------------------------------\r\n");
+        term.write("+ Server: Apache/2.4.52 (Ubuntu)\r\n");
+        term.write("+ /: The anti-clickjacking X-Frame-Options header is not present.\r\n");
+        term.write("+ /: The X-Content-Type-Options header is not set.\r\n");
+        term.write("\x1b[1;32m+ /admin/: Admin login portal discovered with default credentials.\x1b[0m\r\n");
+        term.write("\x1b[1;32m+ /flag.txt: Sensitive file exposed in web root directory!\x1b[0m\r\n");
+        term.write("+ 7915 requests: 0 error(s) and 4 item(s) reported on remote host\r\n");
+        break;
+
+      case "gobuster":
+      case "dirb":
+        term.write("\x1b[36m===============================================================\r\n");
+        term.write("Gobuster v3.6 - Directory & File Brute-Forcing\r\n");
+        term.write("by OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)\r\n");
+        term.write("===============================================================\r\n");
+        term.write("[+] Url:                     http://10.10.14.55\r\n");
+        term.write("[+] Threads:                 10\r\n");
+        term.write("[+] Wordlist:                /usr/share/wordlists/dirb/common.txt\r\n");
+        term.write("===============================================================\x1b[0m\r\n");
+        term.write("/index.html          (Status: 200) [Size: 1042]\r\n");
+        term.write("/login               (Status: 200) [Size: 3410]\r\n");
+        term.write("/admin               (Status: 301) [Size: 178] --> /admin/\r\n");
+        term.write("/assets              (Status: 301) [Size: 178] --> /assets/\r\n");
+        term.write("\x1b[1;32m/flag.txt            (Status: 200) [Size: 48]\x1b[0m\r\n");
+        term.write("/secret_backup.zip   (Status: 200) [Size: 84201]\r\n");
+        term.write("===============================================================\r\n");
+        term.write("Progress: 4614 / 4614 (100.00%)\r\n");
+        break;
+
+      case "python":
+      case "python3":
+        if (args.length > 0) {
+          const fname = args[0];
+          if (files[fname]) {
+            term.write(`\x1b[36m[Python 3.11.0] Running ${fname}...\x1b[0m\r\n`);
+            term.write("[+] Initializing exploit sequence against target 10.10.14.55...\r\n");
+            term.write("[*] Sending malicious SQL injection payload: admin' OR '1'='1...\r\n");
+            term.write("[✓] SUCCESS! Authentication bypassed.\r\n");
+            term.write(`\x1b[1;31m[!] Extracted Flag: FLAG{${labId}_exploit_executed_2026}\x1b[0m\r\n`);
+          } else {
+            term.write(`python3: can't open file '${fname}': [Errno 2] No such file or directory\r\n`);
+          }
+        } else {
+          term.write("Python 3.11.0 (main, Sep  2 2026, 01:50:00) [GCC 11.2.0] on linux\r\nType \"help\", \"copyright\", \"credits\" or \"license\" for more information.\r\n>>> print('CyberLearn Python Sandbox Active')\r\nCyberLearn Python Sandbox Active\r\n");
+        }
+        break;
+
+      case "curl":
+        const url = args[0] || "http://10.10.14.55/login";
+        term.write(`\x1b[36m[*] Connecting to ${url}...\x1b[0m\r\n`);
+        term.write("HTTP/1.1 200 OK\r\n");
+        term.write("Server: Apache/2.4.52 (Ubuntu)\r\n");
+        term.write("Content-Type: text/html; charset=UTF-8\r\n");
+        term.write("X-Powered-By: CyberLearn-Target/2.0\r\n\r\n");
+        term.write("<!DOCTYPE html>\r\n<html>\r\n<body>\r\n  <h1>CyberLearn Authenticated Portal</h1>\r\n");
+        term.write(`  <p>Secret Flag: \x1b[1;31mFLAG{curl_http_endpoint_recovered_2026}\x1b[0m</p>\r\n`);
+        term.write("</body>\r\n</html>\r\n");
+        break;
+
+      case "nc":
+      case "netcat":
+        term.write(`\x1b[36m[+] Connected to ${args[0] || "10.10.14.55"} on port ${args[1] || "80"}.\x1b[0m\r\n`);
+        term.write("220 target.cyberlearn.local ESMTP Postfix (Ubuntu)\r\n");
+        term.write("Type 'QUIT' to close connection.\r\n");
+        break;
+
+      case "ping":
+        const ptarget = args[0] || "10.10.14.55";
+        term.write(`PING ${ptarget} (${ptarget}) 56(84) bytes of data.\r\n`);
+        term.write(`64 bytes from ${ptarget}: icmp_seq=1 ttl=64 time=0.034 ms\r\n`);
+        term.write(`64 bytes from ${ptarget}: icmp_seq=2 ttl=64 time=0.041 ms\r\n`);
+        term.write(`64 bytes from ${ptarget}: icmp_seq=3 ttl=64 time=0.038 ms\r\n`);
+        term.write(`--- ${ptarget} ping statistics ---\r\n3 packets transmitted, 3 received, 0% packet loss, time 2004ms\r\n`);
         break;
 
       case "whoami":
@@ -233,11 +365,11 @@ Supported utilities: ls, cat, pwd, cd, whoami, id, uname, clear, echo, grep, fin
         break;
 
       case "uname":
-        if (args.includes("-a")) {
-          term.write("Linux cyberlearn-sandbox 6.1.0-render-free-x86_64 #1 SMP PREEMPT_DYNAMIC GNU/Linux\r\n");
-        } else {
-          term.write("Linux\r\n");
-        }
+        term.write("Linux cyberlearn-sandbox 6.1.0-render-free-x86_64 #1 SMP PREEMPT_DYNAMIC GNU/Linux\r\n");
+        break;
+
+      case "pwd":
+        term.write(`/home/student/labs/${currentPathRef.current.join("/")}\r\n`);
         break;
 
       case "cd":
@@ -284,30 +416,6 @@ Supported utilities: ls, cat, pwd, cd, whoami, id, uname, clear, echo, grep, fin
         });
         break;
 
-      case "curl":
-        term.write(`\x1b[36m[*] Connecting to ${args[0] || "http://target.local"}...\x1b[0m\r\n`);
-        term.write("HTTP/1.1 200 OK\r\nServer: CyberLearn/2.0\r\nContent-Type: text/html\r\n\r\n<h1>CyberLearn Target Active</h1>\r\n");
-        break;
-
-      case "ping":
-        const target = args[0] || "127.0.0.1";
-        term.write(`PING ${target} (${target}) 56(84) bytes of data.\r\n`);
-        term.write(`64 bytes from ${target}: icmp_seq=1 ttl=64 time=0.034 ms\r\n`);
-        term.write(`64 bytes from ${target}: icmp_seq=2 ttl=64 time=0.041 ms\r\n`);
-        term.write(`--- ${target} ping statistics ---\r\n2 packets transmitted, 2 received, 0% packet loss\r\n`);
-        break;
-
-      case "nmap":
-        term.write(`Starting Nmap 7.94 ( https://nmap.org ) at ${new Date().toISOString()}\r\n`);
-        term.write(`Nmap scan report for ${args[0] || "10.10.14.1"}\r\n`);
-        term.write("Host is up (0.0012s latency).\r\n");
-        term.write("PORT     STATE SERVICE VERSION\r\n");
-        term.write("22/tcp   open  ssh     OpenSSH 8.9p1 Ubuntu\r\n");
-        term.write("80/tcp   open  http    Apache httpd 2.4.52\r\n");
-        term.write("8000/tcp open  http-alt FastAPI CyberLearn Sandbox\r\n\r\n");
-        term.write("Nmap done: 1 IP address scanned in 1.12 seconds\r\n");
-        break;
-
       case "base64":
         if (args[0]) {
           try {
@@ -317,6 +425,20 @@ Supported utilities: ls, cat, pwd, cd, whoami, id, uname, clear, echo, grep, fin
           }
         } else {
           term.write("usage: base64 <string>\r\n");
+        }
+        break;
+
+      case "sudo":
+        term.write(`\x1b[1;32m[sudo] executing as root: ${args.join(" ")}\x1b[0m\r\n`);
+        if (args[0] === "cat" && args[1]) {
+          const fn = args[1];
+          if (files[fn]) {
+            term.write(files[fn].replace(/\n/g, "\r\n") + "\r\n");
+          } else {
+            term.write(`cat: ${fn}: No such file or directory\r\n`);
+          }
+        } else {
+          term.write("root privileges granted in sandbox container.\r\n");
         }
         break;
 
@@ -332,7 +454,7 @@ Supported utilities: ls, cat, pwd, cd, whoami, id, uname, clear, echo, grep, fin
     }
 
     term.write(getPrompt());
-  }, [getVirtualFiles, labId]);
+  }, [getPrompt, getVirtualFiles, labId]);
 
   // Connect or switch to virtual engine
   const connectTerminal = useCallback(async () => {
@@ -392,7 +514,7 @@ Supported utilities: ls, cat, pwd, cd, whoami, id, uname, clear, echo, grep, fin
       xtermRef.current = term;
       fitAddonRef.current = fitAddon;
 
-      // Handle Key input in Virtual or PTY mode
+      // Handle Key input with instant typing responsiveness
       term.onData((data: string) => {
         if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN && !isVirtualModeRef.current) {
           socketRef.current.send(data);
@@ -470,28 +592,23 @@ Supported utilities: ls, cat, pwd, cd, whoami, id, uname, clear, echo, grep, fin
     const term = xtermRef.current;
     printBanner(term);
 
+    // Write prompt immediately so user can type right away with 0ms delay!
+    term.write(getPrompt());
+    term.focus();
+    isVirtualModeRef.current = true;
+    setConnectionStatus("virtual");
+
+    // Initiate WebSocket link to Render Free Tier backend in the background
     const wsUrl = getWebSocketUrl();
-    setConnectionStatus("connecting");
 
     try {
       const ws = new WebSocket(wsUrl);
       socketRef.current = ws;
 
-      coldStartTimerRef.current = setTimeout(() => {
-        if (ws.readyState !== WebSocket.OPEN) {
-          setConnectionStatus("virtual");
-          isVirtualModeRef.current = true;
-          term.write("\x1b[33m[*] Connected to CyberLearn Sandboxed Virtual Linux Engine.\x1b[0m\r\n");
-          term.write("\x1b[90m[*] (Render Free Tier background PTY will auto-link when awake)\x1b[0m\r\n\r\n");
-          term.write(getPrompt());
-        }
-      }, 3500);
-
       ws.onopen = () => {
-        if (coldStartTimerRef.current) clearTimeout(coldStartTimerRef.current);
         setConnectionStatus("connected");
         isVirtualModeRef.current = false;
-        term.write("\x1b[1;32m[+] Real Linux PTY WebSocket Linked (Render Free Sandbox)!\x1b[0m\r\n\r\n");
+        term.write("\r\n\x1b[1;32m[+] Real Linux PTY WebSocket Attached (Render Free Tier)!\x1b[0m\r\n\r\n");
       };
 
       ws.onmessage = (event) => {
@@ -509,23 +626,18 @@ Supported utilities: ls, cat, pwd, cd, whoami, id, uname, clear, echo, grep, fin
         if (!isVirtualModeRef.current) {
           setConnectionStatus("virtual");
           isVirtualModeRef.current = true;
-          term.write("\r\n\x1b[33m[*] Running in Instant Interactive Virtual Linux Shell.\x1b[0m\r\n");
-          term.write(getPrompt());
         }
       };
 
       ws.onerror = () => {
         setConnectionStatus("virtual");
         isVirtualModeRef.current = true;
-        term.write("\r\n\x1b[33m[*] Running in Instant Interactive Virtual Linux Shell.\x1b[0m\r\n");
-        term.write(getPrompt());
       };
     } catch {
       setConnectionStatus("virtual");
       isVirtualModeRef.current = true;
-      term.write(getPrompt());
     }
-  }, [fontSize, getPrompt, getVirtualFiles, getWebSocketUrl, labId, executeVirtualCommand]);
+  }, [fontSize, getPrompt, getVirtualFiles, getWebSocketUrl, executeVirtualCommand]);
 
   useEffect(() => {
     connectTerminal();
@@ -570,12 +682,16 @@ Supported utilities: ls, cat, pwd, cd, whoami, id, uname, clear, echo, grep, fin
     });
   };
 
-  // Quick Command sender
+  // Quick Command Launcher
   const sendCommand = (cmd: string) => {
     if (xtermRef.current) {
       if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN && !isVirtualModeRef.current) {
         socketRef.current.send(cmd + "\n");
       } else {
+        xtermRef.current.write(cmd);
+        currentInputRef.current = cmd;
+        commandHistoryRef.current.push(cmd);
+        currentInputRef.current = "";
         executeVirtualCommand(cmd, xtermRef.current);
       }
       setCopiedHelper(cmd);
@@ -603,17 +719,6 @@ Supported utilities: ls, cat, pwd, cd, whoami, id, uname, clear, echo, grep, fin
     }, 120);
   };
 
-  const handleCopySelection = () => {
-    if (xtermRef.current) {
-      const selection = xtermRef.current.getSelection();
-      if (selection) {
-        navigator.clipboard.writeText(selection);
-        setCopiedTextNotice(true);
-        setTimeout(() => setCopiedTextNotice(false), 2000);
-      }
-    }
-  };
-
   return (
     <div
       className={`transition-all duration-200 ${
@@ -630,21 +735,21 @@ Supported utilities: ls, cat, pwd, cd, whoami, id, uname, clear, echo, grep, fin
           <div className="flex items-center gap-2">
             <button
               onClick={handleClear}
-              className="w-3 h-3 rounded-full bg-[#FF5F56] hover:brightness-110 border border-[#E0443E] transition-all flex items-center justify-center group"
-              title="Close / Clear terminal"
+              className="w-3 h-3 rounded-full bg-[#FF5F56] hover:brightness-110 border border-[#E0443E] transition-all flex items-center justify-center group cursor-pointer"
+              title="Close / Clear terminal buffer"
             >
               <span className="opacity-0 group-hover:opacity-100 text-[8px] font-bold text-black leading-none">×</span>
             </button>
             <button
               onClick={() => changeFontSize(-1)}
-              className="w-3 h-3 rounded-full bg-[#FFBD2E] hover:brightness-110 border border-[#DEA123] transition-all flex items-center justify-center group"
+              className="w-3 h-3 rounded-full bg-[#FFBD2E] hover:brightness-110 border border-[#DEA123] transition-all flex items-center justify-center group cursor-pointer"
               title="Zoom out"
             >
               <span className="opacity-0 group-hover:opacity-100 text-[8px] font-bold text-black leading-none">-</span>
             </button>
             <button
               onClick={toggleFullscreen}
-              className="w-3 h-3 rounded-full bg-[#27C93F] hover:brightness-110 border border-[#1AAB29] transition-all flex items-center justify-center group"
+              className="w-3 h-3 rounded-full bg-[#27C93F] hover:brightness-110 border border-[#1AAB29] transition-all flex items-center justify-center group cursor-pointer"
               title="Toggle Fullscreen"
             >
               <span className="opacity-0 group-hover:opacity-100 text-[7px] font-bold text-black leading-none">↗</span>
@@ -659,33 +764,27 @@ Supported utilities: ls, cat, pwd, cd, whoami, id, uname, clear, echo, grep, fin
             </div>
           </div>
 
-          {/* Live Status Indicators & Window Controls */}
+          {/* Live Status Indicators & Controls */}
           <div className="flex items-center gap-3 text-xs font-mono">
             <div className="hidden sm:flex items-center gap-2 text-foreground-muted text-[11px]">
-              <span>HOST:</span>
-              <span className="text-primary font-bold">sandbox-node-01</span>
+              <span>TARGET:</span>
+              <span className="text-primary font-bold">10.10.14.55</span>
               <span>•</span>
-              <span>IP:</span>
-              <span className="text-foreground-secondary">10.10.14.55</span>
+              <span>NODE:</span>
+              <span className="text-foreground-secondary">sandbox-01</span>
             </div>
 
             <Badge
               variant={
                 connectionStatus === "connected"
                   ? "success"
-                  : connectionStatus === "virtual"
-                  ? "primary"
-                  : "warning"
+                  : "primary"
               }
               size="sm"
               className="text-[10px] font-mono px-2 py-0.5 uppercase tracking-wider flex items-center gap-1.5"
             >
               <span className="w-2 h-2 rounded-full bg-current animate-ping" />
-              {connectionStatus === "connected"
-                ? "Live Linux PTY"
-                : connectionStatus === "virtual"
-                ? "Virtual Shell"
-                : "Connecting..."}
+              {connectionStatus === "connected" ? "Live Linux PTY" : "Interactive Shell"}
             </Badge>
 
             <div className="flex items-center gap-1">
@@ -707,25 +806,26 @@ Supported utilities: ls, cat, pwd, cd, whoami, id, uname, clear, echo, grep, fin
           </div>
         </div>
 
-        {/* Quick Command Launcher Bar */}
+        {/* Offensive Attack & Recon Tools Bar */}
         <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-[#0B1120] border-b border-border/40 overflow-x-auto text-xs font-mono">
           <div className="flex items-center gap-1.5 shrink-0">
             <span className="text-foreground-muted text-[11px] flex items-center gap-1 mr-1">
-              <Play className="w-3 h-3 text-accent" /> Quick Run:
+              <Crosshair className="w-3 h-3 text-accent" /> Attack Tools:
             </span>
             {[
-              { label: "ls -la", cmd: "ls -la" },
-              { label: "cat README.txt", cmd: "cat README.txt" },
-              { label: "cat flag.txt", cmd: "cat flag.txt" },
-              { label: "whoami & id", cmd: "whoami && id" },
-              { label: "find .", cmd: "find ." },
-              { label: "help", cmd: "help" },
+              { label: "nmap 10.10.14.55", cmd: "nmap -sV 10.10.14.55", icon: <Radio className="w-2.5 h-2.5 text-accent" /> },
+              { label: "sqlmap -u /login", cmd: "sqlmap -u http://10.10.14.55/login --dump", icon: <Flame className="w-2.5 h-2.5 text-warning" /> },
+              { label: "hydra ssh", cmd: "hydra -l admin -P rockyou.txt 10.10.14.55 ssh", icon: <Skull className="w-2.5 h-2.5 text-error" /> },
+              { label: "nikto -h target", cmd: "nikto -h 10.10.14.55", icon: <Globe className="w-2.5 h-2.5 text-secondary-light" /> },
+              { label: "cat flag.txt", cmd: "cat flag.txt", icon: <Lock className="w-2.5 h-2.5 text-success" /> },
+              { label: "python3 exploit.py", cmd: "python3 exploit.py", icon: <Play className="w-2.5 h-2.5 text-primary" /> },
             ].map((chip) => (
               <button
                 key={chip.cmd}
                 onClick={() => sendCommand(chip.cmd)}
-                className="shrink-0 px-2 py-0.5 rounded bg-[#162032] border border-border/60 hover:border-primary/60 hover:bg-primary/15 text-foreground-secondary hover:text-primary transition-all text-[11px] flex items-center gap-1 cursor-pointer"
+                className="shrink-0 px-2 py-1 rounded bg-[#162032] border border-border/60 hover:border-primary/60 hover:bg-primary/15 text-foreground-secondary hover:text-primary transition-all text-[11px] flex items-center gap-1.5 cursor-pointer"
               >
+                {chip.icon}
                 <span>{chip.label}</span>
                 {copiedHelper === chip.cmd && <CheckCircle2 className="w-2.5 h-2.5 text-success" />}
               </button>
@@ -735,7 +835,7 @@ Supported utilities: ls, cat, pwd, cd, whoami, id, uname, clear, echo, grep, fin
           <div className="flex items-center gap-1 shrink-0 text-foreground-muted text-[11px]">
             <button
               onClick={() => changeFontSize(-1)}
-              className="p-1 rounded hover:bg-surface hover:text-foreground"
+              className="p-1 rounded hover:bg-surface hover:text-foreground cursor-pointer"
               title="Decrease Font Size"
             >
               <ZoomOut className="w-3 h-3" />
@@ -743,7 +843,7 @@ Supported utilities: ls, cat, pwd, cd, whoami, id, uname, clear, echo, grep, fin
             <span className="text-[10px]">{fontSize}px</span>
             <button
               onClick={() => changeFontSize(1)}
-              className="p-1 rounded hover:bg-surface hover:text-foreground"
+              className="p-1 rounded hover:bg-surface hover:text-foreground cursor-pointer"
               title="Increase Font Size"
             >
               <ZoomIn className="w-3 h-3" />
@@ -775,8 +875,8 @@ Supported utilities: ls, cat, pwd, cd, whoami, id, uname, clear, echo, grep, fin
             1
           </div>
           <div className="min-w-0">
-            <p className="text-foreground font-bold truncate">Explore Directory Tree</p>
-            <p className="text-[10px] text-foreground-muted truncate">Run `ls -la` to find challenge files</p>
+            <p className="text-foreground font-bold truncate">Recon & Port Scanning</p>
+            <p className="text-[10px] text-foreground-muted truncate">Run `nmap` or `ls -la` to find services</p>
           </div>
         </div>
 
@@ -785,8 +885,8 @@ Supported utilities: ls, cat, pwd, cd, whoami, id, uname, clear, echo, grep, fin
             2
           </div>
           <div className="min-w-0">
-            <p className="text-foreground font-bold truncate">Extract Flag Content</p>
-            <p className="text-[10px] text-foreground-muted truncate">Read `cat flag.txt` or `cat README.txt`</p>
+            <p className="text-foreground font-bold truncate">Launch Attack / Extract Flag</p>
+            <p className="text-[10px] text-foreground-muted truncate">Run `sqlmap`, `hydra`, or `cat flag.txt`</p>
           </div>
         </div>
 
@@ -796,7 +896,7 @@ Supported utilities: ls, cat, pwd, cd, whoami, id, uname, clear, echo, grep, fin
           </div>
           <div className="min-w-0">
             <p className="text-foreground font-bold truncate">Claim XP Reward</p>
-            <p className="text-[10px] text-foreground-muted truncate">Paste into Submit Flag box below</p>
+            <p className="text-[10px] text-foreground-muted truncate">Paste flag into Submit box below</p>
           </div>
         </div>
       </div>
