@@ -1343,3 +1343,16 @@ def update_invoice_status_by_admin(
     return {"status": "success", "invoice_id": invoice.id, "new_status": invoice.status}
 
 
+@router.post("/sync-firestore")
+async def trigger_firestore_sync(
+    current_user: models.User = Depends(require_admin)
+):
+    """Triggers high-speed synchronization across SQL DB and Cloud Firestore."""
+    try:
+        from sync_to_firestore_fast import run_fast_sync
+        await run_fast_sync()
+        return {"status": "success", "message": "All platform data (users, points, progress, certificates, exams) successfully synchronized to Cloud Firestore."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
