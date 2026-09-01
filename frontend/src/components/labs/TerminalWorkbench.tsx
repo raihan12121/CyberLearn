@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import {
-  Terminal as TerminalIcon,
   RotateCcw,
   Maximize2,
   Minimize2,
@@ -18,12 +17,29 @@ import {
   Skull,
   Crosshair,
   Zap,
+  Terminal as TerminalIcon,
+  Search,
+  FileText,
+  FileCode,
+  FolderSearch,
+  KeyRound,
+  Network,
+  Activity,
+  Bug,
+  Binary,
 } from "lucide-react";
 import { Badge, Button } from "@/components/ui";
 
 interface TerminalWorkbenchProps {
   sessionId: string;
   labId: string;
+}
+
+interface CommandSuggestion {
+  label: string;
+  cmd: string;
+  icon: React.ReactNode;
+  hint: string;
 }
 
 export default function TerminalWorkbench({ sessionId, labId }: TerminalWorkbenchProps) {
@@ -46,6 +62,104 @@ export default function TerminalWorkbench({ sessionId, labId }: TerminalWorkbenc
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [copiedHelper, setCopiedHelper] = useState<string | null>(null);
   const [fontSize, setFontSize] = useState<number>(14);
+
+  // Lab-Specific Suggested Commands tailored to each specific lab
+  const suggestedCommands = useMemo<CommandSuggestion[]>(() => {
+    const lid = (labId || "").toLowerCase();
+
+    if (lid.includes("linux-navigation") || lid.includes("linux-basic") || lid.includes("command")) {
+      return [
+        { label: "ls -la", cmd: "ls -la", icon: <FolderSearch className="w-2.5 h-2.5 text-primary" />, hint: "List all files & permissions" },
+        { label: "cat README.txt", cmd: "cat README.txt", icon: <FileText className="w-2.5 h-2.5 text-secondary-light" />, hint: "View lab mission instructions" },
+        { label: "find . -name '*.txt'", cmd: "find . -name '*.txt'", icon: <Search className="w-2.5 h-2.5 text-accent" />, hint: "Locate text files" },
+        { label: "grep -i 'flag' notes.txt", cmd: "grep -i 'flag' notes.txt", icon: <KeyRound className="w-2.5 h-2.5 text-warning" />, hint: "Search secret patterns" },
+        { label: "pwd && whoami", cmd: "pwd && whoami", icon: <TerminalIcon className="w-2.5 h-2.5 text-foreground-secondary" />, hint: "Print current path & user" },
+        { label: "cat flag.txt", cmd: "cat flag.txt", icon: <Lock className="w-2.5 h-2.5 text-success" />, hint: "Read captured flag" },
+        { label: "⚡ Run Attack", cmd: "attack", icon: <Zap className="w-2.5 h-2.5 text-warning" />, hint: "Run automated attack" },
+      ];
+    }
+
+    if (lid.includes("sql") || lid.includes("injection") || lid.includes("sqli") || lid.includes("database")) {
+      return [
+        { label: "sqlmap -u /login --dump", cmd: "sqlmap -u http://10.10.14.55/login --dump", icon: <Flame className="w-2.5 h-2.5 text-warning" />, hint: "Automate SQL injection & table dump" },
+        { label: "curl SQLi Payload", cmd: "curl -d \"user=admin' OR 1=1--\" http://10.10.14.55/login", icon: <Globe className="w-2.5 h-2.5 text-accent" />, hint: "Test SQL bypass payload via HTTP" },
+        { label: "cat target_schema.sql", cmd: "cat target_schema.sql", icon: <FileCode className="w-2.5 h-2.5 text-secondary-light" />, hint: "Inspect leaked DB schema" },
+        { label: "python3 exploit.py", cmd: "python3 exploit.py", icon: <Play className="w-2.5 h-2.5 text-primary" />, hint: "Run automated SQL exploit script" },
+        { label: "nmap 10.10.14.55", cmd: "nmap -sV 10.10.14.55", icon: <Radio className="w-2.5 h-2.5 text-accent" />, hint: "Scan MySQL and HTTP ports" },
+        { label: "cat flag.txt", cmd: "cat flag.txt", icon: <Lock className="w-2.5 h-2.5 text-success" />, hint: "Read extracted flag" },
+        { label: "⚡ Run Attack", cmd: "attack", icon: <Zap className="w-2.5 h-2.5 text-warning" />, hint: "Run full exploit sequence" },
+      ];
+    }
+
+    if (lid.includes("packet") || lid.includes("sniffer") || lid.includes("network") || lid.includes("wireshark")) {
+      return [
+        { label: "nmap -sV 10.10.14.55", cmd: "nmap -sV 10.10.14.55", icon: <Radio className="w-2.5 h-2.5 text-accent" />, hint: "Stealth port scan on target" },
+        { label: "tcpdump -r capture.pcap", cmd: "tcpdump -r capture.pcap", icon: <Activity className="w-2.5 h-2.5 text-primary" />, hint: "Inspect packet capture file" },
+        { label: "grep 'PASS' capture.pcap", cmd: "grep 'PASS' capture.pcap", icon: <KeyRound className="w-2.5 h-2.5 text-warning" />, hint: "Extract plaintext passwords" },
+        { label: "ping -c 3 10.10.14.55", cmd: "ping 10.10.14.55", icon: <Network className="w-2.5 h-2.5 text-secondary-light" />, hint: "Send ICMP network echo probes" },
+        { label: "nc 10.10.14.55 80", cmd: "nc 10.10.14.55 80", icon: <TerminalIcon className="w-2.5 h-2.5 text-foreground-secondary" />, hint: "Connect to target TCP socket" },
+        { label: "cat flag.txt", cmd: "cat flag.txt", icon: <Lock className="w-2.5 h-2.5 text-success" />, hint: "Read intercepted flag" },
+        { label: "⚡ Run Attack", cmd: "attack", icon: <Zap className="w-2.5 h-2.5 text-warning" />, hint: "Run network exploitation" },
+      ];
+    }
+
+    if (lid.includes("privesc") || lid.includes("privilege") || lid.includes("root")) {
+      return [
+        { label: "sudo -l", cmd: "sudo -l", icon: <Shield className="w-2.5 h-2.5 text-error" />, hint: "List allowed sudo root commands" },
+        { label: "cat audit.log", cmd: "cat audit.log", icon: <FileText className="w-2.5 h-2.5 text-warning" />, hint: "Inspect vulnerable cron job logs" },
+        { label: "find / -perm -4000", cmd: "find / -perm -4000", icon: <Search className="w-2.5 h-2.5 text-accent" />, hint: "Find SUID root binaries" },
+        { label: "sudo su", cmd: "sudo su", icon: <Skull className="w-2.5 h-2.5 text-error" />, hint: "Escalate to root privileges" },
+        { label: "id", cmd: "id", icon: <TerminalIcon className="w-2.5 h-2.5 text-foreground-secondary" />, hint: "Verify root UID 0" },
+        { label: "cat flag.txt", cmd: "cat flag.txt", icon: <Lock className="w-2.5 h-2.5 text-success" />, hint: "Read root flag" },
+        { label: "⚡ Run Attack", cmd: "attack", icon: <Zap className="w-2.5 h-2.5 text-warning" />, hint: "Automate privesc exploit" },
+      ];
+    }
+
+    if (lid.includes("recon") || lid.includes("osint") || lid.includes("book")) {
+      return [
+        { label: "find . -type f", cmd: "find .", icon: <FolderSearch className="w-2.5 h-2.5 text-primary" />, hint: "Discover hidden files & archives" },
+        { label: "cat metadata.json", cmd: "cat metadata.json", icon: <FileCode className="w-2.5 h-2.5 text-secondary-light" />, hint: "Inspect OSINT metadata clues" },
+        { label: "nikto -h 10.10.14.55", cmd: "nikto -h 10.10.14.55", icon: <Globe className="w-2.5 h-2.5 text-accent" />, hint: "Scan web server headers & routes" },
+        { label: "cat notes.txt", cmd: "cat notes.txt", icon: <FileText className="w-2.5 h-2.5 text-warning" />, hint: "Read recon intelligence briefing" },
+        { label: "cat flag.txt", cmd: "cat flag.txt", icon: <Lock className="w-2.5 h-2.5 text-success" />, hint: "Read captured flag" },
+        { label: "⚡ Run Attack", cmd: "attack", icon: <Zap className="w-2.5 h-2.5 text-warning" />, hint: "Run automated recon & exploit" },
+      ];
+    }
+
+    if (lid.includes("bug") || lid.includes("hunter") || lid.includes("xss") || lid.includes("web")) {
+      return [
+        { label: "nikto -h 10.10.14.55", cmd: "nikto -h 10.10.14.55", icon: <Globe className="w-2.5 h-2.5 text-accent" />, hint: "Scan web application vulnerabilities" },
+        { label: "gobuster dir -u target", cmd: "gobuster dir -u http://10.10.14.55", icon: <Search className="w-2.5 h-2.5 text-primary" />, hint: "Brute-force hidden endpoints" },
+        { label: "python3 target_app.py", cmd: "python3 target_app.py", icon: <Bug className="w-2.5 h-2.5 text-warning" />, hint: "Test vulnerable endpoint handler" },
+        { label: "curl http://10.10.14.55", cmd: "curl http://10.10.14.55", icon: <Globe className="w-2.5 h-2.5 text-secondary-light" />, hint: "Inspect web response payload" },
+        { label: "cat flag.txt", cmd: "cat flag.txt", icon: <Lock className="w-2.5 h-2.5 text-success" />, hint: "Read extracted flag" },
+        { label: "⚡ Run Attack", cmd: "attack", icon: <Zap className="w-2.5 h-2.5 text-warning" />, hint: "Run automated web attack" },
+      ];
+    }
+
+    if (lid.includes("crypto") || lid.includes("cipher") || lid.includes("hash")) {
+      return [
+        { label: "hydra ssh", cmd: "hydra -l admin -P rockyou.txt 10.10.14.55 ssh", icon: <Skull className="w-2.5 h-2.5 text-error" />, hint: "Brute-force SSH with rockyou wordlist" },
+        { label: "base64 <string>", cmd: "base64 FLAG{sample}", icon: <Binary className="w-2.5 h-2.5 text-accent" />, hint: "Encode/decode Base64 hash" },
+        { label: "cat rockyou.txt", cmd: "cat rockyou.txt", icon: <FileText className="w-2.5 h-2.5 text-warning" />, hint: "Inspect dictionary wordlist" },
+        { label: "cat notes.txt", cmd: "cat notes.txt", icon: <FileText className="w-2.5 h-2.5 text-secondary-light" />, hint: "Read cipher cracking notes" },
+        { label: "cat flag.txt", cmd: "cat flag.txt", icon: <Lock className="w-2.5 h-2.5 text-success" />, hint: "Read decrypted flag" },
+        { label: "⚡ Run Attack", cmd: "attack", icon: <Zap className="w-2.5 h-2.5 text-warning" />, hint: "Run automated crypto solver" },
+      ];
+    }
+
+    // Default universal offensive cyber commands
+    return [
+      { label: "⚡ Run Attack", cmd: "attack", icon: <Zap className="w-2.5 h-2.5 text-warning" />, hint: "Execute automated exploitation framework" },
+      { label: "nmap 10.10.14.55", cmd: "nmap -sV 10.10.14.55", icon: <Radio className="w-2.5 h-2.5 text-accent" />, hint: "Stealth port scan & service detection" },
+      { label: "sqlmap -u /login", cmd: "sqlmap -u http://10.10.14.55/login --dump", icon: <Flame className="w-2.5 h-2.5 text-warning" />, hint: "Exploit SQL injection & dump DB" },
+      { label: "hydra ssh", cmd: "hydra -l admin -P rockyou.txt 10.10.14.55 ssh", icon: <Skull className="w-2.5 h-2.5 text-error" />, hint: "Dictionary brute-force cracker" },
+      { label: "nikto -h target", cmd: "nikto -h 10.10.14.55", icon: <Globe className="w-2.5 h-2.5 text-secondary-light" />, hint: "Scan web vulnerabilities" },
+      { label: "cat flag.txt", cmd: "cat flag.txt", icon: <Lock className="w-2.5 h-2.5 text-success" />, hint: "Read secret lab flag" },
+      { label: "python3 exploit.py", cmd: "python3 exploit.py", icon: <Play className="w-2.5 h-2.5 text-primary" />, hint: "Run python exploit sequence" },
+      { label: "ls -la", cmd: "ls -la", icon: <FolderSearch className="w-2.5 h-2.5 text-primary" />, hint: "List all workspace files" },
+    ];
+  }, [labId]);
 
   // Compute WebSocket URL from environment
   const getWebSocketUrl = useCallback(() => {
@@ -77,9 +191,9 @@ export default function TerminalWorkbench({ sessionId, labId }: TerminalWorkbenc
     term.write(" ╚██████╗   ██║   ██████╔╝███████╗██║  ██║███████╗███████╗██║  ██║██║  ██║██║ ╚████║\r\n");
     term.write("  ╚═════╝   ╚═╝   ╚═════╝ ╚══════╝╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝\r\n");
     term.write("\x1b[0m\r\n");
-    term.write("\x1b[1;32m [✓] CyberLearn Interactive Linux Practice Terminal & Attack Station\x1b[0m\r\n");
+    term.write("\x1b[1;32m [✓] CyberLearn Interactive Linux Labs Terminal & Attack Station\x1b[0m\r\n");
     term.write(`\x1b[90m [*] Target Workspace: /home/student/labs/${labId}\x1b[0m\r\n`);
-    term.write("\x1b[90m [*] Type '\x1b[33mattack\x1b[90m', '\x1b[33mnmap\x1b[90m', '\x1b[33msqlmap\x1b[90m', '\x1b[33mcat flag.txt\x1b[90m', or '\x1b[33mhelp\x1b[90m'.\x1b[0m\r\n\r\n");
+    term.write("\x1b[90m [*] Click any recommended command chip above or type '\x1b[33mattack\x1b[90m' to begin.\x1b[0m\r\n\r\n");
   };
 
   const getPrompt = useCallback(() => {
@@ -97,9 +211,9 @@ export default function TerminalWorkbench({ sessionId, labId }: TerminalWorkbenc
       "README.txt": `=====================================================
   CYBERLEARN INTERACTIVE LAB: ${labId.toUpperCase()}
 =====================================================
-Welcome to your practice sandbox terminal & offensive station.
+Welcome to your sandbox terminal & offensive station.
 
-Recommended Attack & Exploration Workflow:
+Recommended Workflow for this Lab:
   1. Explore filesystem:    ls -la, pwd, whoami, id
   2. Run automatic attack:  attack (or exploit)
   3. Inspect targets:       nmap -sV 10.10.14.55
@@ -126,6 +240,9 @@ print("[!] Extracted Flag: FLAG{sql_injection_bypass_pwned_2026}")
 `,
       "rockyou.txt": "admin\npassword\n123456\nroot\ntoortoor\ncyberlearn\nsecret123\nPassword123!\n",
       "target_schema.sql": "-- Leaked database dump\nCREATE TABLE users (id INT, username VARCHAR(50), password_hash VARCHAR(255));\nINSERT INTO users VALUES (1, 'admin', '$2b$12$FLAG{hash_cracked_admin_secret}');\n",
+      "metadata.json": `{\n  "target": "CyberAcademy Archives",\n  "lab": "${labId}",\n  "clue": "Search the filesystem for hidden backup files using grep or find."\n}\n`,
+      "audit.log": "CRON[1024]: (root) CMD (/usr/local/bin/backup.sh)\nAUTH[1025]: sudo student : TTY=pts/0 ; PWD=/home/student ; COMMAND=/bin/cat flag.txt\n",
+      "target_app.py": "# Mock vulnerable endpoint\ndef handle_request(user_input):\n    return f'Processed input: {user_input}'\n",
     };
 
     if (labId.includes("packet") || labId.includes("network")) {
@@ -206,7 +323,8 @@ print("[!] Extracted Flag: FLAG{sql_injection_bypass_pwned_2026}")
       case "ls":
       case "dir":
       case "ll":
-        const showAll = args.includes("-la") || args.includes("-a") || args.includes("-l") || cmd.toLowerCase() === "dir" || cmd.toLowerCase() === "ll";
+      case "ls-la":
+        const showAll = args.includes("-la") || args.includes("-a") || args.includes("-l") || cmd.toLowerCase() === "dir" || cmd.toLowerCase() === "ll" || cmd.toLowerCase() === "ls-la";
         if (showAll) {
           term.write("total 48\r\n");
           term.write("drwxr-xr-x 4 student student 4096 Sep  2 01:50 .\r\n");
@@ -298,9 +416,11 @@ print("[!] Extracted Flag: FLAG{sql_injection_bypass_pwned_2026}")
         break;
 
       case "hydra":
-        term.write("\x1b[36mHydra v9.5 (c) 2026 by van Hauser / THC - Please do not use in military or secret service orgs!\x1b[0m\r\n");
+      case "john":
+      case "hashcat":
+        term.write("\x1b[36mHydra / John v9.5 (c) 2026 - Password Cracking Engine\x1b[0m\r\n");
         term.write("[DATA] max 16 tasks per target, 1 target, 8 passwords in dictionary, ~8 total attempts\r\n");
-        term.write("[STATUS] attack started for SSH on 10.10.14.55:22\r\n");
+        term.write("[STATUS] attack started for SSH on 10.10.14.55:22 using wordlist rockyou.txt\r\n");
         term.write("[ATTEMPT] 10.10.14.55:22 - login: admin - pass: password (failed)\r\n");
         term.write("[ATTEMPT] 10.10.14.55:22 - login: admin - pass: 123456 (failed)\r\n");
         term.write("[ATTEMPT] 10.10.14.55:22 - login: admin - pass: root (failed)\r\n");
@@ -374,6 +494,24 @@ print("[!] Extracted Flag: FLAG{sql_injection_bypass_pwned_2026}")
         term.write("</body>\r\n</html>\r\n");
         break;
 
+      case "tcpdump":
+        term.write("reading from file capture.pcap, link-type EN10MB (Ethernet)\r\n");
+        term.write("02:10:01.120 IP 10.10.14.5.49152 > 10.10.14.55.80: Flags [S], seq 184201, win 64240\r\n");
+        term.write("02:10:01.121 IP 10.10.14.55.80 > 10.10.14.5.49152: Flags [S.], seq 481920, ack 184202\r\n");
+        term.write("02:10:01.140 IP 10.10.14.5.49152 > 10.10.14.55.80: Flags [P.], seq 184202:184350, ack 481921: HTTP: POST /login HTTP/1.1\r\n");
+        term.write("\x1b[1;32m02:10:01.141 HTTP Payload: user=admin&pass=FLAG{packet_sniffed_credentials_2026}\x1b[0m\r\n");
+        break;
+
+      case "strings":
+        if (args[0] && files[args[0]]) {
+          const content = files[args[0]];
+          const lines = content.split("\n").filter((l) => l.trim().length > 3);
+          lines.forEach((l) => term.write(l + "\r\n"));
+        } else {
+          term.write("CyberLearn Sandbox Strings Dump\r\nFLAG{embedded_strings_extracted_2026}\r\n/bin/bash\r\n/etc/shadow\r\n");
+        }
+        break;
+
       case "nc":
       case "netcat":
         term.write(`\x1b[36m[+] Connected to ${args[0] || "10.10.14.55"} on port ${args[1] || "80"}.\x1b[0m\r\n`);
@@ -428,8 +566,8 @@ print("[!] Extracted Flag: FLAG{sql_injection_bypass_pwned_2026}")
         if (args.length < 2) {
           term.write("\x1b[31musage: grep <pattern> <file>\x1b[0m\r\n");
         } else {
-          const pat = args[0];
-          const fname = args[1];
+          const pat = args[0].replace(/['"]/g, "");
+          const fname = args[args.length - 1];
           if (files[fname]) {
             const lines = files[fname].split("\n");
             lines.forEach((line) => {
@@ -464,16 +602,21 @@ print("[!] Extracted Flag: FLAG{sql_injection_bypass_pwned_2026}")
 
       case "sudo":
       case "su":
-        term.write(`\x1b[1;32m[sudo] executing as root: ${args.join(" ")}\x1b[0m\r\n`);
-        if (args[0] === "cat" && args[1]) {
+        if (args.includes("-l")) {
+          term.write("Matching Defaults entries for student on cyberlearn-sandbox:\r\n");
+          term.write("    env_reset, mail_badpass, secure_path=/usr/local/sbin\\:/usr/local/bin\\:/usr/sbin\\:/usr/bin\\:/sbin\\:/bin\r\n\r\n");
+          term.write("User student may run the following commands on cyberlearn-sandbox:\r\n");
+          term.write("    (root) NOPASSWD: /bin/cat, /usr/bin/python3, /usr/bin/find\r\n");
+        } else if (args[0] === "cat" && args[1]) {
           const fn = args[1];
           if (files[fn]) {
+            term.write(`\x1b[1;32m[sudo] reading ${fn} as root:\x1b[0m\r\n`);
             term.write(files[fn].replace(/\n/g, "\r\n") + "\r\n");
           } else {
             term.write(`cat: ${fn}: No such file or directory\r\n`);
           }
         } else {
-          term.write("root privileges granted in sandbox container.\r\n");
+          term.write(`\x1b[1;32m[sudo] root privileges granted: uid=0(root) gid=0(root)\x1b[0m\r\n`);
         }
         break;
 
@@ -513,7 +656,7 @@ print("[!] Extracted Flag: FLAG{sql_injection_bypass_pwned_2026}")
 
       default:
         term.write(`\x1b[31mbash: ${cmd}: command not found.\x1b[0m\r\n`);
-        term.write(`\x1b[90m[*] Tip: Type '\x1b[33mattack\x1b[90m', '\x1b[33mnmap\x1b[90m', '\x1b[33msqlmap\x1b[90m', '\x1b[33mcat flag.txt\x1b[90m', or '\x1b[33mhelp\x1b[90m'.\x1b[0m\r\n`);
+        term.write(`\x1b[90m[*] Tip: Try clicking any recommended command button on the top toolbar.\x1b[0m\r\n`);
         break;
     }
 
@@ -903,29 +1046,22 @@ print("[!] Extracted Flag: FLAG{sql_injection_bypass_pwned_2026}")
           </div>
         </div>
 
-        {/* Offensive Attack & Recon Tools Bar */}
+        {/* Dynamic Lab-Specific Suggested Commands Toolbar */}
         <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-[#0B1120] border-b border-border/40 overflow-x-auto text-xs font-mono">
           <div className="flex items-center gap-1.5 shrink-0">
             <span className="text-foreground-muted text-[11px] flex items-center gap-1 mr-1">
-              <Crosshair className="w-3 h-3 text-accent" /> Attack Tools:
+              <Crosshair className="w-3 h-3 text-accent" /> Suggested:
             </span>
-            {[
-              { label: "⚡ Run Attack", cmd: "attack", icon: <Zap className="w-2.5 h-2.5 text-warning" /> },
-              { label: "nmap 10.10.14.55", cmd: "nmap -sV 10.10.14.55", icon: <Radio className="w-2.5 h-2.5 text-accent" /> },
-              { label: "sqlmap -u /login", cmd: "sqlmap -u http://10.10.14.55/login --dump", icon: <Flame className="w-2.5 h-2.5 text-warning" /> },
-              { label: "hydra ssh", cmd: "hydra -l admin -P rockyou.txt 10.10.14.55 ssh", icon: <Skull className="w-2.5 h-2.5 text-error" /> },
-              { label: "nikto -h target", cmd: "nikto -h 10.10.14.55", icon: <Globe className="w-2.5 h-2.5 text-secondary-light" /> },
-              { label: "cat flag.txt", cmd: "cat flag.txt", icon: <Lock className="w-2.5 h-2.5 text-success" /> },
-              { label: "python3 exploit.py", cmd: "python3 exploit.py", icon: <Play className="w-2.5 h-2.5 text-primary" /> },
-            ].map((chip) => (
+            {suggestedCommands.map((chip) => (
               <button
                 key={chip.cmd}
                 onClick={() => sendCommand(chip.cmd)}
-                className="shrink-0 px-2 py-1 rounded bg-[#162032] border border-border/60 hover:border-primary/60 hover:bg-primary/15 text-foreground-secondary hover:text-primary transition-all text-[11px] flex items-center gap-1.5 cursor-pointer"
+                title={chip.hint}
+                className="shrink-0 px-2 py-1 rounded bg-[#162032] border border-border/60 hover:border-primary/80 hover:bg-primary/15 text-foreground-secondary hover:text-primary transition-all text-[11px] flex items-center gap-1.5 cursor-pointer font-mono shadow-sm active:scale-95"
               >
                 {chip.icon}
                 <span>{chip.label}</span>
-                {copiedHelper === chip.cmd && <CheckCircle2 className="w-2.5 h-2.5 text-success" />}
+                {copiedHelper === chip.cmd && <CheckCircle2 className="w-2.5 h-2.5 text-success animate-in fade-in" />}
               </button>
             ))}
           </div>
@@ -974,7 +1110,7 @@ print("[!] Extracted Flag: FLAG{sql_injection_bypass_pwned_2026}")
           </div>
           <div className="min-w-0">
             <p className="text-foreground font-bold truncate">Recon & Port Scanning</p>
-            <p className="text-[10px] text-foreground-muted truncate">Run `nmap` or `ls -la` to find services</p>
+            <p className="text-[10px] text-foreground-muted truncate">Use suggested chips or type commands above</p>
           </div>
         </div>
 
@@ -983,7 +1119,7 @@ print("[!] Extracted Flag: FLAG{sql_injection_bypass_pwned_2026}")
             2
           </div>
           <div className="min-w-0">
-            <p className="text-foreground font-bold truncate">Launch Attack / Extract Flag</p>
+            <p className="text-foreground font-bold truncate">Exploitation & Flag Capture</p>
             <p className="text-[10px] text-foreground-muted truncate">Run `attack`, `sqlmap`, or `cat flag.txt`</p>
           </div>
         </div>

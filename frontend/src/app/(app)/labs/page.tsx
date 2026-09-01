@@ -29,7 +29,7 @@ const labs = [
     difficulty: "Easy",
     timeLimit: "30 mins",
     xp: 100,
-    desc: "Practice filesystem navigation using commands like cd, ls, and pwd in an interactive practice lab environment.",
+    desc: "Practice filesystem navigation using commands like cd, ls, and pwd in an interactive lab environment.",
     template: "linux-basic",
   },
   {

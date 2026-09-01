@@ -31,7 +31,7 @@ export default function SubscriptionPaywallModal({
   isOpen,
   onClose,
   title = "Unlock CyberLearn Pro",
-  description = "A paid subscription is required to access interactive courses, video lessons, and practice labs.",
+  description = "A paid subscription is required to access interactive courses, video lessons, and labs.",
   resourceName,
 }: SubscriptionPaywallModalProps) {
   const router = useRouter();
@@ -149,7 +149,7 @@ export default function SubscriptionPaywallModal({
                   <ul className="space-y-2 text-xs text-foreground-secondary">
                     <li className="flex items-center gap-2">
                       <Check className="w-3.5 h-3.5 text-accent shrink-0" />
-                      <span>Unlimited practice labs & security tools</span>
+                      <span>Unlimited labs & security tools</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <Check className="w-3.5 h-3.5 text-accent shrink-0" />

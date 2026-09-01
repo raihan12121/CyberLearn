@@ -137,6 +137,20 @@ ls -la "$@"
 """
     (bin_dir / "ls-la").write_text(ls_la_script, encoding="utf-8")
 
+    # 8. tcpdump CLI tool
+    tcpdump_script = f"""#!/usr/bin/env python3
+print("reading from file capture.pcap, link-type EN10MB (Ethernet)")
+print("02:10:01.120 IP 10.10.14.5.49152 > 10.10.14.55.80: Flags [S], seq 184201, win 64240")
+print("02:10:01.121 IP 10.10.14.55.80 > 10.10.14.5.49152: Flags [S.], seq 481920, ack 184202")
+print("02:10:01.140 IP 10.10.14.5.49152 > 10.10.14.55.80: Flags [P.], seq 184202:184350, ack 481921: HTTP: POST /login HTTP/1.1")
+print("\\033[1;32m02:10:01.141 HTTP Payload: user=admin&pass={flag}\\033[0m")
+"""
+    (bin_dir / "tcpdump").write_text(tcpdump_script, encoding="utf-8")
+
+    # 9. john / hashcat CLI tool
+    (bin_dir / "john").write_text(hydra_script, encoding="utf-8")
+    (bin_dir / "hashcat").write_text(hydra_script, encoding="utf-8")
+
     # Make all files in bin directory executable
     for f in bin_dir.iterdir():
         try:

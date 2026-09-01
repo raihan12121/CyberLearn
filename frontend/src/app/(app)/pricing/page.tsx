@@ -64,7 +64,7 @@ export default function PricingPage() {
       name: "Pro",
       price: billingPeriod === "monthly" ? 12 : 10,
       desc: "For intermediate learners pursuing career readiness.",
-      features: ["Unlimited practice labs & tools", "Full access to AI Coach", "Course completion certificates", "Advanced CTF challenges", "Priority discord support"],
+      features: ["Unlimited labs & tools", "Full access to AI Coach", "Course completion certificates", "Advanced CTF challenges", "Priority discord support"],
       badge: "Most Popular",
       variant: "primary" as const,
       glow: "primary" as const,
@@ -88,7 +88,7 @@ export default function PricingPage() {
         <Badge variant="primary" size="md">Pricing Plans</Badge>
         <h1 className="text-3xl md:text-4xl font-bold text-foreground">Flexible Plans for Every Stage</h1>
         <p className="text-foreground-secondary text-sm max-w-lg mx-auto leading-relaxed">
-          Upgrade to a Pro or Premium plan to unlock unlimited interactive practice labs, certificates, and personal coaching.
+          Upgrade to a Pro or Premium plan to unlock unlimited interactive labs, certificates, and personal coaching.
         </p>
 
         {activePlanMessage && (

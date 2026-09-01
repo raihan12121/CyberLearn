@@ -43,7 +43,7 @@ const PLANS: Record<string, PlanConfig> = {
   pro: {
     name: "Pro",
     title: "CyberLearn Pro All-Access",
-    tagline: "Unlocks every course video, syllabus, quizzes, and hands-on practice labs.",
+    tagline: "Unlocks every course video, syllabus, quizzes, and hands-on labs.",
     monthlyPrice: 12.00,
     annualPrice: 120.00,
     features: [

@@ -75,7 +75,7 @@ export default function TopNav({ onMenuClick }: TopNavProps) {
     const baseNotifs: NotificationItem[] = [
       {
         id: "notif-welcome-labs",
-        title: "Hands-on Practice Labs Ready",
+        title: "Hands-on Labs Ready",
         description: "Explore interactive CTF challenges, Web Security Proxy Inspector, and SOC Workbenches.",
         timestamp: "Just now",
         type: "lab",

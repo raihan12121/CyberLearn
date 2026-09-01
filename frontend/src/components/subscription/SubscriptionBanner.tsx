@@ -20,7 +20,7 @@ export default function SubscriptionBanner({ type = "general" }: SubscriptionBan
     type === "courses"
       ? "Course Video Lessons & Assessments Require a Subscription"
       : type === "labs"
-      ? "Interactive Practice Labs Require a Paid Subscription"
+      ? "Interactive Labs Require a Paid Subscription"
       : "Unlock Unlimited Cyber Security Training with Pro";
 
   const description =
@@ -28,7 +28,7 @@ export default function SubscriptionBanner({ type = "general" }: SubscriptionBan
       ? "You are currently on the Free tier. Upgrade to Pro to watch all video lessons, read complete curriculum modules, and complete graded quizzes."
       : type === "labs"
       ? "Interactive Web Security Proxies, Attack Network Graphs, and SOC Log Analyzers require an active Pro or Premium subscription."
-      : "Get unlimited interactive practice labs, comprehensive video courses, AI tutoring, and verified industry certificates.";
+      : "Get unlimited interactive labs, comprehensive video courses, AI tutoring, and verified industry certificates.";
 
   return (
     <>

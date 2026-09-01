@@ -187,7 +187,7 @@ export default function LabWorkspacePage() {
               className="w-full sm:w-auto font-bold shadow-lg"
             >
               <Zap className="w-4 h-4 mr-1.5" />
-              <span>Unlock Practice Labs with Pro ($12/mo)</span>
+              <span>Unlock Labs with Pro ($12/mo)</span>
             </Button>
             <Button
               variant="outline"
@@ -203,7 +203,7 @@ export default function LabWorkspacePage() {
         <SubscriptionPaywallModal
           isOpen={paywallOpen}
           onClose={() => setPaywallOpen(false)}
-          title="Unlock Practice Lab Workspaces"
+          title="Unlock Lab Workspaces"
           resourceName={labId.replace(/-/g, " ")}
         />
       </div>

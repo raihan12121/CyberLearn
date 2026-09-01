@@ -58,7 +58,7 @@ const studentNavSections: NavSection[] = [
     items: [
       { label: "Courses", href: "/courses", icon: BookOpen },
       { label: "Live Batches", href: "/batches", icon: GraduationCap },
-      { label: "Practice Labs", href: "/labs", icon: FlaskConical },
+      { label: "Labs", href: "/labs", icon: FlaskConical },
     ],
   },
   {
