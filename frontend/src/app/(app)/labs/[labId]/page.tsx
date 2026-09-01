@@ -15,6 +15,7 @@ import {
   ArrowLeft,
   Zap,
   Lock,
+  Terminal as TerminalIcon,
 } from "lucide-react";
 import { Card, Badge, Button } from "@/components/ui";
 import { api } from "@/lib/api";
@@ -24,6 +25,7 @@ import WebProxyInspector from "@/components/labs/WebProxyInspector";
 import NetworkTopologyGraph from "@/components/labs/NetworkTopologyGraph";
 import SocLogWorkbench from "@/components/labs/SocLogWorkbench";
 import SocraticHintDrawer from "@/components/labs/SocraticHintDrawer";
+import TerminalWorkbench from "@/components/labs/TerminalWorkbench";
 
 export default function LabWorkspacePage() {
   const params = useParams();
@@ -33,7 +35,7 @@ export default function LabWorkspacePage() {
   const subscribed = isUserSubscribed(user);
 
   // Session & workspace state
-  const [activeTab, setActiveTab] = useState<"proxy" | "network" | "soc">("proxy");
+  const [activeTab, setActiveTab] = useState<"terminal" | "proxy" | "network" | "soc">("terminal");
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionStatus, setSessionStatus] = useState<"idle" | "running" | "completed">("idle");
   const [timeRemaining, setTimeRemaining] = useState<number>(1800);
@@ -143,8 +145,16 @@ export default function LabWorkspacePage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-xl mx-auto text-left py-2">
-            <div className="p-3.5 rounded-xl bg-surface border border-border space-y-1">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 max-w-2xl mx-auto text-left py-2">
+            <div className="p-3 rounded-xl bg-surface border border-border space-y-1">
+              <div className="flex items-center gap-2 text-primary font-bold text-xs">
+                <TerminalIcon className="w-4 h-4" />
+                <span>Linux Terminal</span>
+              </div>
+              <p className="text-[11px] text-foreground-muted">Interactive sandboxed Linux PTY & bash shell with live flag discovery.</p>
+            </div>
+
+            <div className="p-3 rounded-xl bg-surface border border-border space-y-1">
               <div className="flex items-center gap-2 text-primary font-bold text-xs">
                 <Globe className="w-4 h-4" />
                 <span>Web Proxy</span>
@@ -152,7 +162,7 @@ export default function LabWorkspacePage() {
               <p className="text-[11px] text-foreground-muted">Live HTTP Repeater, header tamper, and injection payload tester.</p>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-surface border border-border space-y-1">
+            <div className="p-3 rounded-xl bg-surface border border-border space-y-1">
               <div className="flex items-center gap-2 text-accent font-bold text-xs">
                 <Network className="w-4 h-4" />
                 <span>Attack Graph</span>
@@ -160,7 +170,7 @@ export default function LabWorkspacePage() {
               <p className="text-[11px] text-foreground-muted">Visual subnet map, port discovery, and host pivot analysis.</p>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-surface border border-border space-y-1">
+            <div className="p-3 rounded-xl bg-surface border border-border space-y-1">
               <div className="flex items-center gap-2 text-secondary-light font-bold text-xs">
                 <Flag className="w-4 h-4" />
                 <span>XP Rewards</span>
@@ -238,6 +248,16 @@ export default function LabWorkspacePage() {
       {/* Tool Navigation Tabs */}
       <div className="flex items-center gap-2 border-b border-border pb-2 overflow-x-auto">
         <button
+          onClick={() => setActiveTab("terminal")}
+          className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-[var(--radius)] transition-all cursor-pointer ${
+            activeTab === "terminal" ? "bg-primary text-white shadow-lg shadow-primary/20" : "bg-surface text-foreground-secondary hover:text-foreground border border-border"
+          }`}
+        >
+          <TerminalIcon className="w-4 h-4" />
+          Interactive Terminal
+        </button>
+
+        <button
           onClick={() => setActiveTab("proxy")}
           className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-[var(--radius)] transition-all cursor-pointer ${
             activeTab === "proxy" ? "bg-primary text-white" : "bg-surface text-foreground-secondary hover:text-foreground border border-border"
@@ -270,6 +290,13 @@ export default function LabWorkspacePage() {
 
       {/* Active Tool Area */}
       <div className="min-h-[520px]">
+        {activeTab === "terminal" && (
+          <TerminalWorkbench
+            sessionId={sessionId || `session-${labId}`}
+            labId={labId}
+          />
+        )}
+
         {activeTab === "proxy" && <WebProxyInspector labId={labId} />}
 
         {activeTab === "network" && <NetworkTopologyGraph />}
