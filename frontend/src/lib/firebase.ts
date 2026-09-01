@@ -26,39 +26,20 @@ export const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 googleProvider.addScope("email");
 googleProvider.addScope("profile");
-googleProvider.setCustomParameters({
-  prompt: "select_account"
-});
 
-/**
- * Sign in with Google using Firebase Popup with automatic timeout fallback.
- * Prevents hanging popups or ERR_CONNECTION_TIMED_OUT from stalling user sign-in.
- */
-export async function signInWithGoogleFirebase(
-  timeoutMs: number = 6000
-): Promise<{ email: string; fullName: string; token: string; avatarUrl?: string }> {
-  const popupTask = (async () => {
-    const result: UserCredential = await signInWithPopup(auth, googleProvider);
-    const user = result.user;
-    const token = await user.getIdToken();
-    if (!user.email) {
-      throw new Error("No verified email address returned from Google account.");
-    }
-    return {
-      email: user.email,
-      fullName: user.displayName || user.email.split("@")[0],
-      avatarUrl: user.photoURL || undefined,
-      token
-    };
-  })();
-
-  const timeoutTask = new Promise<never>((_, reject) => {
-    setTimeout(() => {
-      reject(new Error("Firebase authentication domain timed out or was blocked. Switching to Direct OAuth."));
-    }, timeoutMs);
-  });
-
-  return await Promise.race([popupTask, timeoutTask]);
+export async function signInWithGoogleFirebase(): Promise<{ email: string; fullName: string; token: string; avatarUrl?: string }> {
+  const result: UserCredential = await signInWithPopup(auth, googleProvider);
+  const user = result.user;
+  const token = await user.getIdToken();
+  if (!user.email) {
+    throw new Error("No verified email address returned from Google account.");
+  }
+  return {
+    email: user.email,
+    fullName: user.displayName || user.email.split("@")[0],
+    avatarUrl: user.photoURL || undefined,
+    token
+  };
 }
 
 export async function signUpWithEmailFirebase(email: string, password: string): Promise<UserCredential> {

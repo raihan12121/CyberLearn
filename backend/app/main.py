@@ -9,7 +9,6 @@ from .database import engine, Base, run_auto_migrations, SessionLocal
 from .auth.router import router as auth_router
 from .courses.router import router as courses_router
 from .labs.router import router as labs_router
-from .labs.terminal import router as terminal_router
 from .ai.router import router as ai_router
 from .community.router import router as community_router
 from .admin.router import router as admin_router
@@ -105,7 +104,6 @@ async def rate_limiting_middleware(request: Request, call_next):
 app.include_router(auth_router)
 app.include_router(courses_router)
 app.include_router(labs_router)
-app.include_router(terminal_router)
 app.include_router(ai_router)
 app.include_router(community_router)
 app.include_router(admin_router)
