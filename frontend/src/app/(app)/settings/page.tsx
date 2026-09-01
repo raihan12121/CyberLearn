@@ -758,15 +758,21 @@ export default function SettingsPage() {
             <Card padding="lg" className="space-y-6">
               <div className="border-b border-border pb-4 flex items-center justify-between">
                 <div>
-                  <h3 className="text-base font-bold text-foreground">Subscription &amp; Entitlements</h3>
-                  <p className="text-xs text-foreground-secondary">Manage your membership plan and access to courses &amp; practice labs.</p>
+                  <h3 className="text-base font-bold text-foreground">
+                    {user?.role === "admin" ? "Platform Access & Privileges" : "Subscription & Entitlements"}
+                  </h3>
+                  <p className="text-xs text-foreground-secondary">
+                    {user?.role === "admin"
+                      ? "System Administrator authority and root platform permissions."
+                      : "Manage your membership plan and access to courses & practice labs."}
+                  </p>
                 </div>
                 <Badge
-                  variant={isUserSubscribed(user) ? "success" : "warning"}
+                  variant={user?.role === "admin" ? "primary" : isUserSubscribed(user) ? "success" : "warning"}
                   size="sm"
                   className="font-mono uppercase text-[10px]"
                 >
-                  {isUserSubscribed(user) ? "Active Subscription" : "Free Plan"}
+                  {user?.role === "admin" ? "Superuser Access" : isUserSubscribed(user) ? "Active Subscription" : "Free Plan"}
                 </Badge>
               </div>
 
@@ -776,43 +782,67 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              {/* Current Tier Overview Box */}
-              <div className="p-5 rounded-2xl bg-surface-elevated border border-border space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <span className="text-[10px] font-bold text-foreground-muted uppercase tracking-wider">Current Membership</span>
-                    <h4 className="text-xl font-extrabold text-foreground capitalize flex items-center gap-2">
-                      <CreditCard className="w-5 h-5 text-primary" />
-                      CyberLearn {user?.subscription_tier || (user?.role === "pro_member" ? "Pro" : user?.role === "premium_member" ? "Premium" : "Free")}
-                    </h4>
+              {user?.role === "admin" ? (
+                <div className="p-5 rounded-2xl bg-surface-elevated border border-primary/30 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] font-bold text-primary uppercase tracking-wider font-mono">Authority Level</span>
+                      <h4 className="text-xl font-extrabold text-foreground capitalize flex items-center gap-2">
+                        <Shield className="w-5 h-5 text-primary" />
+                        System Administrator (Root Superuser)
+                      </h4>
+                    </div>
+                    <Link href="/admin">
+                      <Button variant="primary" size="sm" className="font-bold">
+                        <Shield className="w-3.5 h-3.5 mr-1" />
+                        <span>Admin Console</span>
+                      </Button>
+                    </Link>
                   </div>
-                  <Link href="/pricing">
-                    <Button variant="primary" size="sm" className="font-bold">
-                      <Zap className="w-3.5 h-3.5 mr-1" />
-                      <span>{isUserSubscribed(user) ? "Change Plan" : "Upgrade to Pro"}</span>
-                    </Button>
-                  </Link>
-                </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-border/60">
-                  <div className="flex items-center gap-2 text-xs text-foreground-secondary">
-                    <CheckCircle2 className={`w-4 h-4 ${isUserSubscribed(user) ? "text-success" : "text-foreground-muted"}`} />
-                    <span>Interactive Course Videos &amp; Quizzes: <strong>{isUserSubscribed(user) ? "Unlocked" : "Locked"}</strong></span>
+                  <p className="text-xs text-foreground-secondary leading-relaxed bg-surface p-3.5 rounded-xl border border-border">
+                    You possess unrestricted root administrative control over the entire CyberLearn ecosystem. All courses, interactive labs, CTF challenges, certification exams, user roles, KYC verifications, and financial controls are permanently active under your administration.
+                  </p>
+                </div>
+              ) : (
+                /* Current Tier Overview Box for Students */
+                <div className="p-5 rounded-2xl bg-surface-elevated border border-border space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <span className="text-[10px] font-bold text-foreground-muted uppercase tracking-wider">Current Membership</span>
+                      <h4 className="text-xl font-extrabold text-foreground capitalize flex items-center gap-2">
+                        <CreditCard className="w-5 h-5 text-primary" />
+                        CyberLearn {user?.subscription_tier || (user?.role === "pro_member" ? "Pro" : user?.role === "premium_member" ? "Premium" : "Free")}
+                      </h4>
+                    </div>
+                    <Link href="/pricing">
+                      <Button variant="primary" size="sm" className="font-bold">
+                        <Zap className="w-3.5 h-3.5 mr-1" />
+                        <span>{isUserSubscribed(user) ? "Change Plan" : "Upgrade to Pro"}</span>
+                      </Button>
+                    </Link>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-foreground-secondary">
-                    <CheckCircle2 className={`w-4 h-4 ${isUserSubscribed(user) ? "text-success" : "text-foreground-muted"}`} />
-                    <span>Interactive CTF Practice Labs: <strong>{isUserSubscribed(user) ? "Unlocked" : "Locked"}</strong></span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-foreground-secondary">
-                    <CheckCircle2 className={`w-4 h-4 ${isUserSubscribed(user) ? "text-success" : "text-foreground-muted"}`} />
-                    <span>AI Cyber Coach &amp; Hint Unlocks: <strong>{isUserSubscribed(user) ? "Full Access" : "Basic"}</strong></span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-foreground-secondary">
-                    <CheckCircle2 className={`w-4 h-4 ${isUserSubscribed(user) ? "text-success" : "text-foreground-muted"}`} />
-                    <span>Verified Course Credentials: <strong>{isUserSubscribed(user) ? "Included" : "Locked"}</strong></span>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-border/60">
+                    <div className="flex items-center gap-2 text-xs text-foreground-secondary">
+                      <CheckCircle2 className={`w-4 h-4 ${isUserSubscribed(user) ? "text-success" : "text-foreground-muted"}`} />
+                      <span>Interactive Course Videos &amp; Quizzes: <strong>{isUserSubscribed(user) ? "Unlocked" : "Locked"}</strong></span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-foreground-secondary">
+                      <CheckCircle2 className={`w-4 h-4 ${isUserSubscribed(user) ? "text-success" : "text-foreground-muted"}`} />
+                      <span>Interactive CTF Practice Labs: <strong>{isUserSubscribed(user) ? "Unlocked" : "Locked"}</strong></span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-foreground-secondary">
+                      <CheckCircle2 className={`w-4 h-4 ${isUserSubscribed(user) ? "text-success" : "text-foreground-muted"}`} />
+                      <span>AI Cyber Coach &amp; Hint Unlocks: <strong>{isUserSubscribed(user) ? "Full Access" : "Basic"}</strong></span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-foreground-secondary">
+                      <CheckCircle2 className={`w-4 h-4 ${isUserSubscribed(user) ? "text-success" : "text-foreground-muted"}`} />
+                      <span>Verified Course Credentials: <strong>{isUserSubscribed(user) ? "Included" : "Locked"}</strong></span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Lifetime Owned Courses */}
               <div className="space-y-3 pt-4 border-t border-border/60">

@@ -26,6 +26,7 @@ import {
   Clock,
   X,
   CreditCard,
+  Users,
 } from "lucide-react";
 import Avatar from "../ui/Avatar";
 import ThemeToggle from "../ui/ThemeToggle";
@@ -490,44 +491,87 @@ export default function TopNav({ onMenuClick }: TopNavProps) {
                   </div>
 
                   {/* Badges / Stats row */}
-                  <div className="mt-3 flex items-center justify-between text-xs pt-2 border-t border-border/40">
-                    <span className="flex items-center gap-1 font-semibold text-primary">
-                      <Zap className="w-3.5 h-3.5" />
-                      {userXp.toLocaleString()} XP
-                    </span>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                      isUserSubscribed(user)
-                        ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                        : "bg-amber-500/15 text-amber-400 border-amber-500/30"
-                    }`}>
-                      {isUserSubscribed(user) ? (user?.subscription_tier ? `${user.subscription_tier.toUpperCase()} PRO` : userRole) : "FREE TIER"}
-                    </span>
-                  </div>
+                  {userRole === "admin" ? (
+                    <div className="mt-3 flex items-center justify-between text-xs pt-2 border-t border-border/40">
+                      <span className="flex items-center gap-1.5 font-bold text-primary font-mono text-[11px]">
+                        <Shield className="w-3.5 h-3.5 text-primary" />
+                        ROOT PRIVILEGES
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-primary/15 text-primary border border-primary/30 font-mono">
+                        SUPERUSER
+                      </span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="mt-3 flex items-center justify-between text-xs pt-2 border-t border-border/40">
+                        <span className="flex items-center gap-1 font-semibold text-primary">
+                          <Zap className="w-3.5 h-3.5" />
+                          {userXp.toLocaleString()} XP
+                        </span>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                          isUserSubscribed(user)
+                            ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                            : "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                        }`}>
+                          {isUserSubscribed(user) ? (user?.subscription_tier ? `${user.subscription_tier.toUpperCase()} PRO` : userRole) : "FREE TIER"}
+                        </span>
+                      </div>
 
-                  {!isUserSubscribed(user) && (
-                    <Link
-                      href="/pricing"
-                      onClick={() => setDropdownOpen(false)}
-                      className="mt-3 block w-full py-1.5 px-2.5 rounded-lg bg-gradient-to-r from-primary/20 to-accent/20 border border-primary/40 text-center text-[11px] font-bold text-foreground hover:border-primary transition-all"
-                    >
-                      ⚡ Upgrade to Pro ($12/mo)
-                    </Link>
+                      {!isUserSubscribed(user) && (
+                        <Link
+                          href="/pricing"
+                          onClick={() => setDropdownOpen(false)}
+                          className="mt-3 block w-full py-1.5 px-2.5 rounded-lg bg-gradient-to-r from-primary/20 to-accent/20 border border-primary/40 text-center text-[11px] font-bold text-foreground hover:border-primary transition-all"
+                        >
+                          ⚡ Upgrade to Pro ($12/mo)
+                        </Link>
+                      )}
+                    </>
                   )}
                 </div>
 
                 {/* Nav Links */}
                 <div className="py-1.5 px-1.5 space-y-0.5 text-xs">
-                  <Link
-                    href="/pricing"
-                    onClick={() => setDropdownOpen(false)}
-                    className="flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius)] text-foreground-secondary hover:text-foreground hover:bg-surface-elevated transition-colors font-medium cursor-pointer"
-                  >
-                    <CreditCard className="w-4 h-4 text-primary" />
-                    <span>Subscription &amp; Plans</span>
-                  </Link>
-
-                  {userRole !== "admin" && (
+                  {userRole === "admin" ? (
                     <>
+                      <Link
+                        href="/admin"
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius)] text-primary hover:bg-primary/10 transition-colors font-bold cursor-pointer"
+                      >
+                        <Shield className="w-4 h-4 text-primary" />
+                        <span>Admin Command Center</span>
+                      </Link>
+
+                      <Link
+                        href="/admin/users"
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius)] text-foreground-secondary hover:text-foreground hover:bg-surface-elevated transition-colors font-medium cursor-pointer"
+                      >
+                        <Users className="w-4 h-4 text-primary" />
+                        <span>Manage Users &amp; Roles</span>
+                      </Link>
+
+                      <Link
+                        href="/settings"
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius)] text-foreground-secondary hover:text-foreground hover:bg-surface-elevated transition-colors font-medium cursor-pointer"
+                      >
+                        <Settings className="w-4 h-4 text-foreground-muted" />
+                        <span>System Settings</span>
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        href="/pricing"
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius)] text-foreground-secondary hover:text-foreground hover:bg-surface-elevated transition-colors font-medium cursor-pointer"
+                      >
+                        <CreditCard className="w-4 h-4 text-primary" />
+                        <span>Subscription &amp; Plans</span>
+                      </Link>
+
                       <Link
                         href="/profile"
                         onClick={() => setDropdownOpen(false)}
@@ -545,17 +589,17 @@ export default function TopNav({ onMenuClick }: TopNavProps) {
                         <Award className="w-4 h-4 text-accent" />
                         <span>Certificates &amp; Credentials</span>
                       </Link>
+
+                      <Link
+                        href="/settings"
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius)] text-foreground-secondary hover:text-foreground hover:bg-surface-elevated transition-colors font-medium cursor-pointer"
+                      >
+                        <Settings className="w-4 h-4 text-foreground-muted" />
+                        <span>Settings &amp; Preferences</span>
+                      </Link>
                     </>
                   )}
-
-                  <Link
-                    href="/settings"
-                    onClick={() => setDropdownOpen(false)}
-                    className="flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius)] text-foreground-secondary hover:text-foreground hover:bg-surface-elevated transition-colors font-medium cursor-pointer"
-                  >
-                    <Settings className="w-4 h-4 text-foreground-muted" />
-                    <span>Settings &amp; Preferences</span>
-                  </Link>
                 </div>
 
                 {/* Logout Action */}
