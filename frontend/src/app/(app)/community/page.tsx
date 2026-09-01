@@ -28,6 +28,15 @@ import {
 import { Card, Badge, Button, Avatar } from "@/components/ui";
 import { api, getAuthToken } from "@/lib/api";
 import { useAuthStore } from "@/lib/authStore";
+import {
+  saveCommunityPostToFirestore,
+  getCommunityPostsFromFirestore,
+  addCommunityCommentToFirestore,
+  getCommunityCommentsFromFirestore,
+  upvoteCommunityPostInFirestore,
+  togglePostSolvedInFirestore,
+  deleteCommunityPostFromFirestore,
+} from "@/lib/firebase";
 
 const categories = ["All", "Questions", "Writeups", "General", "Security News", "Help Wanted"];
 
@@ -99,7 +108,7 @@ export default function CommunityPage() {
     fetchUser().catch(() => {});
   }, [fetchUser]);
 
-  const fetchPosts = () => {
+  const fetchPosts = async () => {
     setLoading(true);
     const filterParams: any = {};
     if (activeCategory !== "All") filterParams.category = activeCategory;
@@ -107,14 +116,83 @@ export default function CommunityPage() {
     if (solvedFilter === "unsolved") filterParams.is_solved = false;
     if (solvedFilter === "solved") filterParams.is_solved = true;
 
-    api.getPosts(filterParams)
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setPosts(data);
+    try {
+      // 1. Fetch from Backend and Firestore in parallel
+      const [backendPostsRes, firestorePostsRes] = await Promise.allSettled([
+        api.getPosts(filterParams),
+        getCommunityPostsFromFirestore(),
+      ]);
+
+      const backendPosts: PostItem[] =
+        backendPostsRes.status === "fulfilled" && Array.isArray(backendPostsRes.value)
+          ? backendPostsRes.value
+          : [];
+
+      const firestorePosts: any[] =
+        firestorePostsRes.status === "fulfilled" && Array.isArray(firestorePostsRes.value)
+          ? firestorePostsRes.value
+          : [];
+
+      // 2. Merge & deduplicate posts by ID or title
+      const mergedMap = new Map<string, PostItem>();
+
+      // Firestore posts first
+      firestorePosts.forEach((fp) => {
+        const item: PostItem = {
+          id: fp.id,
+          user_id: fp.user_id || "",
+          title: fp.title,
+          content: fp.content,
+          category: fp.category || "Questions",
+          tags: fp.tags,
+          is_solved: fp.is_solved || false,
+          author_name: fp.author_name || "Learner",
+          author_username: fp.author_username || "learner",
+          author_avatar: fp.author_avatar,
+          upvotes: fp.upvotes ?? 1,
+          comment_count: fp.comment_count ?? 0,
+          has_upvoted: user?.email ? (fp.upvoted_by || []).includes(user.email.toLowerCase().trim()) : false,
+          created_at: fp.created_at || new Date().toISOString(),
+        };
+        mergedMap.set(fp.id, item);
+      });
+
+      // Overlay backend posts
+      backendPosts.forEach((bp) => {
+        if (!mergedMap.has(bp.id)) {
+          mergedMap.set(bp.id, bp);
         }
-      })
-      .catch((err) => console.log("Error loading community posts:", err))
-      .finally(() => setLoading(false));
+      });
+
+      let mergedList = Array.from(mergedMap.values());
+
+      // Apply filter params locally for merged Firestore results
+      if (activeCategory !== "All") {
+        mergedList = mergedList.filter((p) => p.category?.toLowerCase() === activeCategory.toLowerCase());
+      }
+      if (solvedFilter === "unsolved") {
+        mergedList = mergedList.filter((p) => !p.is_solved);
+      } else if (solvedFilter === "solved") {
+        mergedList = mergedList.filter((p) => p.is_solved);
+      }
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase().trim();
+        mergedList = mergedList.filter(
+          (p) =>
+            p.title.toLowerCase().includes(query) ||
+            p.content.toLowerCase().includes(query) ||
+            (p.tags && p.tags.toLowerCase().includes(query))
+        );
+      }
+
+      // Sort by created_at desc
+      mergedList.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      setPosts(mergedList);
+    } catch (err) {
+      console.warn("Error loading community posts:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -131,8 +209,39 @@ export default function CommunityPage() {
     setCommentError(null);
     setLoadingDetails(true);
     try {
-      const details = await api.getPostDetail(post.id);
-      setSelectedPostDetails(details);
+      const [backendDetailRes, firestoreCommentsRes] = await Promise.allSettled([
+        api.getPostDetail(post.id),
+        getCommunityCommentsFromFirestore(post.id),
+      ]);
+
+      const backendDetail = backendDetailRes.status === "fulfilled" ? backendDetailRes.value : null;
+      const firestoreComments =
+        firestoreCommentsRes.status === "fulfilled" && Array.isArray(firestoreCommentsRes.value)
+          ? firestoreCommentsRes.value
+          : [];
+
+      const mergedCommentsMap = new Map<string, CommentItem>();
+
+      firestoreComments.forEach((c) => {
+        mergedCommentsMap.set(c.id, c);
+      });
+
+      if (backendDetail?.comments) {
+        backendDetail.comments.forEach((c: CommentItem) => {
+          if (!mergedCommentsMap.has(c.id)) {
+            mergedCommentsMap.set(c.id, c);
+          }
+        });
+      }
+
+      const allComments = Array.from(mergedCommentsMap.values()).sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+
+      setSelectedPostDetails({
+        ...(backendDetail || post),
+        comments: allComments,
+      });
     } catch (err: any) {
       console.warn("Failed to load post detail:", err);
       setSelectedPostDetails({ ...post, comments: [] });
@@ -144,12 +253,22 @@ export default function CommunityPage() {
   const handleUpvote = async (postId: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     try {
-      const updated = await api.upvotePost(postId);
+      let upvoteResult: { upvotes: number; has_upvoted: boolean };
+      try {
+        upvoteResult = await api.upvotePost(postId);
+      } catch {
+        upvoteResult = await upvoteCommunityPostInFirestore(postId, user?.email || "anon");
+      }
+
+      if (user?.email) {
+        upvoteCommunityPostInFirestore(postId, user.email).catch(() => {});
+      }
+
       setPosts((prev) =>
-        prev.map((p) => (p.id === postId ? { ...p, upvotes: updated.upvotes, has_upvoted: updated.has_upvoted } : p))
+        prev.map((p) => (p.id === postId ? { ...p, upvotes: upvoteResult.upvotes, has_upvoted: upvoteResult.has_upvoted } : p))
       );
       if (selectedPost && selectedPost.id === postId) {
-        setSelectedPost((prev) => prev ? { ...prev, upvotes: updated.upvotes, has_upvoted: updated.has_upvoted } : null);
+        setSelectedPost((prev) => (prev ? { ...prev, upvotes: upvoteResult.upvotes, has_upvoted: upvoteResult.has_upvoted } : null));
       }
     } catch (err: any) {
       console.warn("Upvote error:", err);
@@ -158,12 +277,21 @@ export default function CommunityPage() {
 
   const handleToggleSolved = async (postId: string) => {
     try {
-      const updated = await api.togglePostSolved(postId);
+      let updated: any;
+      try {
+        updated = await api.togglePostSolved(postId);
+      } catch {
+        const curr = posts.find((p) => p.id === postId);
+        updated = { is_solved: !curr?.is_solved };
+      }
+
+      await togglePostSolvedInFirestore(postId, updated.is_solved);
+
       setPosts((prev) =>
         prev.map((p) => (p.id === postId ? { ...p, is_solved: updated.is_solved } : p))
       );
       if (selectedPost && selectedPost.id === postId) {
-        setSelectedPost((prev) => prev ? { ...prev, is_solved: updated.is_solved } : null);
+        setSelectedPost((prev) => (prev ? { ...prev, is_solved: updated.is_solved } : null));
       }
     } catch (err: any) {
       alert(err.message || "Failed to update solved status.");
@@ -173,7 +301,11 @@ export default function CommunityPage() {
   const handleDeletePost = async (postId: string) => {
     if (!confirm("Are you sure you want to delete this discussion post?")) return;
     try {
-      await api.deletePost(postId);
+      try {
+        await api.deletePost(postId);
+      } catch {}
+      await deleteCommunityPostFromFirestore(postId);
+
       setPosts((prev) => prev.filter((p) => p.id !== postId));
       setSelectedPost(null);
     } catch (err: any) {
@@ -188,15 +320,61 @@ export default function CommunityPage() {
     setPostError(null);
     setIsSubmittingPost(true);
 
+    const authorName = user?.full_name || user?.username || "Learner";
+    const authorUsername = user?.username || (user?.email ? user.email.split("@")[0] : "learner");
+    const authorAvatar = user?.avatar_url || "";
+    const authorEmail = user?.email || "";
+
     try {
-      const created = await api.createPost({
-        title: newPostTitle.trim(),
-        content: newPostContent.trim(),
-        category: newPostCategory,
-        tags: newPostTags.trim() || undefined,
+      let createdPost: PostItem;
+
+      try {
+        createdPost = await api.createPost({
+          title: newPostTitle.trim(),
+          content: newPostContent.trim(),
+          category: newPostCategory,
+          tags: newPostTags.trim() || undefined,
+        });
+      } catch (backendErr) {
+        console.warn("Backend post creation fallback to Firestore:", backendErr);
+        const fallbackId = `post_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        createdPost = {
+          id: fallbackId,
+          user_id: user?.id || "",
+          title: newPostTitle.trim(),
+          content: newPostContent.trim(),
+          category: newPostCategory,
+          tags: newPostTags.trim() || undefined,
+          is_solved: false,
+          author_name: authorName,
+          author_username: authorUsername,
+          author_avatar: authorAvatar,
+          upvotes: 1,
+          comment_count: 0,
+          has_upvoted: true,
+          created_at: new Date().toISOString(),
+        };
+      }
+
+      // Permanently save to Cloud Firestore so question is instantly visible to all users
+      await saveCommunityPostToFirestore({
+        id: createdPost.id,
+        user_id: createdPost.user_id || user?.id,
+        title: createdPost.title,
+        content: createdPost.content,
+        category: createdPost.category,
+        tags: createdPost.tags,
+        is_solved: false,
+        author_name: authorName,
+        author_username: authorUsername,
+        author_avatar: authorAvatar,
+        author_email: authorEmail,
+        upvotes: 1,
+        comment_count: 0,
+        created_at: createdPost.created_at || new Date().toISOString(),
       });
 
-      setPosts([created, ...posts]);
+      setPosts((prev) => [createdPost, ...prev.filter((p) => p.id !== createdPost.id)]);
       setShowCreateModal(false);
       setNewPostTitle("");
       setNewPostTags("");
@@ -204,7 +382,7 @@ export default function CommunityPage() {
       setPostError(null);
     } catch (err: any) {
       console.error("Post creation failure:", err);
-      setPostError(err.message || "Failed to publish post. Please check your credentials.");
+      setPostError(err.message || "Failed to publish question. Please try again.");
     } finally {
       setIsSubmittingPost(false);
     }
@@ -217,12 +395,56 @@ export default function CommunityPage() {
     setCommentError(null);
     setIsSubmittingComment(true);
 
+    const authorName = user?.full_name || user?.username || "Learner";
+    const authorUsername = user?.username || (user?.email ? user.email.split("@")[0] : "learner");
+    const authorAvatar = user?.avatar_url || "";
+    const authorEmail = user?.email || "";
+    const authorRole = user?.role || "student";
+
     try {
-      const commentRes = await api.addComment(selectedPost.id, newComment.trim());
+      let createdComment: CommentItem;
+
+      try {
+        createdComment = await api.addComment(selectedPost.id, newComment.trim());
+      } catch (backendErr) {
+        console.warn("Backend add comment fallback to Firestore:", backendErr);
+        const fallbackId = `comment_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        createdComment = {
+          id: fallbackId,
+          post_id: selectedPost.id,
+          user_id: user?.id || "",
+          author_name: authorName,
+          author_username: authorUsername,
+          author_avatar: authorAvatar,
+          author_role: authorRole,
+          content: newComment.trim(),
+          is_solution: false,
+          created_at: new Date().toISOString(),
+        };
+      }
+
+      // Permanently save reply in Cloud Firestore
+      await addCommunityCommentToFirestore(selectedPost.id, {
+        id: createdComment.id,
+        post_id: selectedPost.id,
+        user_id: user?.id,
+        author_name: authorName,
+        author_username: authorUsername,
+        author_avatar: authorAvatar,
+        author_email: authorEmail,
+        author_role: authorRole,
+        content: newComment.trim(),
+        is_solution: false,
+        created_at: createdComment.created_at || new Date().toISOString(),
+      });
+
       if (selectedPostDetails) {
         setSelectedPostDetails({
           ...selectedPostDetails,
-          comments: [...(selectedPostDetails.comments || []), commentRes],
+          comments: [
+            ...(selectedPostDetails.comments || []).filter((c: any) => c.id !== createdComment.id),
+            createdComment,
+          ],
         });
       }
       setPosts((prev) =>
