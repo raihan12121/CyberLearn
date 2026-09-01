@@ -289,8 +289,8 @@ def login_user(user_in: schemas.UserLogin, db: Session = Depends(get_db)):
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Admins do not require onboarding
-    if db_user.role == "admin" and not db_user.is_onboarded:
+    # Existing users with assigned usernames or admins do not require onboarding
+    if not db_user.is_onboarded and (db_user.role == "admin" or (db_user.username and len(db_user.username) >= 3)):
         db_user.is_onboarded = True
         db.commit()
     

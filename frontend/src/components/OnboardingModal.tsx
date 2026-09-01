@@ -173,16 +173,67 @@ export function OnboardingModal() {
     return () => clearTimeout(timer);
   }, [username, checkUsername]);
 
-  // Only render if user is authenticated, is a student/learner, and not yet onboarded (Admins never onboard)
-  if (!user || user.role === "admin" || user.is_onboarded) {
+  // Local dismissal state to prevent recurring popup on returning logins
+  const [isDismissed, setIsDismissed] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && user?.email) {
+      const stored = localStorage.getItem(`cyberlearn_onboarded_${user.email.toLowerCase().trim()}`);
+      if (stored === "true" || user.is_onboarded) {
+        setIsDismissed(true);
+      }
+    }
+  }, [user]);
+
+  // Only render if user is authenticated, is a student/learner, not admin, and not yet onboarded
+  if (!user || user.role === "admin" || user.is_onboarded || isDismissed) {
     return null;
   }
+
+  const handleNextStep = async () => {
+    if (step === 1) {
+      if (!username.trim() || username.trim().length < 3 || usernameAvailable === false || isCheckingUsername) {
+        return;
+      }
+      const cleanName = username.trim().toLowerCase();
+      // Instantly mark user as onboarded in localStorage and Firestore so it NEVER prompts again on login
+      if (user?.email) {
+        try {
+          localStorage.setItem(`cyberlearn_onboarded_${user.email.toLowerCase().trim()}`, "true");
+          saveUserToFirestore({
+            email: user.email,
+            username: cleanName,
+            full_name: fullName.trim() || undefined,
+            is_onboarded: true,
+          }).catch(() => {});
+        } catch {}
+      }
+      try {
+        const updated = await api.updateProfile({
+          username: cleanName,
+          full_name: fullName.trim() || undefined,
+          is_onboarded: true,
+        });
+        setUser(updated);
+      } catch (e) {
+        console.warn("Autosave handle on step 1:", e);
+      }
+    }
+    setStep((p) => p + 1);
+  };
 
   const handleCompleteOnboarding = async () => {
     if (!username.trim() || username.trim().length < 3) {
       alert("Please choose a valid unique username of at least 3 characters.");
       setStep(1);
       return;
+    }
+
+    setIsDismissed(true);
+    if (user?.email) {
+      try {
+        localStorage.setItem(`cyberlearn_onboarded_${user.email.toLowerCase().trim()}`, "true");
+      } catch {}
     }
 
     setSubmitting(true);
@@ -206,7 +257,7 @@ export function OnboardingModal() {
           experience_level: experienceLevel,
           bio: bio.trim() || undefined,
           avatar_url: avatarUrl,
-          is_onboarded: true
+          is_onboarded: true,
         }).catch(() => {});
       }
       await fetchUser(true);
@@ -218,12 +269,16 @@ export function OnboardingModal() {
   };
 
   const handleSkip = async () => {
+    setIsDismissed(true);
+    if (user?.email) {
+      try {
+        localStorage.setItem(`cyberlearn_onboarded_${user.email.toLowerCase().trim()}`, "true");
+        saveUserToFirestore({ email: user.email, is_onboarded: true }).catch(() => {});
+      } catch {}
+    }
     try {
       const updatedUser = await api.updateProfile({ is_onboarded: true });
       setUser(updatedUser);
-      if (user?.email) {
-        saveUserToFirestore({ email: user.email, is_onboarded: true }).catch(() => {});
-      }
       await fetchUser(true);
     } catch {
       if (user) {
@@ -579,7 +634,7 @@ export function OnboardingModal() {
               variant="primary"
               size="sm"
               disabled={step === 1 && (username.length < 3 || usernameAvailable === false || isCheckingUsername)}
-              onClick={() => setStep((p) => p + 1)}
+              onClick={handleNextStep}
               className="font-bold shadow-md"
             >
               <span>Next Step</span>

@@ -119,7 +119,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 mergedData.role = firestoreUser.role;
               }
             }
+            if (firestoreUser.is_onboarded !== undefined) {
+              mergedData.is_onboarded = Boolean(firestoreUser.is_onboarded);
+            }
           }
+
+          // Also check localStorage onboarding flag
+          if (typeof window !== "undefined" && data.email) {
+            const localOnboarded = localStorage.getItem(`cyberlearn_onboarded_${data.email.toLowerCase()}`);
+            if (localOnboarded === "true") {
+              mergedData.is_onboarded = true;
+            }
+          }
+
           // Backup latest profile to Cloud Firestore permanently
           await saveUserToFirestore(mergedData);
         }
