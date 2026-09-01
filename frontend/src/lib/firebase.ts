@@ -534,21 +534,32 @@ export async function saveCertificateToFirestore(cert: CertificateData): Promise
 }
 
 /**
- * Retrieves all certificates from Cloud Firestore.
+ * Retrieves all certificates from Cloud Firestore with fallback.
  */
 export async function getCertificatesFromFirestore(): Promise<any[]> {
   try {
-    const q = query(
-      collection(firestore, "certificates"),
-      orderBy("issued_at", "desc"),
-      limit(100)
-    );
-    const snap = await getDocs(q);
-    const results: any[] = [];
-    snap.forEach((d) => {
-      results.push(d.data());
-    });
-    return results;
+    try {
+      const q = query(
+        collection(firestore, "certificates"),
+        orderBy("issued_at", "desc"),
+        limit(100)
+      );
+      const snap = await getDocs(q);
+      const results: any[] = [];
+      snap.forEach((d) => {
+        results.push(d.data());
+      });
+      if (results.length > 0) return results;
+    } catch {
+      // Fallback without orderBy
+      const snap = await getDocs(collection(firestore, "certificates"));
+      const results: any[] = [];
+      snap.forEach((d) => {
+        results.push(d.data());
+      });
+      return results;
+    }
+    return [];
   } catch (err) {
     console.warn("Firestore getCertificates warning:", err);
     return [];

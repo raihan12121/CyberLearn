@@ -21,6 +21,7 @@ import {
 import { Card, Badge, Button, ProgressBar } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useAuthStore, isUserSubscribed } from "@/lib/authStore";
+import { saveCourseProgressToFirestore } from "@/lib/firebase";
 import SubscriptionPaywallModal from "@/components/subscription/SubscriptionPaywallModal";
 import Link from "next/link";
 import { Lock } from "lucide-react";
@@ -738,6 +739,9 @@ export default function CourseDetailPage() {
 
   // Mark lesson as completed
   const markLessonComplete = (lessonId: string) => {
+    if (user?.email) {
+      saveCourseProgressToFirestore(user.email, courseId, lessonId, "completed").catch(() => {});
+    }
     api.updateProgress(courseId, lessonId, "completed", 100.0)
       .then(() => {
         const newSet = new Set(completedLessonsSet);
