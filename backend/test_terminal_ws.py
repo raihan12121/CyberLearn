@@ -40,3 +40,19 @@ def test_terminal_websocket_route_registered():
     from app.labs.terminal import router as terminal_router
     routes = [r.path for r in terminal_router.routes]
     assert "/labs/{session_id}/terminal/ws" in routes
+
+def test_cli_attack_tools_provisioned():
+    session_id = "test-attack-tools-102"
+    lab_id = "linux-navigation"
+    workspace = setup_workspace(session_id, lab_id)
+    
+    bin_dir = workspace / "bin"
+    assert bin_dir.exists()
+    assert (bin_dir / "attack").exists()
+    assert (bin_dir / "nmap").exists()
+    assert (bin_dir / "sqlmap").exists()
+    assert (bin_dir / "hydra").exists()
+    assert (bin_dir / "nikto").exists()
+    assert (bin_dir / "gobuster").exists()
+    assert (workspace / "exploit.py").exists()
+    assert (workspace / "rockyou.txt").exists()

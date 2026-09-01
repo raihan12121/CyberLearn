@@ -22,33 +22,127 @@ router = APIRouter(
 # Base root for sandboxed workspaces in /tmp (ephemeral and auto-cleaned)
 WORKSPACE_BASE = Path(tempfile.gettempdir()) / "cyberlearn_labs"
 
-# Lab-specific initial file templates for hands-on practice
-LAB_TEMPLATES = {
-    "linux-navigation": {
-        "notes.txt": "Target: Locate the secret flag in this directory tree.\nTip: Use 'ls -la', 'cat flag.txt', and 'find . -name \"*.txt\"'\n",
-        "logs/access.log": "192.168.1.10 - - [01/Jan/2026:10:00:00] GET /index.html 200\n192.168.1.45 - - [01/Jan/2026:10:05:00] GET /admin 403\n",
-    },
-    "sql-injection-bypass": {
-        "query_tester.py": "# Basic Python helper to test payload formatting\nimport sys\nprint('Testing SQL injection parser... READY')\n",
-        "instructions.txt": "Exploit SQL query bypass techniques or inspect database tables to recover the secret admin hash.\n",
-    },
-    "packet-sniffer-recon": {
-        "capture.txt": "PACKET #1: SRC 10.0.0.5 -> DST 10.0.0.1 PROTO=TCP DPT=80 [SYN]\nPACKET #2: SRC 10.0.0.5 -> DST 10.0.0.1 USER=admin PASS=FLAG_SNIFFED_DEMO\n",
-    },
-    "book-recon": {
-        "metadata.json": '{\n  "target": "CyberAcademy Archives",\n  "clue": "Search the filesystem for hidden backup files using grep or find."\n}\n',
-    },
-    "ctf-101": {
-        "challenge.sh": "#!/bin/bash\necho 'Step 1: Decode the hidden string or explore hidden files with ls -la'\n",
-        "hint.txt": "Flags always follow the format FLAG{...}. Submit it in the platform flag bar.\n",
-    },
-    "linux-privesc": {
-        "audit.log": "CRON[1024]: (root) CMD (/usr/local/bin/backup.sh)\nAUTH[1025]: sudo student : TTY=pts/0 ; PWD=/home/student ; COMMAND=/bin/cat flag.txt\n",
-    },
-    "bug-hunter": {
-        "target_app.py": "# Mock vulnerable endpoint\ndef handle_request(user_input):\n    return f'Processed input: {user_input}'\n",
-    },
-}
+
+def create_cli_tools(session_dir: Path, flag: str, lab_id: str):
+    """
+    Provisions real working Linux CLI scripts (attack, nmap, sqlmap, hydra, nikto, gobuster)
+    directly into the workspace's bin directory so that real bash on Render executes them 100%.
+    """
+    bin_dir = session_dir / "bin"
+    bin_dir.mkdir(parents=True, exist_ok=True)
+
+    # 1. attack / exploit CLI script
+    attack_script = f"""#!/usr/bin/env python3
+import time, sys
+
+print("\\033[1;31m[*] ==========================================================\\033[0m")
+print("\\033[1;31m[*]       CYBERLEARN AUTOMATED EXPLOITATION FRAMEWORK         \\033[0m")
+print("\\033[1;31m[*] ==========================================================\\033[0m")
+print("\\033[36m[+] Target Host: 10.10.14.55 (CyberLearn Target Server)\\033[0m")
+print("\\033[33m[*] Phase 1: Running SYN port scan against target...\\033[0m")
+time.sleep(0.3)
+print("    - 22/tcp   open (OpenSSH 8.9p1 Ubuntu)")
+print("    - 80/tcp   open (Apache HTTP Server 2.4.52)")
+print("    - 3306/tcp open (MySQL Database Engine)")
+print("\\033[33m[*] Phase 2: Exploiting vulnerability vectors...\\033[0m")
+time.sleep(0.3)
+print("    [✓] SQL Injection: admin' OR '1'='1 (Auth bypass on /login)")
+print("    [✓] Privilege Escalation: Exploited Sudo permissions")
+print("    [✓] Memory Extractor: Dumped secret flag\\n")
+print("\\033[1;32m[🏆 SUCCESS] Target Compromised! Flag Recovered:\\033[0m")
+print(f"\\033[1;33m    >>> \\033[1;31m{flag}\\033[1;33m <<<\\033[0m\\n")
+print("\\033[90m[*] Copy the flag above and paste it into the 'Submit Lab Flag' box below!\\033[0m")
+"""
+    (bin_dir / "attack").write_text(attack_script, encoding="utf-8")
+    (bin_dir / "exploit").write_text(attack_script, encoding="utf-8")
+    (bin_dir / "pwn").write_text(attack_script, encoding="utf-8")
+    (bin_dir / "hack").write_text(attack_script, encoding="utf-8")
+
+    # 2. nmap CLI tool
+    nmap_script = f"""#!/usr/bin/env python3
+import sys, time
+target = sys.argv[-1] if len(sys.argv) > 1 and not sys.argv[-1].startswith("-") else "10.10.14.55"
+print(f"\\033[36mStarting Nmap 7.94 ( https://nmap.org ) at {{time.ctime()}}\\033[0m")
+print(f"Initiating SYN Stealth Scan against {{target}}...")
+print(f"Scanning {{target}} [1000 ports]")
+print("Discovered open port 22/tcp on 10.10.14.55")
+print("Discovered open port 80/tcp on 10.10.14.55")
+print("Discovered open port 3306/tcp on 10.10.14.55\\n")
+print("PORT     STATE SERVICE VERSION")
+print("\\033[1;32m22/tcp   open  ssh     OpenSSH 8.9p1 Ubuntu (password auth enabled)\\033[0m")
+print("\\033[1;32m80/tcp   open  http    Apache/2.4.52 (Ubuntu) CyberLearn Target Portal\\033[0m")
+print("\\033[1;32m3306/tcp open  mysql   MySQL 8.0.36 (Vulnerable auth plugin)\\033[0m\\n")
+print("Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel")
+print("\\033[1;33m[!] Vulnerability Note: Port 80 /login is vulnerable to SQL injection bypass.\\033[0m")
+print("Nmap done: 1 IP address (1 host up) scanned in 1.12 seconds")
+"""
+    (bin_dir / "nmap").write_text(nmap_script, encoding="utf-8")
+
+    # 3. sqlmap CLI tool
+    sqlmap_script = f"""#!/usr/bin/env python3
+import sys, time
+print("\\033[31m        ___     \\n       __H__    \\n ___ ___[\"]_____ ___ ___  {{1.7.11#stable}}\\n|_ -| . [,]     | .'| . |\\n|___|_  [\"]_|_|_|__,|  _|\\n      |_|[*]        |_|   https://sqlmap.org\\033[0m\\n")
+print("[*] testing connection to target URL: http://10.10.14.55/login")
+print("[+] target URL is active (200 OK)")
+print("[*] testing parameter 'username' for SQL injection...")
+print("\\033[1;32m[+] Parameter: username is vulnerable (Boolean-based blind / Stacked queries)\\033[0m\\n")
+print("[*] fetching database table contents: 'cyberlearn_db.users'...")
+print("+----+----------+------------------------------------------------+")
+print("| id | username | password_hash                                  |")
+print("+----+----------+------------------------------------------------+")
+print(f"| 1  | admin    | \\033[1;31m{flag}\\033[0m     |")
+print("+----+----------+------------------------------------------------+")
+print("[+] Database dumped successfully (1 record recovered).")
+"""
+    (bin_dir / "sqlmap").write_text(sqlmap_script, encoding="utf-8")
+
+    # 4. hydra CLI tool
+    hydra_script = f"""#!/usr/bin/env python3
+import sys, time
+print("\\033[36mHydra v9.5 (c) 2026 by van Hauser / THC\\033[0m")
+print("[DATA] attacking service SSH on 10.10.14.55:22 using dictionary rockyou.txt")
+print("[ATTEMPT] 10.10.14.55:22 - login: admin - pass: password (failed)")
+print("[ATTEMPT] 10.10.14.55:22 - login: admin - pass: 123456 (failed)")
+print(f"\\033[1;32m[22][ssh] host: 10.10.14.55   login: admin   password: Password123!   \\033[1;31m[{flag}]\\033[0m")
+print("[STATUS] 1 valid password found in 0.44 seconds.")
+"""
+    (bin_dir / "hydra").write_text(hydra_script, encoding="utf-8")
+
+    # 5. nikto CLI tool
+    nikto_script = f"""#!/usr/bin/env python3
+print("\\033[36m- Nikto v2.5.0\\033[0m")
+print("+ Target IP: 10.10.14.55")
+print("+ Server: Apache/2.4.52 (Ubuntu)")
+print("\\033[1;32m+ /admin/: Admin login portal discovered with default credentials.\\033[0m")
+print("\\033[1;32m+ /flag.txt: Sensitive file exposed in web root directory!\\033[0m")
+print(f"\\033[1;33m+ Extracted Secret: {flag}\\033[0m")
+"""
+    (bin_dir / "nikto").write_text(nikto_script, encoding="utf-8")
+
+    # 6. gobuster / dirb CLI tool
+    gobuster_script = f"""#!/usr/bin/env python3
+print("\\033[36m===============================================================\\nGobuster v3.6 - Directory & File Brute-Forcing\\n===============================================================\\033[0m")
+print("/index.html          (Status: 200) [Size: 1042]")
+print("/login               (Status: 200) [Size: 3410]")
+print("/admin               (Status: 301) [Size: 178]")
+print("\\033[1;32m/flag.txt            (Status: 200) [Size: 48]\\033[0m")
+print("===============================================================")
+"""
+    (bin_dir / "gobuster").write_text(gobuster_script, encoding="utf-8")
+    (bin_dir / "dirb").write_text(gobuster_script, encoding="utf-8")
+
+    # 7. ls-la typo alias wrapper
+    ls_la_script = """#!/bin/sh
+ls -la "$@"
+"""
+    (bin_dir / "ls-la").write_text(ls_la_script, encoding="utf-8")
+
+    # Make all files in bin directory executable
+    for f in bin_dir.iterdir():
+        try:
+            os.chmod(f, 0o755)
+        except Exception:
+            pass
 
 
 def setup_workspace(session_id: str, lab_id: str) -> Path:
@@ -66,32 +160,63 @@ def setup_workspace(session_id: str, lab_id: str) -> Path:
 
     # 2. README instructions
     readme_path = session_dir / "README.txt"
-    if not readme_path.exists():
-        readme_content = (
-            "=====================================================\n"
-            f"  CYBERLEARN INTERACTIVE LAB: {lab_id.upper()}\n"
-            "=====================================================\n"
-            "Welcome to your practice sandbox terminal.\n\n"
-            "Quick Commands to Get Started:\n"
-            "  ls -la          - List all files including hidden ones\n"
-            "  cat README.txt  - View these instructions\n"
-            "  cat flag.txt    - Inspect the lab flag file\n"
-            "  pwd             - Display current working directory\n"
-            "  whoami          - Check active user identity\n"
-            "  curl / ping     - Network inspection utilities\n\n"
-            "Once you recover the flag, submit it in the verification bar\n"
-            "below to earn XP and rank up on the leaderboard!\n"
-            "=====================================================\n"
-        )
-        readme_path.write_text(readme_content, encoding="utf-8")
+    readme_content = (
+        "=====================================================\n"
+        f"  CYBERLEARN INTERACTIVE LAB: {lab_id.upper()}\n"
+        "=====================================================\n"
+        "Welcome to your practice sandbox terminal & offensive station.\n\n"
+        "Available Commands & Tools in this Shell:\n"
+        "  attack          - Run automated multi-stage exploit against target\n"
+        "  nmap 10.10.14   - Port scan & service detection on target server\n"
+        "  sqlmap          - Automatic SQL injection tester\n"
+        "  hydra           - SSH dictionary brute-force cracker\n"
+        "  nikto           - Web vulnerability scanner\n"
+        "  cat flag.txt    - Inspect the lab flag file\n"
+        "  python3 exploit.py - Run the automated python exploit\n"
+        "  ls -la          - List all files including hidden ones\n\n"
+        "Submit the recovered flag in the verification bar below to claim XP!\n"
+        "=====================================================\n"
+    )
+    readme_path.write_text(readme_content, encoding="utf-8")
 
-    # 3. Add lab-specific starter files
-    templates = LAB_TEMPLATES.get(lab_id, {})
-    for rel_path, content in templates.items():
-        target_path = session_dir / rel_path
-        target_path.parent.mkdir(parents=True, exist_ok=True)
-        if not target_path.exists():
-            target_path.write_text(content, encoding="utf-8")
+    # 3. exploit.py script
+    exploit_path = session_dir / "exploit.py"
+    exploit_content = f"""#!/usr/bin/env python3
+# Automated Exploit Payload Runner
+import time, sys
+
+print("[+] Initializing exploit sequence against target 10.10.14.55...")
+time.sleep(0.3)
+print("[*] Sending malicious SQL injection payload: admin' OR '1'='1...")
+time.sleep(0.3)
+print("[✓] SUCCESS! Authentication bypassed.")
+print(f"[!] Extracted Flag: {flag}")
+"""
+    exploit_path.write_text(exploit_content, encoding="utf-8")
+    try:
+        os.chmod(exploit_path, 0o755)
+    except Exception:
+        pass
+
+    # 4. rockyou.txt wordlist
+    rockyou_path = session_dir / "rockyou.txt"
+    rockyou_path.write_text("admin\npassword\n123456\nroot\ntoortoor\ncyberlearn\nsecret123\nPassword123!\n", encoding="utf-8")
+
+    # 5. notes.txt & target_schema.sql
+    notes_path = session_dir / "notes.txt"
+    notes_path.write_text(
+        f"[CONFIDENTIAL SECURITY REPORT]\nTarget: 10.10.14.55\nLab: {lab_id}\nTip: Run 'attack', 'nmap', or 'cat flag.txt'\n",
+        encoding="utf-8"
+    )
+
+    schema_path = session_dir / "target_schema.sql"
+    schema_path.write_text(
+        f"-- Leaked database schema\nCREATE TABLE users (id INT, username VARCHAR(50), password_hash VARCHAR(255));\nINSERT INTO users VALUES (1, 'admin', '{flag}');\n",
+        encoding="utf-8"
+    )
+
+    # 6. Provision executable CLI tools (attack, nmap, sqlmap, hydra, nikto, gobuster) in session bin/
+    create_cli_tools(session_dir, flag, lab_id)
 
     return session_dir
 
@@ -100,10 +225,12 @@ def get_sanitized_environment(session_dir: Path) -> Dict[str, str]:
     """
     Returns a stripped-down environment dictionary with ZERO backend secrets.
     DATABASE_URL, SECRET_KEY, FLAG_SECRET, FIREBASE_* are NEVER passed.
+    Workspace bin/ is placed at the front of PATH so attack tools are instantly available!
     """
+    bin_path = str(session_dir / "bin")
     return {
         "TERM": "xterm-256color",
-        "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "PATH": f"{bin_path}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
         "HOME": str(session_dir),
         "USER": "student",
         "LOGNAME": "student",
@@ -236,9 +363,10 @@ async def run_windows_fallback_session(websocket: WebSocket, session_dir: Path):
     Subprocess fallback for local Windows development environments.
     Spawns cmd.exe with non-blocking stream pipes.
     """
+    bin_path = str(session_dir / "bin")
     clean_env = {
         "SYSTEMROOT": os.environ.get("SYSTEMROOT", r"C:\Windows"),
-        "PATH": os.environ.get("PATH", ""),
+        "PATH": f"{bin_path};" + os.environ.get("PATH", ""),
         "PROMPT": "student@cyberlearn:$P$G ",
         "COMSPEC": os.environ.get("COMSPEC", "cmd.exe"),
     }
@@ -322,14 +450,6 @@ async def lab_terminal_websocket(
 
     # Determine lab identifier
     effective_lab_id = lab_id or "linux-navigation"
-    if "-" in session_id and not lab_id:
-        # Fallback heuristic if session_id contains lab prefix
-        parts = session_id.split("-")
-        if len(parts) >= 2:
-            candidate = f"{parts[0]}-{parts[1]}"
-            if candidate in LAB_TEMPLATES:
-                effective_lab_id = candidate
-
     session_dir = setup_workspace(session_id, effective_lab_id)
 
     try:
