@@ -17,6 +17,7 @@ import {
   Lock,
   Skull,
   Crosshair,
+  Zap,
 } from "lucide-react";
 import { Badge, Button } from "@/components/ui";
 
@@ -33,7 +34,7 @@ export default function TerminalWorkbench({ sessionId, labId }: TerminalWorkbenc
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const coldStartTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Virtual Shell State (Always active with 0ms keystroke latency)
+  // Virtual Shell State (Always active with instant 0ms keystroke response)
   const currentPathRef = useRef<string[]>([labId || "linux-navigation"]);
   const commandHistoryRef = useRef<string[]>([]);
   const historyIndexRef = useRef<number>(-1);
@@ -78,7 +79,7 @@ export default function TerminalWorkbench({ sessionId, labId }: TerminalWorkbenc
     term.write("\x1b[0m\r\n");
     term.write("\x1b[1;32m [✓] CyberLearn Interactive Linux Practice Terminal & Attack Station\x1b[0m\r\n");
     term.write(`\x1b[90m [*] Target Workspace: /home/student/labs/${labId}\x1b[0m\r\n`);
-    term.write("\x1b[90m [*] Type '\x1b[33mhelp\x1b[90m' or run attack tools (\x1b[36mnmap\x1b[90m, \x1b[36msqlmap\x1b[90m, \x1b[36mhydra\x1b[90m, \x1b[36mnikto\x1b[90m, \x1b[36mcurl\x1b[90m, \x1b[36mcat\x1b[90m).\x1b[0m\r\n\r\n");
+    term.write("\x1b[90m [*] Type '\x1b[33mattack\x1b[90m', '\x1b[33mnmap\x1b[90m', '\x1b[33msqlmap\x1b[90m', '\x1b[33mcat flag.txt\x1b[90m', or '\x1b[33mhelp\x1b[90m'.\x1b[0m\r\n\r\n");
   };
 
   const getPrompt = useCallback(() => {
@@ -100,11 +101,12 @@ Welcome to your practice sandbox terminal & offensive station.
 
 Recommended Attack & Exploration Workflow:
   1. Explore filesystem:    ls -la, pwd, whoami, id
-  2. Inspect targets:       nmap -sV 10.10.14.55
-  3. Scan web services:     nikto -h http://10.10.14.55
-  4. Database exploitation: sqlmap -u "http://10.10.14.55/login" --dump
-  5. Password cracking:     hydra -l admin -P rockyou.txt 10.10.14.55 ssh
-  6. Read secret flag:      cat flag.txt
+  2. Run automatic attack:  attack (or exploit)
+  3. Inspect targets:       nmap -sV 10.10.14.55
+  4. Web scanning:          nikto -h http://10.10.14.55
+  5. SQL injection exploit: sqlmap -u "http://10.10.14.55/login" --dump
+  6. SSH brute-force:       hydra -l admin -P rockyou.txt 10.10.14.55 ssh
+  7. Read secret flag:      cat flag.txt
 
 Submit the extracted flag in the verification bar below to claim XP!
 =====================================================`,
@@ -122,11 +124,8 @@ print("[*] Sending malicious SQL injection payload: admin' OR '1'='1...")
 print("[✓] SUCCESS! Authentication bypassed.")
 print("[!] Extracted Flag: FLAG{sql_injection_bypass_pwned_2026}")
 `,
-      "rockyou.txt": `admin\npassword\n123456\nroot\ntoortoor\ncyberlearn\nsecret123\nPassword123!\n`,
-      "target_schema.sql": `-- Leaked database dump
-CREATE TABLE users (id INT, username VARCHAR(50), password_hash VARCHAR(255));
-INSERT INTO users VALUES (1, 'admin', '$2b$12$FLAG{hash_cracked_admin_secret}');
-`,
+      "rockyou.txt": "admin\npassword\n123456\nroot\ntoortoor\ncyberlearn\nsecret123\nPassword123!\n",
+      "target_schema.sql": "-- Leaked database dump\nCREATE TABLE users (id INT, username VARCHAR(50), password_hash VARCHAR(255));\nINSERT INTO users VALUES (1, 'admin', '$2b$12$FLAG{hash_cracked_admin_secret}');\n",
     };
 
     if (labId.includes("packet") || labId.includes("network")) {
@@ -154,23 +153,48 @@ INSERT INTO users VALUES (1, 'admin', '$2b$12$FLAG{hash_cracked_admin_secret}');
 
     switch (cmd.toLowerCase()) {
       case "clear":
+      case "cls":
         term.clear();
         term.write(getPrompt());
         return;
 
+      case "attack":
+      case "pwn":
+      case "exploit":
+      case "hack":
+      case "autoattack":
+        term.write("\x1b[1;31m[*] ==========================================================\x1b[0m\r\n");
+        term.write("\x1b[1;31m[*]       CYBERLEARN AUTOMATED EXPLOITATION FRAMEWORK         \x1b[0m\r\n");
+        term.write("\x1b[1;31m[*] ==========================================================\x1b[0m\r\n");
+        term.write("\x1b[36m[+] Target Host: 10.10.14.55 (Target Server)\x1b[0m\r\n");
+        term.write("\x1b[33m[*] Phase 1: Port Discovery...\x1b[0m\r\n");
+        term.write("    - 22/tcp  (OpenSSH 8.9p1)\r\n");
+        term.write("    - 80/tcp  (Apache HTTP Server 2.4.52)\r\n");
+        term.write("    - 3306/tcp (MySQL Database Engine)\r\n");
+        term.write("\x1b[33m[*] Phase 2: Injecting Exploits...\x1b[0m\r\n");
+        term.write("    [✓] SQL Injection: admin' OR '1'='1 (Bypassed auth on /login)\r\n");
+        term.write("    [✓] Privilege Escalation: Sudo misconfiguration exploited (UID 0 root)\r\n");
+        term.write("    [✓] Memory Dump: Extracted system flags from memory\r\n\r\n");
+        term.write(`\x1b[1;32m[🏆 SUCCESS] Target Compromised! Flag Recovered:\x1b[0m\r\n`);
+        term.write(`\x1b[1;33m    >>> \x1b[1;31mFLAG{${labId.replace(/-/g, "_")}_expert_flag_2026}\x1b[1;33m <<<\x1b[0m\r\n\r\n`);
+        term.write("\x1b[90m[*] Copy the flag above and paste it into the 'Submit Lab Flag' bar below!\x1b[0m\r\n");
+        break;
+
       case "help":
+      case "man":
         term.write("\x1b[1;36m┌── Available Linux & Offensive Cyber Commands ─────────────────────────────┐\x1b[0m\r\n");
-        term.write("│ \x1b[1;33mls\x1b[0m [-la]            - List files and directories in current workspace     │\r\n");
-        term.write("│ \x1b[1;33mcat\x1b[0m <file>          - Display contents of files (e.g. cat flag.txt)       │\r\n");
-        term.write("│ \x1b[1;33mnmap\x1b[0m [target]       - Network port scan & service detection               │\r\n");
+        term.write("│ \x1b[1;31mattack\x1b[0m / \x1b[1;31mexploit\x1b[0m    - Run automated multi-stage penetration test against target │\r\n");
+        term.write("│ \x1b[1;33mnmap\x1b[0m [target]       - Network port scan & service detection (e.g. nmap 10.10.14) │\r\n");
         term.write("│ \x1b[1;33msqlmap\x1b[0m -u <url>     - Automatic SQL injection and database dump           │\r\n");
         term.write("│ \x1b[1;33mhydra\x1b[0m -l <usr> -P <w> - Multi-protocol network login brute-forcer           │\r\n");
         term.write("│ \x1b[1;33mnikto\x1b[0m -h <host>     - Web server vulnerability scanner                    │\r\n");
         term.write("│ \x1b[1;33mgobuster\x1b[0m / \x1b[1;33mdirb\x1b[0m     - Web directory and file brute-forcer                 │\r\n");
+        term.write("│ \x1b[1;33mls\x1b[0m [-la]            - List files and directories in current workspace     │\r\n");
+        term.write("│ \x1b[1;33mcat\x1b[0m <file>          - Display contents of files (e.g. cat flag.txt)       │\r\n");
+        term.write("│ \x1b[1;33mpython3\x1b[0m <script>    - Execute Python security scripts (e.g. exploit.py)   │\r\n");
         term.write("│ \x1b[1;33mcurl\x1b[0m [url]          - HTTP request inspector and payload repeater         │\r\n");
         term.write("│ \x1b[1;33mping\x1b[0m <host>         - Send ICMP network echo probes                       │\r\n");
         term.write("│ \x1b[1;33mnc\x1b[0m / \x1b[1;33mnetcat\x1b[0m         - TCP port listener & arbitrary connection client     │\r\n");
-        term.write("│ \x1b[1;33mpython3\x1b[0m <script>    - Execute Python security scripts (e.g. exploit.py)   │\r\n");
         term.write("│ \x1b[1;33mwhoami\x1b[0m / \x1b[1;33mid\x1b[0m         - Print active user identity and privilege groups     │\r\n");
         term.write("│ \x1b[1;33mpwd\x1b[0m / \x1b[1;33mcd\x1b[0m            - Display and change directory paths                  │\r\n");
         term.write("│ \x1b[1;33mgrep\x1b[0m / \x1b[1;33mfind\x1b[0m          - Search strings and locate files in filesystem       │\r\n");
@@ -180,7 +204,9 @@ INSERT INTO users VALUES (1, 'admin', '$2b$12$FLAG{hash_cracked_admin_secret}');
         break;
 
       case "ls":
-        const showAll = args.includes("-la") || args.includes("-a") || args.includes("-l");
+      case "dir":
+      case "ll":
+        const showAll = args.includes("-la") || args.includes("-a") || args.includes("-l") || cmd.toLowerCase() === "dir" || cmd.toLowerCase() === "ll";
         if (showAll) {
           term.write("total 48\r\n");
           term.write("drwxr-xr-x 4 student student 4096 Sep  2 01:50 .\r\n");
@@ -209,14 +235,21 @@ INSERT INTO users VALUES (1, 'admin', '$2b$12$FLAG{hash_cracked_admin_secret}');
         break;
 
       case "cat":
+      case "more":
+      case "less":
+      case "head":
+      case "tail":
         if (args.length === 0) {
-          term.write("\x1b[31mcat: missing file operand\x1b[0m\r\n");
+          term.write("Available files in this directory:\r\n");
+          Object.keys(files).forEach((f) => term.write(`  - ${f}\r\n`));
+          term.write("\x1b[90mUsage: cat <filename> (e.g. cat flag.txt)\x1b[0m\r\n");
         } else {
           const fname = args[0];
           if (files[fname]) {
             term.write(files[fname].replace(/\n/g, "\r\n") + "\r\n");
           } else {
             term.write(`\x1b[31mcat: ${fname}: No such file or directory\x1b[0m\r\n`);
+            term.write("Available files: " + Object.keys(files).join(", ") + "\r\n");
           }
         }
         break;
@@ -292,9 +325,9 @@ INSERT INTO users VALUES (1, 'admin', '$2b$12$FLAG{hash_cracked_admin_secret}');
 
       case "gobuster":
       case "dirb":
+      case "dirbuster":
         term.write("\x1b[36m===============================================================\r\n");
         term.write("Gobuster v3.6 - Directory & File Brute-Forcing\r\n");
-        term.write("by OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)\r\n");
         term.write("===============================================================\r\n");
         term.write("[+] Url:                     http://10.10.14.55\r\n");
         term.write("[+] Threads:                 10\r\n");
@@ -329,6 +362,7 @@ INSERT INTO users VALUES (1, 'admin', '$2b$12$FLAG{hash_cracked_admin_secret}');
         break;
 
       case "curl":
+      case "wget":
         const url = args[0] || "http://10.10.14.55/login";
         term.write(`\x1b[36m[*] Connecting to ${url}...\x1b[0m\r\n`);
         term.write("HTTP/1.1 200 OK\r\n");
@@ -429,6 +463,7 @@ INSERT INTO users VALUES (1, 'admin', '$2b$12$FLAG{hash_cracked_admin_secret}');
         break;
 
       case "sudo":
+      case "su":
         term.write(`\x1b[1;32m[sudo] executing as root: ${args.join(" ")}\x1b[0m\r\n`);
         if (args[0] === "cat" && args[1]) {
           const fn = args[1];
@@ -448,15 +483,44 @@ INSERT INTO users VALUES (1, 'admin', '$2b$12$FLAG{hash_cracked_admin_secret}');
         });
         break;
 
+      case "ps":
+      case "top":
+      case "htop":
+        term.write("  PID TTY          TIME CMD\r\n");
+        term.write("    1 ?        00:00:01 systemd\r\n");
+        term.write("  120 pts/0    00:00:00 bash\r\n");
+        term.write("  142 pts/0    00:00:00 python3\r\n");
+        term.write("  204 ?        00:00:02 apache2\r\n");
+        term.write("  305 ?        00:00:05 mysqld\r\n");
+        break;
+
+      case "ifconfig":
+      case "ip":
+        term.write("eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500\r\n");
+        term.write("        inet 10.10.14.55  netmask 255.255.255.0  broadcast 10.10.14.255\r\n");
+        term.write("        inet6 fe80::a00:27ff:fe4e:66a1  prefixlen 64  scopeid 0x20<link>\r\n");
+        term.write("        ether 08:00:27:4e:66:a1  txqueuelen 1000  (Ethernet)\r\n");
+        break;
+
+      case "netstat":
+      case "ss":
+        term.write("Active Internet connections (only servers)\r\n");
+        term.write("Proto Recv-Q Send-Q Local Address           Foreign Address         State\r\n");
+        term.write("tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN\r\n");
+        term.write("tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN\r\n");
+        term.write("tcp        0      0 127.0.0.1:3306          0.0.0.0:*               LISTEN\r\n");
+        break;
+
       default:
-        term.write(`\x1b[31mbash: ${cmd}: command not found. Type '\x1b[33mhelp\x1b[31m' for supported commands.\x1b[0m\r\n`);
+        term.write(`\x1b[31mbash: ${cmd}: command not found.\x1b[0m\r\n`);
+        term.write(`\x1b[90m[*] Tip: Type '\x1b[33mattack\x1b[90m', '\x1b[33mnmap\x1b[90m', '\x1b[33msqlmap\x1b[90m', '\x1b[33mcat flag.txt\x1b[90m', or '\x1b[33mhelp\x1b[90m'.\x1b[0m\r\n`);
         break;
     }
 
     term.write(getPrompt());
   }, [getPrompt, getVirtualFiles, labId]);
 
-  // Connect or switch to virtual engine
+  // Connect and initialize terminal
   const connectTerminal = useCallback(async () => {
     if (!terminalRef.current) return;
 
@@ -514,16 +578,15 @@ INSERT INTO users VALUES (1, 'admin', '$2b$12$FLAG{hash_cracked_admin_secret}');
       xtermRef.current = term;
       fitAddonRef.current = fitAddon;
 
-      // Handle Key input with instant typing responsiveness
+      // Handle Key input with instant typing responsiveness & reliable output
       term.onData((data: string) => {
         if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN && !isVirtualModeRef.current) {
           socketRef.current.send(data);
           return;
         }
 
-        // Virtual Engine interactive keystroke handler
-        if (data === "\r") {
-          // Enter key
+        // Handle Enter / Newline
+        if (data === "\r" || data === "\n" || data === "\r\n") {
           const cmd = currentInputRef.current;
           if (cmd.trim()) {
             commandHistoryRef.current.push(cmd);
@@ -531,14 +594,34 @@ INSERT INTO users VALUES (1, 'admin', '$2b$12$FLAG{hash_cracked_admin_secret}');
           historyIndexRef.current = commandHistoryRef.current.length;
           currentInputRef.current = "";
           executeVirtualCommand(cmd, term);
-        } else if (data === "\u007F") {
-          // Backspace
+          return;
+        }
+
+        // Handle Backspace (ASCII 127 or 8)
+        if (data === "\u007F" || data === "\b") {
           if (currentInputRef.current.length > 0) {
             currentInputRef.current = currentInputRef.current.slice(0, -1);
             term.write("\b \b");
           }
-        } else if (data === "\x1b[A") {
-          // Up Arrow (history previous)
+          return;
+        }
+
+        // Handle Ctrl+C (ASCII 3)
+        if (data === "\u0003") {
+          term.write("^C\r\n" + getPrompt());
+          currentInputRef.current = "";
+          return;
+        }
+
+        // Handle Ctrl+L (Clear screen, ASCII 12)
+        if (data === "\u000c") {
+          term.clear();
+          term.write(getPrompt() + currentInputRef.current);
+          return;
+        }
+
+        // Handle Up Arrow (history previous)
+        if (data === "\x1b[A") {
           if (commandHistoryRef.current.length > 0 && historyIndexRef.current > 0) {
             historyIndexRef.current -= 1;
             const prevCmd = commandHistoryRef.current[historyIndexRef.current];
@@ -549,8 +632,11 @@ INSERT INTO users VALUES (1, 'admin', '$2b$12$FLAG{hash_cracked_admin_secret}');
             term.write(prevCmd);
             currentInputRef.current = prevCmd;
           }
-        } else if (data === "\x1b[B") {
-          // Down Arrow (history next)
+          return;
+        }
+
+        // Handle Down Arrow (history next)
+        if (data === "\x1b[B") {
           if (historyIndexRef.current < commandHistoryRef.current.length - 1) {
             historyIndexRef.current += 1;
             const nextCmd = commandHistoryRef.current[historyIndexRef.current];
@@ -567,20 +653,31 @@ INSERT INTO users VALUES (1, 'admin', '$2b$12$FLAG{hash_cracked_admin_secret}');
               currentInputRef.current = currentInputRef.current.slice(0, -1);
             }
           }
-        } else if (data === "\t") {
-          // Tab auto-complete
+          return;
+        }
+
+        // Handle Tab key auto-complete
+        if (data === "\t") {
           const files = getVirtualFiles();
-          const matches = Object.keys(files).filter((f) => f.startsWith(currentInputRef.current.split(" ").pop() || ""));
-          if (matches.length === 1) {
-            const parts = currentInputRef.current.split(" ");
-            parts.pop();
-            const completed = [...parts, matches[0]].join(" ");
-            const extra = completed.slice(currentInputRef.current.length);
-            term.write(extra);
-            currentInputRef.current = completed;
+          const lastWord = currentInputRef.current.split(" ").pop() || "";
+          if (lastWord) {
+            const matches = Object.keys(files).filter((f) => f.toLowerCase().startsWith(lastWord.toLowerCase()));
+            if (matches.length === 1) {
+              const parts = currentInputRef.current.split(" ");
+              parts.pop();
+              const completed = [...parts, matches[0]].join(" ");
+              const extra = completed.slice(currentInputRef.current.length);
+              term.write(extra);
+              currentInputRef.current = completed;
+            } else if (matches.length > 1) {
+              term.write("\r\n" + matches.join("  ") + "\r\n" + getPrompt() + currentInputRef.current);
+            }
           }
-        } else if (data >= " " && data <= "~") {
-          // Normal printable characters
+          return;
+        }
+
+        // Handle normal characters & pasted text
+        if (!data.startsWith("\x1b")) {
           currentInputRef.current += data;
           term.write(data);
         }
@@ -813,6 +910,7 @@ INSERT INTO users VALUES (1, 'admin', '$2b$12$FLAG{hash_cracked_admin_secret}');
               <Crosshair className="w-3 h-3 text-accent" /> Attack Tools:
             </span>
             {[
+              { label: "⚡ Run Attack", cmd: "attack", icon: <Zap className="w-2.5 h-2.5 text-warning" /> },
               { label: "nmap 10.10.14.55", cmd: "nmap -sV 10.10.14.55", icon: <Radio className="w-2.5 h-2.5 text-accent" /> },
               { label: "sqlmap -u /login", cmd: "sqlmap -u http://10.10.14.55/login --dump", icon: <Flame className="w-2.5 h-2.5 text-warning" /> },
               { label: "hydra ssh", cmd: "hydra -l admin -P rockyou.txt 10.10.14.55 ssh", icon: <Skull className="w-2.5 h-2.5 text-error" /> },
@@ -886,7 +984,7 @@ INSERT INTO users VALUES (1, 'admin', '$2b$12$FLAG{hash_cracked_admin_secret}');
           </div>
           <div className="min-w-0">
             <p className="text-foreground font-bold truncate">Launch Attack / Extract Flag</p>
-            <p className="text-[10px] text-foreground-muted truncate">Run `sqlmap`, `hydra`, or `cat flag.txt`</p>
+            <p className="text-[10px] text-foreground-muted truncate">Run `attack`, `sqlmap`, or `cat flag.txt`</p>
           </div>
         </div>
 
