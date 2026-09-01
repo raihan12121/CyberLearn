@@ -58,13 +58,18 @@ def sync_all():
             })
             res = httpx.patch(url, json=payload)
             if res.status_code == 200:
-                print(f"  ✓ Synced user: {u.email}")
+                print(f"  [OK] Synced user: {u.email}")
             elif res.status_code == 403:
-                print(f"  ✗ 403 Forbidden: Firebase Rules currently block writes.")
-                print(f"    Please paste 'allow read, write: if true;' in Firebase Console -> Rules and click Publish.")
+                print("\n" + "!" * 60)
+                print(">>> 403 FORBIDDEN: Google Cloud Firestore Rules Blocked Writes <<<")
+                print("To fix this immediately:")
+                print("1. Go to Firebase Console: https://console.firebase.google.com/project/cyberlearn-39cfe/firestore/databases/-default-/rules")
+                print("2. Change rules to: allow read, write: if true;")
+                print("3. Click 'Publish'")
+                print("!" * 60 + "\n")
                 return False
             else:
-                print(f"  ✗ Failed for {u.email}: {res.status_code} - {res.text[:100]}")
+                print(f"  [FAIL] Failed for {u.email}: {res.status_code} - {res.text[:100]}")
 
         # 2. Sync Community Posts
         posts = db.query(models.Post).all()
@@ -89,7 +94,7 @@ def sync_all():
             })
             res = httpx.patch(url, json=payload)
             if res.status_code == 200:
-                print(f"  ✓ Synced post: {p.title[:40]}...")
+                print(f"  [OK] Synced post: {p.title[:40]}...")
 
         # 3. Sync Certificates
         certs = db.query(models.Certificate).all()
@@ -111,7 +116,7 @@ def sync_all():
             })
             res = httpx.patch(url, json=payload)
             if res.status_code == 200:
-                print(f"  ✓ Synced certificate: {c.verification_token}")
+                print(f"  [OK] Synced certificate: {c.verification_token}")
 
         print("\n" + "=" * 60)
         print("ALL DATA SUCCESSFULLY SYNCHRONIZED TO CLOUD FIRESTORE!")
