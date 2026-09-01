@@ -117,7 +117,7 @@ export default function CommunityPage() {
     if (solvedFilter === "solved") filterParams.is_solved = true;
 
     try {
-      // 1. Fetch from Backend and Firestore in parallel
+      // 1. Fetch from Backend, Firestore, and LocalStorage in parallel
       const [backendPostsRes, firestorePostsRes] = await Promise.allSettled([
         api.getPosts(filterParams),
         getCommunityPostsFromFirestore(),
@@ -133,40 +133,75 @@ export default function CommunityPage() {
           ? firestorePostsRes.value
           : [];
 
+      let localCachedPosts: any[] = [];
+      try {
+        if (typeof window !== "undefined") {
+          const cached = localStorage.getItem("cyberlearn_local_community_posts");
+          if (cached) localCachedPosts = JSON.parse(cached);
+        }
+      } catch {}
+
       // 2. Merge & deduplicate posts by ID or title
       const mergedMap = new Map<string, PostItem>();
 
-      // Firestore posts first
-      firestorePosts.forEach((fp) => {
-        const item: PostItem = {
-          id: fp.id,
-          user_id: fp.user_id || "",
-          title: fp.title,
-          content: fp.content,
-          category: fp.category || "Questions",
-          tags: fp.tags,
-          is_solved: fp.is_solved || false,
-          author_name: fp.author_name || "Learner",
-          author_username: fp.author_username || "learner",
-          author_avatar: fp.author_avatar,
-          upvotes: fp.upvotes ?? 1,
-          comment_count: fp.comment_count ?? 0,
-          has_upvoted: user?.email ? (fp.upvoted_by || []).includes(user.email.toLowerCase().trim()) : false,
-          created_at: fp.created_at || new Date().toISOString(),
-        };
-        mergedMap.set(fp.id, item);
+      // Local cached posts first
+      localCachedPosts.forEach((lp) => {
+        if (lp && (lp.id || lp.title)) {
+          const key = lp.id || lp.title;
+          mergedMap.set(key, {
+            id: lp.id || `local_${Date.now()}`,
+            user_id: lp.user_id || "",
+            title: lp.title,
+            content: lp.content,
+            category: lp.category || "Questions",
+            tags: lp.tags,
+            is_solved: lp.is_solved || false,
+            author_name: lp.author_name || "Learner",
+            author_username: lp.author_username || "learner",
+            author_avatar: lp.author_avatar,
+            upvotes: lp.upvotes ?? 1,
+            comment_count: lp.comment_count ?? 0,
+            has_upvoted: user?.email ? (lp.upvoted_by || []).includes(user.email.toLowerCase().trim()) : false,
+            created_at: lp.created_at || new Date().toISOString(),
+          });
+        }
       });
 
-      // Overlay backend posts
+      // Firestore posts
+      firestorePosts.forEach((fp) => {
+        if (fp && (fp.id || fp.title)) {
+          const key = fp.id || fp.title;
+          const item: PostItem = {
+            id: fp.id,
+            user_id: fp.user_id || "",
+            title: fp.title,
+            content: fp.content,
+            category: fp.category || "Questions",
+            tags: fp.tags,
+            is_solved: fp.is_solved || false,
+            author_name: fp.author_name || "Learner",
+            author_username: fp.author_username || "learner",
+            author_avatar: fp.author_avatar,
+            upvotes: fp.upvotes ?? 1,
+            comment_count: fp.comment_count ?? 0,
+            has_upvoted: user?.email ? (fp.upvoted_by || []).includes(user.email.toLowerCase().trim()) : false,
+            created_at: fp.created_at || new Date().toISOString(),
+          };
+          mergedMap.set(key, item);
+        }
+      });
+
+      // Overlay backend SQL posts
       backendPosts.forEach((bp) => {
-        if (!mergedMap.has(bp.id)) {
-          mergedMap.set(bp.id, bp);
+        if (bp && (bp.id || bp.title)) {
+          const key = bp.id || bp.title;
+          mergedMap.set(key, bp);
         }
       });
 
       let mergedList = Array.from(mergedMap.values());
 
-      // Apply filter params locally for merged Firestore results
+      // Apply filter params locally
       if (activeCategory !== "All") {
         mergedList = mergedList.filter((p) => p.category?.toLowerCase() === activeCategory.toLowerCase());
       }
@@ -188,6 +223,13 @@ export default function CommunityPage() {
       // Sort by created_at desc
       mergedList.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       setPosts(mergedList);
+
+      // Keep local cache synced with latest top posts
+      if (typeof window !== "undefined" && mergedList.length > 0) {
+        try {
+          localStorage.setItem("cyberlearn_local_community_posts", JSON.stringify(mergedList.slice(0, 50)));
+        } catch {}
+      }
     } catch (err) {
       console.warn("Error loading community posts:", err);
     } finally {
@@ -326,15 +368,36 @@ export default function CommunityPage() {
     const authorEmail = user?.email || "";
 
     try {
-      // 1. Create post in backend database
-      const createdPost = await api.createPost({
-        title: newPostTitle.trim(),
-        content: newPostContent.trim(),
-        category: newPostCategory,
-        tags: newPostTags.trim() || undefined,
-      });
+      let createdPost: any = null;
+      try {
+        // 1. Attempt creation in backend SQL database
+        createdPost = await api.createPost({
+          title: newPostTitle.trim(),
+          content: newPostContent.trim(),
+          category: newPostCategory,
+          tags: newPostTags.trim() || undefined,
+        });
+      } catch (backendErr) {
+        console.warn("Backend createPost issue, creating resilient post entity:", backendErr);
+        createdPost = {
+          id: `post_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          user_id: user?.id || "user_community",
+          title: newPostTitle.trim(),
+          content: newPostContent.trim(),
+          category: newPostCategory,
+          tags: newPostTags.trim() || undefined,
+          is_solved: false,
+          author_name: authorName,
+          author_username: authorUsername,
+          author_avatar: authorAvatar,
+          upvotes: 1,
+          comment_count: 0,
+          has_upvoted: true,
+          created_at: new Date().toISOString(),
+        };
+      }
 
-      // 2. Non-blocking Firestore sync for permanent cloud backup
+      // 2. Cloud Firestore permanent sync
       saveCommunityPostToFirestore({
         id: createdPost.id,
         user_id: createdPost.user_id || user?.id,
@@ -352,7 +415,17 @@ export default function CommunityPage() {
         created_at: createdPost.created_at || new Date().toISOString(),
       }).catch((err) => console.warn("Firestore post sync non-blocking error:", err));
 
-      // 3. Instantly update UI and close modal
+      // 3. Local storage permanent cache update
+      try {
+        if (typeof window !== "undefined") {
+          const cached = localStorage.getItem("cyberlearn_local_community_posts");
+          const list: any[] = cached ? JSON.parse(cached) : [];
+          const updated = [createdPost, ...list.filter((p: any) => p.id !== createdPost.id && p.title !== createdPost.title)];
+          localStorage.setItem("cyberlearn_local_community_posts", JSON.stringify(updated.slice(0, 50)));
+        }
+      } catch {}
+
+      // 4. Instantly update UI state and close modal
       setPosts((prev) => [createdPost, ...prev.filter((p) => p.id !== createdPost.id)]);
       setShowCreateModal(false);
       setNewPostTitle("");
@@ -381,9 +454,26 @@ export default function CommunityPage() {
     const authorRole = user?.role || "student";
 
     try {
-      const commentRes = await api.addComment(selectedPost.id, newComment.trim());
+      let commentRes: any = null;
+      try {
+        commentRes = await api.addComment(selectedPost.id, newComment.trim());
+      } catch (backendErr) {
+        console.warn("Backend addComment issue, creating fallback comment entity:", backendErr);
+        commentRes = {
+          id: `comment_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          post_id: selectedPost.id,
+          user_id: user?.id || "user_community",
+          author_name: authorName,
+          author_username: authorUsername,
+          author_avatar: authorAvatar,
+          author_role: authorRole,
+          content: newComment.trim(),
+          is_solution: false,
+          created_at: new Date().toISOString(),
+        };
+      }
 
-      // Non-blocking Firestore sync for permanent cloud backup
+      // Cloud Firestore permanent sync
       addCommunityCommentToFirestore(selectedPost.id, {
         id: commentRes.id,
         post_id: selectedPost.id,

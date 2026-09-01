@@ -327,21 +327,32 @@ export async function saveCommunityPostToFirestore(post: CommunityPostData): Pro
 }
 
 /**
- * Retrieves all community posts permanently stored in Cloud Firestore.
+ * Retrieves all community posts permanently stored in Cloud Firestore with fallback.
  */
 export async function getCommunityPostsFromFirestore(): Promise<any[]> {
   try {
-    const q = query(
-      collection(firestore, "community_posts"),
-      orderBy("created_at", "desc"),
-      limit(100)
-    );
-    const snap = await getDocs(q);
-    const results: any[] = [];
-    snap.forEach((d) => {
-      results.push(d.data());
-    });
-    return results;
+    try {
+      const q = query(
+        collection(firestore, "community_posts"),
+        orderBy("created_at", "desc"),
+        limit(100)
+      );
+      const snap = await getDocs(q);
+      const results: any[] = [];
+      snap.forEach((d) => {
+        results.push(d.data());
+      });
+      if (results.length > 0) return results;
+    } catch {
+      // Fallback without orderBy (in case composite index is not built)
+      const snap = await getDocs(collection(firestore, "community_posts"));
+      const results: any[] = [];
+      snap.forEach((d) => {
+        results.push(d.data());
+      });
+      return results;
+    }
+    return [];
   } catch (err) {
     console.warn("Firestore getCommunityPosts warning:", err);
     return [];
