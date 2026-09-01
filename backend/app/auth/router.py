@@ -10,7 +10,7 @@ from ..database import get_db
 from .. import models, schemas
 from ..config import settings
 from .utils import get_password_hash, verify_password, create_access_token
-from .dependencies import get_current_user, has_active_subscription
+from .dependencies import get_current_user, get_optional_user, has_active_subscription
 from .email import send_verification_email, send_otp_verification_email
 
 logger = logging.getLogger(__name__)
@@ -468,7 +468,7 @@ def social_login(provider_in: schemas.SocialLoginRequest, db: Session = Depends(
 def check_username_availability(
     username: str,
     db: Session = Depends(get_db),
-    current_user: Optional[models.User] = Depends(lambda: None)
+    current_user: Optional[models.User] = Depends(get_optional_user)
 ):
     import re
     from sqlalchemy import func
@@ -502,7 +502,11 @@ def check_username_availability(
             message="Username may only contain letters, numbers, underscores, and hyphens."
         )
         
-    existing = db.query(models.User).filter(func.lower(models.User.username) == clean_username.lower()).first()
+    query = db.query(models.User).filter(func.lower(models.User.username) == clean_username.lower())
+    if current_user:
+        query = query.filter(models.User.id != current_user.id)
+        
+    existing = query.first()
     if existing:
         return schemas.UsernameCheckResponse(
             username=clean_username,

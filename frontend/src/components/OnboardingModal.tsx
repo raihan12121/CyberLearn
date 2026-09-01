@@ -27,6 +27,7 @@ import {
 import { Button, Card, Badge } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/lib/authStore";
+import { saveUserToFirestore } from "@/lib/firebase";
 
 const FOCUS_OPTIONS = [
   {
@@ -141,6 +142,13 @@ export function OnboardingModal() {
       return;
     }
 
+    // If checking current user's assigned handle, it is automatically valid
+    if (user?.username && clean.toLowerCase() === user.username.toLowerCase()) {
+      setUsernameAvailable(true);
+      setUsernameError(null);
+      return;
+    }
+
     setIsCheckingUsername(true);
     setUsernameError(null);
     try {
@@ -155,7 +163,7 @@ export function OnboardingModal() {
     } finally {
       setIsCheckingUsername(false);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (!username) return;
@@ -189,6 +197,18 @@ export function OnboardingModal() {
       });
 
       setUser(updatedUser);
+      if (user?.email) {
+        saveUserToFirestore({
+          email: user.email,
+          username: username.trim(),
+          full_name: fullName.trim() || undefined,
+          primary_focus: primaryFocus,
+          experience_level: experienceLevel,
+          bio: bio.trim() || undefined,
+          avatar_url: avatarUrl,
+          is_onboarded: true
+        }).catch(() => {});
+      }
       await fetchUser(true);
     } catch (err: any) {
       alert(err.message || "Failed to complete onboarding. Please try again.");
@@ -201,10 +221,16 @@ export function OnboardingModal() {
     try {
       const updatedUser = await api.updateProfile({ is_onboarded: true });
       setUser(updatedUser);
+      if (user?.email) {
+        saveUserToFirestore({ email: user.email, is_onboarded: true }).catch(() => {});
+      }
       await fetchUser(true);
     } catch {
       if (user) {
         setUser({ ...user, is_onboarded: true });
+        if (user.email) {
+          saveUserToFirestore({ email: user.email, is_onboarded: true }).catch(() => {});
+        }
       }
     }
   };
